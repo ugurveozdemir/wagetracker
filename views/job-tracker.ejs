@@ -44,12 +44,22 @@
             <div class="card">
                 <div class="card-body">
                     <h2 class="card-title">Settings</h2>
-                    <form action="/job/<%= job.id %>/update-rate" method="POST">
+                    <form action="/job/edit/<%= job.id %>" method="POST">
+                        <input type="hidden" name="from" value="job-tracker">
                         <div class="form-group">
                             <label for="hourlyRate">Hourly Rate ($)</label>
                             <input type="number" id="hourlyRate" name="hourlyRate" step="0.01" value="<%= job.hourlyRate %>" required>
                         </div>
-                        <button type="submit" class="btn btn-secondary btn-block">Update Rate</button>
+                        <div class="form-group">
+                            <label for="weekStartDay">First Day of Week</label>
+                            <select id="weekStartDay" name="weekStartDay">
+                                <% const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']; %>
+                                <% days.forEach(day => { %>
+                                    <option value="<%= day %>" <%= job.weekStartDay === day ? 'selected' : '' %>><%= day %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-secondary btn-block">Update Settings</button>
                     </form>
                 </div>
             </div>
@@ -85,8 +95,19 @@
                                 const year = date.getUTCFullYear();
                                 return `${month}/${day}/${year}`;
                             };
+
+                            const formatDayOfWeek = (dateString) => {
+                                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                const date = new Date(dateString);
+                                return days[date.getUTCDay()];
+                            };
                         %>
-                        <h2 class="card-title"><%= formatDate(week.startDate) %> - <%= formatDate(week.endDate) %></h2>
+                        <h2 class="card-title">
+                            <%= formatDate(week.startDate) %> - <%= formatDate(week.endDate) %>
+                            <div style="font-size: 0.6em; color: #6c757d; font-weight: 400; margin-top: 4px;">
+                                <%= formatDayOfWeek(week.startDate) %> - <%= formatDayOfWeek(week.endDate) %>
+                            </div>
+                        </h2>
                         <table class="entries-table">
                             <thead>
                                 <tr>
@@ -98,12 +119,17 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% week.entries.forEach(entry => { %>
+                                <% week.entries.forEach(entry => { 
+                                    const dailyEarnings = entry.hours * job.hourlyRate + (entry.tip || 0);
+                                %>
                                     <tr>
-                                        <td><%= formatDate(entry.date) %></td>
+                                        <td>
+                                            <%= formatDate(entry.date) %>
+                                            <div style="font-size: 0.85em; color: #6c757d;"><%= formatDayOfWeek(entry.date) %></div>
+                                        </td>
                                         <td><%= entry.hours.toFixed(2) %> hours</td>
                                         <td>$<%= entry.tip ? entry.tip.toFixed(2) : '0.00' %></td>
-                                        <td>$<%= entry.dailyEarnings.toFixed(2) %></td>
+                                        <td>$<%= dailyEarnings.toFixed(2) %></td>
                                         <td>
                                             <form action="/job/delete-entry/<%= entry.id %>" method="POST">
                                                 <button type="submit" class="delete-btn">🗑️</button>
@@ -114,10 +140,21 @@
                             </tbody>
                         </table>
                         <div class="weekly-totals">
-                            <div>
-                                <span>Weekly Hours</span>
-                                <strong><%= week.weeklyHours.toFixed(2) %></strong>
-                            </div>
+                            <% if (week.overtimeHours > 0) { %>
+                                <div>
+                                    <span>Regular Hours</span>
+                                    <strong><%= week.regularHours.toFixed(2) %></strong>
+                                </div>
+                                <div>
+                                    <span>Overtime Hours</span>
+                                    <strong><%= week.overtimeHours.toFixed(2) %></strong>
+                                </div>
+                            <% } else { %>
+                                <div>
+                                    <span>Weekly Hours</span>
+                                    <strong><%= week.weeklyHours.toFixed(2) %></strong>
+                                </div>
+                            <% } %>
                             <div>
                                 <span>Weekly Tips</span>
                                 <strong>$<%= week.weeklyTips.toFixed(2) %></strong>

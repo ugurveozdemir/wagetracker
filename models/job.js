@@ -18,6 +18,11 @@ const JobSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    weekStartDay: {
+      type: String,
+      required: true,
+      default: 'Friday', // Default to Friday, can be changed in settings
+    },
   },
   {
     timestamps: true,

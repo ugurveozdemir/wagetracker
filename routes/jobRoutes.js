@@ -18,7 +18,8 @@ router.get('/edit/:id', ensureAuth, async (req, res) => {
             return res.redirect('/dashboard');
         }
         job.id = job._id.toString();
-        res.render('edit-job', { job });
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        res.render('edit-job', { job, days });
     } catch (err) {
         console.error(err);
         res.render('error/500');
@@ -51,42 +52,73 @@ router.get('/:id', ensureAuth, async (req, res) => {
             jobTotalEarnings += entry.hours * job.hourlyRate + (entry.tip || 0);
         });
 
-        // Group entries by week (Friday to Thursday)
+        // Group entries by week based on job's weekStartDay
         const weeklyEntries = {};
+        const weekStartDayNum = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(job.weekStartDay);
+
         entries.forEach((entry) => {
             const date = new Date(entry.date);
-            let dayOfWeek = date.getDay();
-            let difference = dayOfWeek < 5 ? dayOfWeek + 2 : dayOfWeek - 5;
+            
+            // Use UTC days to avoid timezone issues. The date from the form is timezone-naive.
+            let dayOfWeek = date.getUTCDay();
+            let difference = (dayOfWeek - weekStartDayNum + 7) % 7;
+            
             let weekStartDate = new Date(date);
-            weekStartDate.setDate(date.getDate() - difference);
-            weekStartDate.setHours(0, 0, 0, 0);
+            weekStartDate.setUTCDate(date.getUTCDate() - difference);
+            weekStartDate.setUTCHours(0, 0, 0, 0);
             
             const weekKey = weekStartDate.toISOString().split('T')[0];
 
             if (!weeklyEntries[weekKey]) {
                 const weekEndDate = new Date(weekStartDate);
-                weekEndDate.setDate(weekStartDate.getDate() + 6);
+                weekEndDate.setUTCDate(weekStartDate.getUTCDate() + 6);
                 weeklyEntries[weekKey] = {
                     startDate: weekStartDate,
                     endDate: weekEndDate,
                     entries: [],
                     weeklyHours: 0,
-                    weeklyEarnings: 0,
-                    weeklyTips: 0
+                    weeklyTips: 0,
+                    regularHours: 0,
+                    overtimeHours: 0,
+                    weeklyEarnings: 0
                 };
             }
-            const dailyEarnings = entry.hours * job.hourlyRate + (entry.tip || 0);
-            weeklyEntries[weekKey].entries.push({ ...entry, dailyEarnings });
+            weeklyEntries[weekKey].entries.push({ ...entry });
             weeklyEntries[weekKey].weeklyHours += entry.hours;
-            weeklyEntries[weekKey].weeklyEarnings += dailyEarnings;
             weeklyEntries[weekKey].weeklyTips += entry.tip || 0;
         });
+
+        // Calculate earnings including overtime for each week
+        let totalEarningsWithOvertime = 0;
+        const processedWeeklyEntries = Object.values(weeklyEntries).map(week => {
+            const weeklyHours = week.weeklyHours;
+            const hourlyRate = job.hourlyRate;
+            const overtimeRate = hourlyRate * 1.5;
+
+            if (weeklyHours > 40) {
+                week.overtimeHours = weeklyHours - 40;
+                week.regularHours = 40;
+            } else {
+                week.overtimeHours = 0;
+                week.regularHours = weeklyHours;
+            }
+
+            const regularPay = week.regularHours * hourlyRate;
+            const overtimePay = week.overtimeHours * overtimeRate;
+            
+            week.weeklyEarnings = regularPay + overtimePay + week.weeklyTips;
+            totalEarningsWithOvertime += week.weeklyEarnings;
+            return week;
+        });
+        
+        // This recalculates the total job earnings to include overtime from all weeks.
+        jobTotalEarnings = totalEarningsWithOvertime;
 
         res.render('job-tracker', {
             job,
             jobTotalHours,
             jobTotalEarnings,
-            weeklyEntries: Object.values(weeklyEntries)
+            weeklyEntries: processedWeeklyEntries
         });
     } catch (err) {
         console.error(err);
@@ -98,12 +130,22 @@ router.get('/:id', ensureAuth, async (req, res) => {
 // @route   POST /job/edit/:id
 router.post('/edit/:id', ensureAuth, async (req, res) => {
     try {
-        await Job.findOneAndUpdate(
-            { _id: req.params.id, userId: req.user._id },
-            { jobName: req.body.jobName, hourlyRate: req.body.hourlyRate },
-            { new: true }
-        );
-        res.redirect('/dashboard');
+        const job = await Job.findOne({ _id: req.params.id, userId: req.user._id });
+        if (!job) {
+            return res.render('error/404');
+        }
+
+        job.jobName = req.body.jobName || job.jobName;
+        job.hourlyRate = req.body.hourlyRate || job.hourlyRate;
+        job.weekStartDay = req.body.weekStartDay || job.weekStartDay;
+
+        await job.save();
+
+        if (req.body.from === 'edit-job') {
+            res.redirect('/dashboard');
+        } else {
+            res.redirect(`/job/${req.params.id}`);
+        }
     } catch (err) {
         console.error(err);
         res.render('error/500');
@@ -156,22 +198,6 @@ router.post('/delete-entry/:id', ensureAuth, async (req, res) => {
         const jobId = entry.jobId;
         await entry.deleteOne();
         res.redirect(`/job/${jobId}`);
-    } catch (err) {
-        console.error(err);
-        res.render('error/500');
-    }
-});
-
-// @desc    Update hourly rate
-// @route   POST /job/:id/update-rate
-router.post('/:id/update-rate', ensureAuth, async (req, res) => {
-    try {
-        await Job.findOneAndUpdate(
-            { _id: req.params.id, userId: req.user._id },
-            { hourlyRate: req.body.hourlyRate },
-            { new: true }
-        );
-        res.redirect(`/job/${req.params.id}`);
     } catch (err) {
         console.error(err);
         res.render('error/500');
