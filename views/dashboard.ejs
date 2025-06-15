@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <%- include('partials/_header', { userName: userName }) %>
+    <div class="container">
+        <div class="main-title-container">
+            <div>
+                <h1>Dashboard</h1>
+                <p class="subtitle">A general summary of all your jobs.</p>
+            </div>
+             <button class="btn btn-primary" onclick="openModal('add-job-modal')">Add New Job</button>
+        </div>
+        
+        <!-- Dashboard Summary -->
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">General Summary</h2>
+                <div class="summary-grid">
+                    <div class="summary-box summary-box-blue">
+                        <span>Total Hours</span>
+                        <strong><%= grandTotalHours.toFixed(2) %></strong>
+                    </div>
+                    <div class="summary-box summary-box-green">
+                        <span>Total Earnings</span>
+                        <strong>$<%= grandTotalEarnings.toFixed(2) %></strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job List -->
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">My Jobs</h2>
+                <div class="jobs-grid">
+                    <% if(jobs.length > 0) { %>
+                        <% jobs.forEach(job => { %>
+                            <div class="job-card">
+                                <h3><%= job.jobName %></h3>
+                                <p>Hourly Rate: $<%= job.hourlyRate.toFixed(2) %></p>
+                                <div class="job-card-actions">
+                                    <a href="/job/<%= job.id %>" class="btn btn-primary">View</a>
+                                    <a href="/job/edit/<%= job.id %>" class="btn btn-secondary">Edit</a>
+                                    
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <p>You haven't added any jobs yet. Add one to get started.</p>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Job Modal -->
+    <div id="add-job-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('add-job-modal')">&times;</span>
+            <h2 class="card-title">Add New Job</h2>
+            <form action="/dashboard/add-job" method="POST">
+                <div class="form-group">
+                    <label for="jobName">Job Name</label>
+                    <input type="text" id="jobName" name="jobName" required>
+                </div>
+                <div class="form-group">
+                    <label for="hourlyRate">Hourly Rate ($)</label>
+                    <input type="number" id="hourlyRate" name="hourlyRate" step="0.01" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Add Job</button>
+            </form>
+        </div>
+    </div>
+    <script src="/js/main.js"></script>
+</body>
+</html> 

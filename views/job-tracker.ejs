@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work & Earnings Tracker</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <%- include('partials/_header', { userName: '' }) %>
+    <div class="container main-title-container">
+        <div>
+            <h1>Work & Earnings Tracker</h1>
+            <p class="subtitle">Enter your work hours and track your earnings weekly.</p>
+        </div>
+        <a href="/dashboard" class="btn back-btn">&larr; Back to Dashboard</a>
+    </div>
+
+    <div class="container page-layout">
+        <div class="left-column">
+            <!-- Add New Entry Card -->
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Add New Entry</h2>
+                    <form action="/job/<%= job.id %>/add-entry" method="POST">
+                        <div class="form-group">
+                            <label for="date">Date</label>
+                            <input type="date" id="date" name="date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="hours">Work Hours</label>
+                            <input type="number" id="hours" name="hours" step="0.01" placeholder="Ex: 6.5" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tip">Tip ($)</label>
+                            <input type="number" id="tip" name="tip" step="0.01" placeholder="Ex: 5.00">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">+ Add</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Settings Card -->
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">Settings</h2>
+                    <form action="/job/<%= job.id %>/update-rate" method="POST">
+                        <div class="form-group">
+                            <label for="hourlyRate">Hourly Rate ($)</label>
+                            <input type="number" id="hourlyRate" name="hourlyRate" step="0.01" value="<%= job.hourlyRate %>" required>
+                        </div>
+                        <button type="submit" class="btn btn-secondary btn-block">Update Rate</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            <!-- General Summary -->
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">General Summary: <%= job.jobName %></h2>
+                    <div class="summary-grid">
+                        <div class="summary-box summary-box-blue">
+                            <span>Total Hours</span>
+                            <strong><%= jobTotalHours.toFixed(2) %></strong>
+                        </div>
+                        <div class="summary-box summary-box-green">
+                            <span>Total Earnings</span>
+                            <strong>$<%= jobTotalEarnings.toFixed(2) %></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly Entries -->
+            <% weeklyEntries.forEach(week => { %>
+                <div class="card weekly-entries-card">
+                    <div class="card-body">
+                        <%
+                            const formatDate = (dateString) => {
+                                const date = new Date(dateString);
+                                const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+                                const day = date.getUTCDate().toString().padStart(2, '0');
+                                const year = date.getUTCFullYear();
+                                return `${month}/${day}/${year}`;
+                            };
+                        %>
+                        <h2 class="card-title"><%= formatDate(week.startDate) %> - <%= formatDate(week.endDate) %></h2>
+                        <table class="entries-table">
+                            <thead>
+                                <tr>
+                                    <th>DATE</th>
+                                    <th>HOURS</th>
+                                    <th>TIPS</th>
+                                    <th>EARNINGS</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% week.entries.forEach(entry => { %>
+                                    <tr>
+                                        <td><%= formatDate(entry.date) %></td>
+                                        <td><%= entry.hours.toFixed(2) %> hours</td>
+                                        <td>$<%= entry.tip ? entry.tip.toFixed(2) : '0.00' %></td>
+                                        <td>$<%= entry.dailyEarnings.toFixed(2) %></td>
+                                        <td>
+                                            <form action="/job/delete-entry/<%= entry.id %>" method="POST">
+                                                <button type="submit" class="delete-btn">🗑️</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                        <div class="weekly-totals">
+                            <div>
+                                <span>Weekly Hours</span>
+                                <strong><%= week.weeklyHours.toFixed(2) %></strong>
+                            </div>
+                            <div>
+                                <span>Weekly Tips</span>
+                                <strong>$<%= week.weeklyTips.toFixed(2) %></strong>
+                            </div>
+                            <div>
+                                <span>Weekly Earnings</span>
+                                <strong>$<%= week.weeklyEarnings.toFixed(2) %></strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+            <% if (weeklyEntries.length === 0) { %>
+                <div class="card">
+                    <div class="card-body">
+                        <p>No entries have been made for this job yet.</p>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+    <script src="/js/main.js"></script>
+</body>
+</html> 

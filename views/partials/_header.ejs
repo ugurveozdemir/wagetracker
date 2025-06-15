@@ -1,0 +1,15 @@
+<header>
+    <div class="container">
+        <div class="header-content">
+            <div class="logo">
+                <a href="/dashboard">Wage Tracker</a>
+            </div>
+            <nav>
+                <% if (typeof userName !== 'undefined' && userName) { %>
+                    <span>Welcome, <%= userName %></span>
+                    <a href="/auth/logout" class="btn btn-secondary">Logout</a>
+                <% } %>
+            </nav>
+        </div>
+    </div>
+</header> 
