@@ -56,8 +56,15 @@ app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Set global vars for flash messages
+app.use(function(req, res, next) {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error = req.flash('error');
+    next();
+});
+
 // Routes
-app.use('/', require('./routes/authRoutes'));
+app.use('/', require('./routes/index'));
 app.use('/auth', require('./routes/authRoutes'));
 app.use('/dashboard', require('./routes/dashboardRoutes'));
 app.use('/job', require('./routes/jobRoutes'));

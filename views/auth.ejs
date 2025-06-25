@@ -14,11 +14,15 @@
                 <button class="tab-link" onclick="openTab(event, 'register')">Register</button>
             </div>
 
+            <% if (success_msg && success_msg.length > 0) { %>
+                <div class="alert alert-success"><%= success_msg %></div>
+            <% } %>
+            <% if (error && error.length > 0) { %>
+                <div class="alert alert-danger"><%= error %></div>
+            <% } %>
+
             <div id="login" class="tab-content active">
                 <h2 class="card-title">Login</h2>
-                <% if (typeof message !== 'undefined' && message && message.length > 0) { %>
-                    <div class="alert alert-danger"><%= message %></div>
-                <% } %>
                 <form action="/auth/login" method="POST">
                     <div class="form-group">
                         <label for="login-email">Email</label>

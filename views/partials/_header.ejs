@@ -6,8 +6,12 @@
             </div>
             <nav>
                 <% if (typeof userName !== 'undefined' && userName) { %>
-                    <span>Welcome, <%= userName %></span>
-                    <a href="/auth/logout" class="btn btn-secondary">Logout</a>
+                    <span>Hello, <%= userName %></span>
+                    <form action="/auth/logout" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-secondary">Logout</button>
+                    </form>
+                <% } else { %>
+                    <a href="/auth" class="btn btn-primary">Login / Register</a>
                 <% } %>
             </nav>
         </div>

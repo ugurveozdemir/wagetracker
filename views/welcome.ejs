@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to WageTracker</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <%- include('partials/_header', { userName: null }) %>
+
+    <div class="hero-section">
+        <div class="container">
+            <div class="welcome-container">
+                <h1 class="welcome-title">Track Your Work & Earnings with WageTracker</h1>
+                <p class="welcome-subtitle">
+                    WageTracker helps you monitor your work hours, tips, and weekly earnings, including overtime. 
+                    Take control of your income today.
+                </p>
+                <div class="welcome-actions">
+                    <a href="/auth" class="btn btn-primary btn-lg">Get Started for Free</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="features-section">
+        <div class="container">
+            <div class="feature-card">
+                <div class="feature-text">
+                    <h2>All Your Jobs in One Place</h2>
+                    <p>Easily manage multiple jobs from a single, clean dashboard. See your total earnings and hours at a glance and dive into the details for each job.</p>
+                </div>
+                <div class="feature-image">
+                    <img src="/images/dashboard.png" alt="Dashboard View">
+                </div>
+            </div>
+
+            <div class="feature-card reverse">
+                <div class="feature-text">
+                    <h2>Detailed Job Tracking</h2>
+                    <p>Enter your daily hours, tips, and see your earnings calculated automatically. Our app handles everything, including complex overtime pay, so you don't have to.</p>
+                </div>
+                <div class="feature-image">
+                    <img src="/images/general-summary-housekeeper.png" alt="Job Summary View">
+                </div>
+            </div>
+            
+            <div class="feature-card feature-card-narrow">
+                 <div class="feature-text">
+                    <h2>Flexible Entry Options</h2>
+                    <p>Whether you prefer to enter your total work hours for the day or use our check-in/check-out timer, we've got you covered. Adding new entries is fast, simple, and intuitive.</p>
+                </div>
+                <div class="feature-image">
+                    <img src="/images/add-new-entry.png" alt="Add New Entry Form">
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <div class="cta-section">
+        <div class="container">
+            <h2>Ready to Take Control?</h2>
+            <p>Stop guessing and start tracking. Sign up now and get a clear view of your finances.</p>
+            <a href="/auth" class="btn btn-primary btn-lg">Sign Up Now</a>
+        </div>
+    </div>
+
+</body>
+</html> 
