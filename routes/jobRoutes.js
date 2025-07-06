@@ -19,7 +19,7 @@ router.get('/edit/:id', ensureAuth, async (req, res) => {
         }
         job.id = job._id.toString();
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        res.render('edit-job', { job, days });
+        res.render('edit-job', { job, days, userName: req.user.name });
     } catch (err) {
         console.error(err);
         res.render('error/500');
@@ -118,7 +118,8 @@ router.get('/:id', ensureAuth, async (req, res) => {
             job,
             jobTotalHours,
             jobTotalEarnings,
-            weeklyEntries: processedWeeklyEntries
+            weeklyEntries: processedWeeklyEntries,
+            userName: req.user.name,
         });
     } catch (err) {
         console.error(err);
