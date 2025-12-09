@@ -40,10 +40,11 @@ msbuild.wrn
 # Rider
 .idea/
 
-# User secrets
+# User secrets - IMPORTANT: Never commit real credentials!
+appsettings.json
 appsettings.Development.json
 appsettings.*.json
-!appsettings.json
+!appsettings.Example.json
 
 # Environment variables
 .env
