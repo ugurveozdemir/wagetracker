@@ -24,10 +24,5 @@ namespace WageTracker.API.Models.Entities
         public string PasswordHash { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        // Navigation Property:
-        // Bir kullanıcının birden fazla işi olabilir.
-        // Bu liste veritabanında sütun olmaz, kod içinde ilişkileri yönetmemizi sağlar.
-        public ICollection<Job> Jobs { get; set; } = new List<Job>();
     }
 }
