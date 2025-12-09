@@ -40,6 +40,12 @@ A comprehensive backend API for tracking work hours, calculating earnings, and m
    - Get your connection string from Settings → Database
 
 3. **Update appsettings.json**
+   - Copy `appsettings.Example.json` to `appsettings.json`
+   - Update with your Supabase credentials:
+   ```bash
+   cp Wagetracker.API/appsettings.Example.json Wagetracker.API/appsettings.json
+   ```
+   - Edit `appsettings.json` with your values:
    ```json
    {
      "ConnectionStrings": {
@@ -50,6 +56,7 @@ A comprehensive backend API for tracking work hours, calculating earnings, and m
      }
    }
    ```
+   - **IMPORTANT:** Never commit `appsettings.json` to Git!
 
 4. **Run database migration**
    - Open Supabase SQL Editor
