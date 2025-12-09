@@ -1,0 +1,165 @@
+using Microsoft.EntityFrameworkCore;
+using WageTracker.API.Data;
+using WageTracker.API.Models.DTOs;
+using WageTracker.API.Models.Entities;
+
+namespace WageTracker.API.Services
+{
+    public class JobService : IJobService
+    {
+        private readonly AppDbContext _context;
+
+        public JobService(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<JobResponse> CreateJobAsync(int userId, CreateJobRequest request)
+        {
+            var job = new Job
+            {
+                UserId = userId,
+                Title = request.Title,
+                HourlyRate = request.HourlyRate,
+                FirstDayOfWeek = request.FirstDayOfWeek,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Jobs.Add(job);
+            await _context.SaveChangesAsync();
+
+            return await MapToJobResponseAsync(job);
+        }
+
+        public async Task<JobResponse> UpdateJobAsync(int userId, int jobId, UpdateJobRequest request)
+        {
+            var job = await _context.Jobs
+                .FirstOrDefaultAsync(j => j.Id == jobId && j.UserId == userId);
+
+            if (job == null)
+            {
+                throw new UnauthorizedAccessException("Job not found or access denied");
+            }
+
+            job.Title = request.Title;
+            job.HourlyRate = request.HourlyRate;
+            job.FirstDayOfWeek = request.FirstDayOfWeek;
+
+            await _context.SaveChangesAsync();
+
+            return await MapToJobResponseAsync(job);
+        }
+
+        public async Task DeleteJobAsync(int userId, int jobId)
+        {
+            var job = await _context.Jobs
+                .FirstOrDefaultAsync(j => j.Id == jobId && j.UserId == userId);
+
+            if (job == null)
+            {
+                throw new UnauthorizedAccessException("Job not found or access denied");
+            }
+
+            _context.Jobs.Remove(job);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<JobResponse> GetJobByIdAsync(int userId, int jobId)
+        {
+            var job = await _context.Jobs
+                .FirstOrDefaultAsync(j => j.Id == jobId && j.UserId == userId);
+
+            if (job == null)
+            {
+                throw new UnauthorizedAccessException("Job not found or access denied");
+            }
+
+            return await MapToJobResponseAsync(job);
+        }
+
+        public async Task<List<JobResponse>> GetUserJobsAsync(int userId)
+        {
+            var jobs = await _context.Jobs
+                .Where(j => j.UserId == userId)
+                .OrderByDescending(j => j.CreatedAt)
+                .ToListAsync();
+
+            var responses = new List<JobResponse>();
+            foreach (var job in jobs)
+            {
+                responses.Add(await MapToJobResponseAsync(job));
+            }
+
+            return responses;
+        }
+
+        private async Task<JobResponse> MapToJobResponseAsync(Job job)
+        {
+            var entries = await _context.DailyEntries
+                .Where(e => e.JobId == job.Id)
+                .ToListAsync();
+
+            var totalEarnings = entries.Sum(e => e.TotalEarnings);
+            var totalHours = entries.Sum(e => e.TotalHours);
+
+            return new JobResponse
+            {
+                Id = job.Id,
+                Title = job.Title,
+                HourlyRate = job.HourlyRate,
+                FirstDayOfWeek = job.FirstDayOfWeek,
+                TotalEarnings = totalEarnings,
+                TotalHours = totalHours,
+                CreatedAt = job.CreatedAt
+            };
+        }
+    }
+
+    public class DashboardService : IDashboardService
+    {
+        private readonly AppDbContext _context;
+
+        public DashboardService(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<DashboardSummaryResponse> GetDashboardSummaryAsync(int userId)
+        {
+            var jobs = await _context.Jobs
+                .Where(j => j.UserId == userId)
+                .ToListAsync();
+
+            var allEntries = await _context.DailyEntries
+                .Where(e => e.UserId == userId)
+                .ToListAsync();
+
+            var totalEarnings = allEntries.Sum(e => e.TotalEarnings);
+            var totalHours = allEntries.Sum(e => e.TotalHours);
+
+            var jobResponses = new List<JobResponse>();
+            foreach (var job in jobs)
+            {
+                var jobEntries = allEntries.Where(e => e.JobId == job.Id).ToList();
+                jobResponses.Add(new JobResponse
+                {
+                    Id = job.Id,
+                    Title = job.Title,
+                    HourlyRate = job.HourlyRate,
+                    FirstDayOfWeek = job.FirstDayOfWeek,
+                    TotalEarnings = jobEntries.Sum(e => e.TotalEarnings),
+                    TotalHours = jobEntries.Sum(e => e.TotalHours),
+                    CreatedAt = job.CreatedAt
+                });
+            }
+
+            return new DashboardSummaryResponse
+            {
+                TotalEarnings = totalEarnings,
+                TotalHours = totalHours,
+                ActiveJobsCount = jobs.Count,
+                Jobs = jobResponses.OrderByDescending(j => j.CreatedAt).ToList()
+            };
+        }
+    }
+}
