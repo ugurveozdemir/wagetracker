@@ -12,14 +12,20 @@ namespace WageTracker.API.Controllers
     public class JobsController : ControllerBase
     {
         private readonly IJobService _jobService;
+        private readonly IWebHostEnvironment _environment;
 
-        public JobsController(IJobService jobService)
+        public JobsController(IJobService jobService, IWebHostEnvironment environment)
         {
             _jobService = jobService;
+            _environment = environment;
         }
 
         private int GetUserId()
         {
+            // DEV-ONLY: Bypass auth for mobile development
+            if (_environment.IsDevelopment())
+                return 1; // Test user ID
+            
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return int.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
         }

@@ -39,24 +39,41 @@ A comprehensive backend API for tracking work hours, calculating earnings, and m
    - Create a Supabase project
    - Get your connection string from Settings → Database
 
-3. **Update appsettings.json**
-   - Copy `appsettings.Example.json` to `appsettings.json`
-   - Update with your Supabase credentials:
-   ```bash
-   cp Wagetracker.API/appsettings.Example.json Wagetracker.API/appsettings.json
+3. **Configure appsettings.json**
+   
+   Copy the example configuration file:
+   
+   **Windows (PowerShell):**
+   ```powershell
+   cd Wagetracker.API
+   Copy-Item appsettings.Example.json appsettings.json
    ```
-   - Edit `appsettings.json` with your values:
+   
+   **Linux/Mac:**
+   ```bash
+   cd Wagetracker.API
+   cp appsettings.Example.json appsettings.json
+   ```
+   
+   Then edit `appsettings.json` and replace the following values:
+   - `YOUR_SUPABASE_HOST` → Your Supabase database host (from Supabase Dashboard → Settings → Database)
+   - `YOUR_PASSWORD` → Your database password
+   - `YOUR_SECRET_KEY_HERE_MINIMUM_32_CHARACTERS_LONG` → A strong secret key (minimum 32 characters)
+   
+   Example:
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Host=YOUR_HOST;Database=postgres;Username=postgres;Password=YOUR_PASSWORD;SSL Mode=Require"
+       "DefaultConnection": "Host=db.xxxxx.supabase.co;Database=postgres;Username=postgres;Password=your_actual_password;SSL Mode=Require;Trust Server Certificate=true"
      },
      "Jwt": {
-       "SecretKey": "YOUR_32_CHARACTER_SECRET_KEY_HERE"
+       "SecretKey": "my-super-secret-jwt-key-12345678"
      }
    }
    ```
-   - **IMPORTANT:** Never commit `appsettings.json` to Git!
+   
+   > [!IMPORTANT]
+   > Never commit `appsettings.json` to Git! This file is already in `.gitignore` to protect your credentials.
 
 4. **Run database migration**
    - Open Supabase SQL Editor
