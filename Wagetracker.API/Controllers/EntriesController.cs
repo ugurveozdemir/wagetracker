@@ -12,20 +12,14 @@ namespace WageTracker.API.Controllers
     public class EntriesController : ControllerBase
     {
         private readonly IDailyEntryService _entryService;
-        private readonly IWebHostEnvironment _environment;
 
-        public EntriesController(IDailyEntryService entryService, IWebHostEnvironment environment)
+        public EntriesController(IDailyEntryService entryService)
         {
             _entryService = entryService;
-            _environment = environment;
         }
 
         private int GetUserId()
         {
-            // DEV-ONLY: Bypass auth for mobile development
-            if (_environment.IsDevelopment())
-                return 1; // Test user ID
-            
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return int.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
         }

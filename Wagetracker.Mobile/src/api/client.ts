@@ -8,15 +8,41 @@ const getBaseUrl = () => {
     if (__DEV__) {
         // Development mode
         if (Platform.OS === 'android') {
-            return 'http://10.0.2.2:5000'; // Android emulator
+            return 'http://10.0.2.2:5098'; // Android emulator
         }
-        return 'http://localhost:5000'; // iOS simulator
+        return 'http://localhost:5098'; // iOS simulator & Web
     }
     // Production URL - update this when deploying
     return 'https://your-production-api.com';
 };
 
 const TOKEN_KEY = 'auth_token';
+
+// Web-compatible storage helpers (SecureStore doesn't work on web)
+const isWeb = Platform.OS === 'web';
+
+const storage = {
+    getItem: async (key: string): Promise<string | null> => {
+        if (isWeb) {
+            return localStorage.getItem(key);
+        }
+        return SecureStore.getItemAsync(key);
+    },
+    setItem: async (key: string, value: string): Promise<void> => {
+        if (isWeb) {
+            localStorage.setItem(key, value);
+            return;
+        }
+        await SecureStore.setItemAsync(key, value);
+    },
+    removeItem: async (key: string): Promise<void> => {
+        if (isWeb) {
+            localStorage.removeItem(key);
+            return;
+        }
+        await SecureStore.deleteItemAsync(key);
+    },
+};
 
 export const apiClient: AxiosInstance = axios.create({
     baseURL: getBaseUrl(),
@@ -30,12 +56,12 @@ export const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
         try {
-            const token = await SecureStore.getItemAsync(TOKEN_KEY);
+            const token = await storage.getItem(TOKEN_KEY);
             if (token && config.headers) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
         } catch (error) {
-            console.warn('Failed to get token from secure store:', error);
+            console.warn('Failed to get token from storage:', error);
         }
         return config;
     },
@@ -68,17 +94,18 @@ apiClient.interceptors.response.use(
     }
 );
 
-// Token management helpers
+// Token management helpers (using web-compatible storage)
 export const setAuthToken = async (token: string): Promise<void> => {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    await storage.setItem(TOKEN_KEY, token);
 };
 
 export const getAuthToken = async (): Promise<string | null> => {
-    return await SecureStore.getItemAsync(TOKEN_KEY);
+    return await storage.getItem(TOKEN_KEY);
 };
 
 export const removeAuthToken = async (): Promise<void> => {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await storage.removeItem(TOKEN_KEY);
 };
 
 export default apiClient;
+

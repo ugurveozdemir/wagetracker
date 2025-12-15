@@ -9,11 +9,13 @@ import {
     ActivityIndicator,
     SafeAreaView,
     StatusBar,
+    Modal,
+    Pressable,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { MainStackParamList } from '../types';
-import { useJobsStore } from '../stores';
+import { useJobsStore, useAuthStore } from '../stores';
 import { Card } from '../components/ui';
 import { JobCard } from '../components/JobCard';
 import { CreateJobModal } from '../components/CreateJobModal';
@@ -24,8 +26,10 @@ type DashboardNavigationProp = NativeStackNavigationProp<MainStackParamList, 'Da
 export const DashboardScreen: React.FC = () => {
     const navigation = useNavigation<DashboardNavigationProp>();
     const { summary, jobs, isLoading, error, fetchDashboard } = useJobsStore();
+    const { logout } = useAuthStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     useEffect(() => {
         fetchDashboard();
@@ -36,6 +40,11 @@ export const DashboardScreen: React.FC = () => {
         await fetchDashboard();
         setRefreshing(false);
     }, [fetchDashboard]);
+
+    const handleLogout = async () => {
+        setShowProfileMenu(false);
+        await logout();
+    };
 
     const today = new Date();
     const dayName = today.toLocaleDateString('en-US', { weekday: 'short' });
@@ -74,6 +83,15 @@ export const DashboardScreen: React.FC = () => {
                             Hi, <Text style={styles.greetingHighlight}>Creator!</Text> 👋
                         </Text>
                     </View>
+
+                    {/* Profile Button */}
+                    <TouchableOpacity
+                        style={styles.profileButton}
+                        onPress={() => setShowProfileMenu(true)}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.profileIcon}>👤</Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Bento Grid */}
@@ -165,6 +183,32 @@ export const DashboardScreen: React.FC = () => {
                     fetchDashboard();
                 }}
             />
+
+            {/* Profile Menu Modal */}
+            <Modal
+                visible={showProfileMenu}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowProfileMenu(false)}
+            >
+                <Pressable
+                    style={styles.menuOverlay}
+                    onPress={() => setShowProfileMenu(false)}
+                >
+                    <Pressable style={styles.menuContainer}>
+                        <View style={styles.menuHeader}>
+                            <Text style={styles.menuTitle}>Account</Text>
+                        </View>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={handleLogout}
+                        >
+                            <Text style={styles.menuItemIcon}>🚪</Text>
+                            <Text style={styles.menuItemText}>Sign Out</Text>
+                        </TouchableOpacity>
+                    </Pressable>
+                </Pressable>
+            </Modal>
         </SafeAreaView>
     );
 };
@@ -190,6 +234,9 @@ const styles = StyleSheet.create({
 
     // Header
     header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: spacing.xl,
     },
     greeting: {
@@ -199,6 +246,68 @@ const styles = StyleSheet.create({
     },
     greetingHighlight: {
         color: colors.primary,
+    },
+    profileButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.white,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: colors.primary,
+    },
+    profileIcon: {
+        fontSize: 20,
+    },
+
+    // Profile Menu
+    menuOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.3)',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-end',
+        paddingTop: 80,
+        paddingRight: spacing.lg,
+    },
+    menuContainer: {
+        backgroundColor: colors.white,
+        borderRadius: borderRadius.xl,
+        minWidth: 180,
+        overflow: 'hidden',
+        shadowColor: colors.slate900,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 24,
+        elevation: 8,
+    },
+    menuHeader: {
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.slate100,
+    },
+    menuTitle: {
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.bold,
+        color: colors.slate400,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        gap: spacing.md,
+    },
+    menuItemIcon: {
+        fontSize: fontSizes.lg,
+    },
+    menuItemText: {
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.semibold,
+        color: colors.slate700,
     },
 
     // Bento Grid
