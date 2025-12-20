@@ -32,7 +32,7 @@ export const Input: React.FC<InputProps> = ({
                 <TextInput
                     style={[
                         styles.input,
-                        leftIcon && styles.inputWithIcon,
+                        leftIcon ? styles.inputWithIcon : undefined,
                         style,
                     ]}
                     placeholderTextColor={colors.slate300}

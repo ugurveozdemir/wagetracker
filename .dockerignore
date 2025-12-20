@@ -1,0 +1,36 @@
+# Docker
+Dockerfile
+.dockerignore
+
+# .NET build outputs
+**/bin/
+**/obj/
+**/out/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Git
+.git/
+.gitignore
+
+# Reference and mobile (not needed for API)
+reference_project/
+Wagetracker.Mobile/
+changelogs/
+
+# Secrets (never include in Docker image)
+**/appsettings.json
+**/appsettings.*.json
+!**/appsettings.Example.json
+
+# Logs
+*.log
+logs/
+
+# OS files
+Thumbs.db
+.DS_Store

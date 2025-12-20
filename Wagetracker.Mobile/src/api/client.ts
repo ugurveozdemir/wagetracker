@@ -1,19 +1,14 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import config from '../config';
 
-// Android emulator uses 10.0.2.2 to access host machine's localhost
-// iOS simulator uses localhost directly
+// Get API base URL from centralized config
 const getBaseUrl = () => {
-    if (__DEV__) {
-        // Development mode
-        if (Platform.OS === 'android') {
-            return 'http://10.0.2.2:5098'; // Android emulator
-        }
-        return 'http://localhost:5098'; // iOS simulator & Web
+    if (Platform.OS === 'android') {
+        return config.API_URL_ANDROID;
     }
-    // Production URL - update this when deploying
-    return 'https://your-production-api.com';
+    return config.API_URL;
 };
 
 const TOKEN_KEY = 'auth_token';
