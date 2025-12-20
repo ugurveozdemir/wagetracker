@@ -63,13 +63,30 @@ builder.Services.AddCors(options =>
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
             ?? Array.Empty<string>();
         
-        options.AddPolicy("AllowAll", policy =>
+        // Log allowed origins for debugging
+        Console.WriteLine($"[CORS] Allowed origins: {string.Join(", ", allowedOrigins)}");
+        
+        if (allowedOrigins.Length > 0)
         {
-            policy.WithOrigins(allowedOrigins)
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
-        });
+            options.AddPolicy("AllowAll", policy =>
+            {
+                policy.WithOrigins(allowedOrigins)
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials();
+            });
+        }
+        else
+        {
+            // Fallback: Allow all if no origins configured
+            Console.WriteLine("[CORS] WARNING: No origins configured, allowing all");
+            options.AddPolicy("AllowAll", policy =>
+            {
+                policy.AllowAnyOrigin()
+                      .AllowAnyMethod()
+                      .AllowAnyHeader();
+            });
+        }
     }
 });
 
