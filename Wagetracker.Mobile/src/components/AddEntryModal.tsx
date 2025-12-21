@@ -234,14 +234,19 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                                 <Text style={styles.label}>DATE</Text>
                                 <TouchableOpacity
                                     style={styles.dateButton}
-                                    onPress={() => setShowDatePicker(true)}
+                                    onPress={() => {
+                                        Keyboard.dismiss();
+                                        setShowStartPicker(false);
+                                        setShowEndPicker(false);
+                                        setShowDatePicker(true);
+                                    }}
                                 >
                                     <Text style={styles.dateButtonText}>
-                                        {date.toLocaleDateString('en-GB', {
-                                            day: '2-digit',
-                                            month: '2-digit',
+                                        {date.toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
                                             year: 'numeric'
-                                        }).replace(/\//g, '.')}
+                                        })}
                                     </Text>
                                     <Text style={styles.calendarIcon}>📅</Text>
                                 </TouchableOpacity>
@@ -327,6 +332,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                                             <TouchableOpacity
                                                 style={styles.timeButton}
                                                 onPress={() => {
+                                                    Keyboard.dismiss();
                                                     setShowDatePicker(false);
                                                     setShowEndPicker(false);
                                                     setShowStartPicker(true);
@@ -341,6 +347,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                                             <TouchableOpacity
                                                 style={styles.timeButton}
                                                 onPress={() => {
+                                                    Keyboard.dismiss();
                                                     setShowDatePicker(false);
                                                     setShowStartPicker(false);
                                                     setShowEndPicker(true);
@@ -530,6 +537,16 @@ const styles = StyleSheet.create({
     },
     calendarIcon: {
         fontSize: fontSizes.lg,
+    },
+    datePickerContainer: {
+        backgroundColor: colors.slate50,
+        borderRadius: borderRadius['2xl'],
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        alignSelf: 'flex-start',
+    },
+    compactPicker: {
+        marginLeft: -spacing.sm,
     },
     pickerContainer: {
         backgroundColor: colors.slate50,
