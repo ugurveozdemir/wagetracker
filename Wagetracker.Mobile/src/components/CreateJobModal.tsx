@@ -1,17 +1,22 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
-    KeyboardAvoidingView,
-    Platform,
     Modal,
-    Pressable,
+    Animated,
+    PanResponder,
+    Dimensions,
+    Keyboard,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useJobsStore } from '../stores';
 import { Button, Input } from './ui';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const DISMISS_THRESHOLD = 150;
 
 interface CreateJobModalProps {
     visible: boolean;
@@ -35,13 +40,57 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
     onCreated,
 }) => {
     const { createJob, isCreating } = useJobsStore();
+    const translateY = useRef(new Animated.Value(0)).current;
 
     const [title, setTitle] = useState('');
     const [hourlyRate, setHourlyRate] = useState('');
-    const [firstDayOfWeek, setFirstDayOfWeek] = useState(1); // Default Monday
+    const [firstDayOfWeek, setFirstDayOfWeek] = useState(1);
     const [error, setError] = useState<string | null>(null);
 
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                return gestureState.dy > 10;
+            },
+            onPanResponderMove: (_, gestureState) => {
+                if (gestureState.dy > 0) {
+                    translateY.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy > DISMISS_THRESHOLD) {
+                    Animated.timing(translateY, {
+                        toValue: SCREEN_HEIGHT,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }).start(() => {
+                        translateY.setValue(0);
+                        onClose();
+                    });
+                } else {
+                    Animated.spring(translateY, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                        bounciness: 8,
+                    }).start();
+                }
+            },
+        })
+    ).current;
+
+    useEffect(() => {
+        if (visible) {
+            translateY.setValue(0);
+            setTitle('');
+            setHourlyRate('');
+            setFirstDayOfWeek(1);
+            setError(null);
+        }
+    }, [visible]);
+
     const handleSubmit = async () => {
+        Keyboard.dismiss();
         if (!title.trim()) {
             setError('Job name is required');
             return;
@@ -57,23 +106,10 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
                 hourlyRate: parseFloat(hourlyRate),
                 firstDayOfWeek,
             });
-            // Reset form
-            setTitle('');
-            setHourlyRate('');
-            setFirstDayOfWeek(1);
-            setError(null);
             onCreated();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create job');
         }
-    };
-
-    const handleClose = () => {
-        setTitle('');
-        setHourlyRate('');
-        setFirstDayOfWeek(1);
-        setError(null);
-        onClose();
     };
 
     return (
@@ -81,25 +117,36 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
             visible={visible}
             animationType="slide"
             transparent={true}
-            onRequestClose={handleClose}
+            onRequestClose={onClose}
         >
-            <Pressable style={styles.overlay} onPress={handleClose}>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={styles.keyboardView}
+            <View style={styles.overlay}>
+                <Animated.View
+                    style={[
+                        styles.content,
+                        { transform: [{ translateY }] }
+                    ]}
                 >
-                    <Pressable style={styles.content} onPress={(e) => e.stopPropagation()}>
-                        {/* Handle Bar */}
+                    {/* Swipe Handle */}
+                    <View {...panResponder.panHandlers} style={styles.handleArea}>
                         <View style={styles.handleBar} />
+                    </View>
 
-                        {/* Header */}
-                        <View style={styles.header}>
-                            <Text style={styles.title}>New Job 💼</Text>
-                            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-                                <Text style={styles.closeIcon}>×</Text>
-                            </TouchableOpacity>
-                        </View>
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <Text style={styles.title}>New Job 💼</Text>
+                        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                            <Text style={styles.closeIcon}>×</Text>
+                        </TouchableOpacity>
+                    </View>
 
+                    <KeyboardAwareScrollView
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={styles.scrollContent}
+                        enableOnAndroid={true}
+                        extraScrollHeight={40}
+                        extraHeight={60}
+                    >
                         {/* Error Message */}
                         {error && (
                             <View style={styles.errorContainer}>
@@ -161,9 +208,9 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
                                 fullWidth
                             />
                         </View>
-                    </Pressable>
-                </KeyboardAvoidingView>
-            </Pressable>
+                    </KeyboardAwareScrollView>
+                </Animated.View>
+            </View>
         </Modal>
     );
 };
@@ -174,56 +221,57 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(15, 23, 42, 0.4)',
         justifyContent: 'flex-end',
     },
-    keyboardView: {
-        justifyContent: 'flex-end',
-    },
     content: {
         backgroundColor: colors.white,
         borderTopLeftRadius: borderRadius['3xl'],
         borderTopRightRadius: borderRadius['3xl'],
-        padding: spacing.xl,
-        paddingBottom: spacing['4xl'],
-        maxHeight: '90%',
+        maxHeight: '75%',
+    },
+    handleArea: {
+        paddingVertical: spacing.md,
+        alignItems: 'center',
     },
     handleBar: {
-        width: 64,
-        height: 6,
-        backgroundColor: colors.slate200,
+        width: 48,
+        height: 5,
+        backgroundColor: colors.slate300,
         borderRadius: 3,
-        alignSelf: 'center',
-        marginBottom: spacing.xl,
-        opacity: 0.5,
+    },
+    scrollContent: {
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing['4xl'],
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.xl,
+        paddingHorizontal: spacing.lg,
+        marginBottom: spacing.md,
     },
     title: {
-        fontSize: fontSizes['3xl'],
+        fontSize: fontSizes['2xl'],
         fontWeight: fontWeights.extrabold,
         color: colors.slate800,
     },
     closeButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: colors.slate100,
         alignItems: 'center',
         justifyContent: 'center',
     },
     closeIcon: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: fontWeights.bold,
         color: colors.slate500,
-        lineHeight: 26,
+        lineHeight: 24,
     },
     errorContainer: {
         backgroundColor: colors.orangeBg,
         padding: spacing.md,
         borderRadius: borderRadius.xl,
-        marginBottom: spacing.lg,
+        marginBottom: spacing.md,
     },
     errorText: {
         color: colors.orange,
@@ -231,10 +279,10 @@ const styles = StyleSheet.create({
         fontSize: fontSizes.sm,
     },
     form: {
-        gap: spacing.md,
+        gap: spacing.sm,
     },
     daySection: {
-        marginBottom: spacing.lg,
+        marginBottom: spacing.md,
     },
     dayLabel: {
         fontSize: fontSizes.xs,
@@ -256,9 +304,9 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
     },
     dayButton: {
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
-        borderRadius: borderRadius['2xl'],
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.xl,
         backgroundColor: colors.slate50,
         borderWidth: 2,
         borderColor: colors.transparent,

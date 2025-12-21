@@ -9,7 +9,6 @@ import {
     TouchableOpacity,
     SafeAreaView,
     StatusBar,
-    Alert,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -26,10 +25,64 @@ export const LoginScreen: React.FC = () => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [touched, setTouched] = useState({ email: false, password: false });
+
+    // Email validation regex
+    const validateEmail = (value: string): string => {
+        if (!value.trim()) return 'Email is required';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) return 'Invalid email format';
+        return '';
+    };
+
+    // Password validation
+    const validatePassword = (value: string): string => {
+        if (!value) return 'Password is required';
+        return '';
+    };
+
+    // Handle email change
+    const handleEmailChange = (value: string) => {
+        setEmail(value);
+        if (touched.email) {
+            setEmailError(validateEmail(value));
+        }
+    };
+
+    // Handle password change
+    const handlePasswordChange = (value: string) => {
+        setPassword(value);
+        if (touched.password) {
+            setPasswordError(validatePassword(value));
+        }
+    };
+
+    // Handle blur events
+    const handleEmailBlur = () => {
+        setTouched(prev => ({ ...prev, email: true }));
+        setEmailError(validateEmail(email));
+    };
+
+    const handlePasswordBlur = () => {
+        setTouched(prev => ({ ...prev, password: true }));
+        setPasswordError(validatePassword(password));
+    };
+
+    // Check if form is valid
+    const isFormValid = email.trim() && password && !validateEmail(email) && !validatePassword(password);
 
     const handleLogin = async () => {
-        if (!email.trim() || !password.trim()) {
-            Alert.alert('Error', 'Please fill in all fields');
+        // Validate all fields
+        const emailErr = validateEmail(email);
+        const passwordErr = validatePassword(password);
+
+        setEmailError(emailErr);
+        setPasswordError(passwordErr);
+        setTouched({ email: true, password: true });
+
+        if (emailErr || passwordErr) {
             return;
         }
 
@@ -75,7 +128,9 @@ export const LoginScreen: React.FC = () => {
                             label="Email"
                             placeholder="your@email.com"
                             value={email}
-                            onChangeText={setEmail}
+                            onChangeText={handleEmailChange}
+                            onBlur={handleEmailBlur}
+                            error={emailError}
                             keyboardType="email-address"
                             autoCapitalize="none"
                             autoComplete="email"
@@ -85,7 +140,9 @@ export const LoginScreen: React.FC = () => {
                             label="Password"
                             placeholder="••••••••"
                             value={password}
-                            onChangeText={setPassword}
+                            onChangeText={handlePasswordChange}
+                            onBlur={handlePasswordBlur}
+                            error={passwordError}
                             secureTextEntry
                             autoComplete="password"
                         />
@@ -94,6 +151,7 @@ export const LoginScreen: React.FC = () => {
                             title="Sign In"
                             onPress={handleLogin}
                             loading={isLoading}
+                            disabled={!isFormValid}
                             size="lg"
                             fullWidth
                         />

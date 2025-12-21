@@ -9,7 +9,6 @@ import {
     TouchableOpacity,
     SafeAreaView,
     StatusBar,
-    Alert,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -29,19 +28,117 @@ export const RegisterScreen: React.FC = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
+    // Error states
+    const [fullNameError, setFullNameError] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [confirmPasswordError, setConfirmPasswordError] = useState('');
+    const [touched, setTouched] = useState({
+        fullName: false,
+        email: false,
+        password: false,
+        confirmPassword: false,
+    });
+
+    // Validation functions
+    const validateFullName = (value: string): string => {
+        if (!value.trim()) return 'Full name is required';
+        if (value.trim().length < 2) return 'Name must be at least 2 characters';
+        return '';
+    };
+
+    const validateEmail = (value: string): string => {
+        if (!value.trim()) return 'Email is required';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) return 'Invalid email format';
+        return '';
+    };
+
+    const validatePassword = (value: string): string => {
+        if (!value) return 'Password is required';
+        if (value.length < 6) return 'Password must be at least 6 characters';
+        return '';
+    };
+
+    const validateConfirmPassword = (value: string, pwd: string): string => {
+        if (!value) return 'Please confirm your password';
+        if (value !== pwd) return 'Passwords do not match';
+        return '';
+    };
+
+    // Change handlers
+    const handleFullNameChange = (value: string) => {
+        setFullName(value);
+        if (touched.fullName) setFullNameError(validateFullName(value));
+    };
+
+    const handleEmailChange = (value: string) => {
+        setEmail(value);
+        if (touched.email) setEmailError(validateEmail(value));
+    };
+
+    const handlePasswordChange = (value: string) => {
+        setPassword(value);
+        if (touched.password) setPasswordError(validatePassword(value));
+        // Also validate confirm password if it was touched
+        if (touched.confirmPassword) {
+            setConfirmPasswordError(validateConfirmPassword(confirmPassword, value));
+        }
+    };
+
+    const handleConfirmPasswordChange = (value: string) => {
+        setConfirmPassword(value);
+        if (touched.confirmPassword) {
+            setConfirmPasswordError(validateConfirmPassword(value, password));
+        }
+    };
+
+    // Blur handlers
+    const handleFullNameBlur = () => {
+        setTouched(prev => ({ ...prev, fullName: true }));
+        setFullNameError(validateFullName(fullName));
+    };
+
+    const handleEmailBlur = () => {
+        setTouched(prev => ({ ...prev, email: true }));
+        setEmailError(validateEmail(email));
+    };
+
+    const handlePasswordBlur = () => {
+        setTouched(prev => ({ ...prev, password: true }));
+        setPasswordError(validatePassword(password));
+    };
+
+    const handleConfirmPasswordBlur = () => {
+        setTouched(prev => ({ ...prev, confirmPassword: true }));
+        setConfirmPasswordError(validateConfirmPassword(confirmPassword, password));
+    };
+
+    // Check if form is valid
+    const isFormValid =
+        fullName.trim() &&
+        email.trim() &&
+        password &&
+        confirmPassword &&
+        !validateFullName(fullName) &&
+        !validateEmail(email) &&
+        !validatePassword(password) &&
+        !validateConfirmPassword(confirmPassword, password);
+
     const handleRegister = async () => {
-        if (!fullName.trim() || !email.trim() || !password.trim()) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
+        // Validate all fields
+        const nameErr = validateFullName(fullName);
+        const emailErr = validateEmail(email);
+        const passwordErr = validatePassword(password);
+        const confirmErr = validateConfirmPassword(confirmPassword, password);
 
-        if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
-            return;
-        }
+        setFullNameError(nameErr);
+        setEmailError(emailErr);
+        setPasswordError(passwordErr);
+        setConfirmPasswordError(confirmErr);
+        setTouched({ fullName: true, email: true, password: true, confirmPassword: true });
 
-        if (password.length < 6) {
-            Alert.alert('Error', 'Password must be at least 6 characters');
+        if (nameErr || emailErr || passwordErr || confirmErr) {
             return;
         }
 
@@ -87,7 +184,9 @@ export const RegisterScreen: React.FC = () => {
                             label="Full Name"
                             placeholder="John Doe"
                             value={fullName}
-                            onChangeText={setFullName}
+                            onChangeText={handleFullNameChange}
+                            onBlur={handleFullNameBlur}
+                            error={fullNameError}
                             autoCapitalize="words"
                             autoComplete="name"
                         />
@@ -96,7 +195,9 @@ export const RegisterScreen: React.FC = () => {
                             label="Email"
                             placeholder="your@email.com"
                             value={email}
-                            onChangeText={setEmail}
+                            onChangeText={handleEmailChange}
+                            onBlur={handleEmailBlur}
+                            error={emailError}
                             keyboardType="email-address"
                             autoCapitalize="none"
                             autoComplete="email"
@@ -106,7 +207,9 @@ export const RegisterScreen: React.FC = () => {
                             label="Password"
                             placeholder="••••••••"
                             value={password}
-                            onChangeText={setPassword}
+                            onChangeText={handlePasswordChange}
+                            onBlur={handlePasswordBlur}
+                            error={passwordError}
                             secureTextEntry
                             autoComplete="password-new"
                         />
@@ -115,7 +218,9 @@ export const RegisterScreen: React.FC = () => {
                             label="Confirm Password"
                             placeholder="••••••••"
                             value={confirmPassword}
-                            onChangeText={setConfirmPassword}
+                            onChangeText={handleConfirmPasswordChange}
+                            onBlur={handleConfirmPasswordBlur}
+                            error={confirmPasswordError}
                             secureTextEntry
                             autoComplete="password-new"
                         />
@@ -124,6 +229,7 @@ export const RegisterScreen: React.FC = () => {
                             title="Create Account"
                             onPress={handleRegister}
                             loading={isLoading}
+                            disabled={!isFormValid}
                             size="lg"
                             fullWidth
                         />
