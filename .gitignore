@@ -58,3 +58,6 @@ appsettings.*.json
 # Logs
 logs/
 *.log
+
+# Agent notes
+ada
