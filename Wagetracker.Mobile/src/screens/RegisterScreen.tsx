@@ -16,6 +16,7 @@ import { AuthStackParamList } from '../types';
 import { useAuthStore } from '../stores';
 import { Button, Input } from '../components/ui';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import Toast from 'react-native-toast-message';
 
 type RegisterNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -144,8 +145,19 @@ export const RegisterScreen: React.FC = () => {
 
         try {
             await register(email.trim(), password, fullName.trim());
+            Toast.show({
+                type: 'success',
+                text1: 'Account Created',
+                text2: 'Welcome to WageTracker!',
+                visibilityTime: 2000,
+            });
         } catch (err) {
-            // Error is handled by the store
+            Toast.show({
+                type: 'error',
+                text1: 'Registration Failed',
+                text2: err instanceof Error ? err.message : 'Please try again',
+                visibilityTime: 3000,
+            });
         }
     };
 

@@ -16,6 +16,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useEntriesStore } from '../stores';
 import { Button, Input } from './ui';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import Toast from 'react-native-toast-message';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const DISMISS_THRESHOLD = 150;
@@ -152,9 +153,22 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                 tip: tip ? parseFloat(tip) : 0,
                 note: null,
             });
+            Toast.show({
+                type: 'success',
+                text1: 'Entry Added',
+                text2: `${totalHours?.toFixed(1)} hours recorded successfully`,
+                visibilityTime: 2000,
+            });
             onCreated();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to create entry');
+            const errorMessage = err instanceof Error ? err.message : 'Failed to create entry';
+            setError(errorMessage);
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: errorMessage,
+                visibilityTime: 3000,
+            });
         }
     };
 
@@ -244,8 +258,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                                     <Text style={styles.dateButtonText}>
                                         {date.toLocaleDateString('en-US', {
                                             month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric'
+                                            day: 'numeric'
                                         })}
                                     </Text>
                                     <Text style={styles.calendarIcon}>📅</Text>
@@ -263,9 +276,8 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                                     <DateTimePicker
                                         value={date}
                                         mode="date"
-                                        display="spinner"
+                                        display="inline"
                                         onChange={onDateChange}
-                                        style={styles.picker}
                                         themeVariant="dark"
                                     />
                                 </View>
@@ -274,7 +286,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                                 <DateTimePicker
                                     value={date}
                                     mode="date"
-                                    display="default"
+                                    display="calendar"
                                     onChange={onDateChange}
                                 />
                             )}

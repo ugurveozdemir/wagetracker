@@ -14,6 +14,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { useJobsStore } from '../stores';
 import { Button, Input } from './ui';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import Toast from 'react-native-toast-message';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const DISMISS_THRESHOLD = 150;
@@ -106,9 +107,22 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
                 hourlyRate: parseFloat(hourlyRate),
                 firstDayOfWeek,
             });
+            Toast.show({
+                type: 'success',
+                text1: 'Job Created',
+                text2: `${title.trim()} has been added`,
+                visibilityTime: 2000,
+            });
             onCreated();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to create job');
+            const errorMessage = err instanceof Error ? err.message : 'Failed to create job';
+            setError(errorMessage);
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: errorMessage,
+                visibilityTime: 3000,
+            });
         }
     };
 

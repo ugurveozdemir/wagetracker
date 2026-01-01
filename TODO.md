@@ -1,69 +1,97 @@
 # WageTracker - Yapılacaklar Listesi
 
-## 🔴 Kritik / Öncelikli
+---
 
-### Error Handling
-- [ ] Toast notifications sistemi (react-native-toast-message)
-- [ ] API hata mesajlarını kullanıcıya göster
+## � FRONTEND (Mobile App)
+
+### �🔴 Kritik / Öncelikli
+
+#### Error Handling
+- [x] Toast notifications sistemi (react-native-toast-message)
+- [x] API hata mesajlarını kullanıcıya göster
 - [ ] Network hatalarında retry butonu
 
-### Form Validation
-- [ ] Email format kontrolü (regex)
+#### Form Validation (UX için)
+- [x] Email format kontrolü (regex)
 - [ ] Password strength indicator
-- [ ] Boş alan uyarıları iyileştir
+- [x] Boş alan uyarıları
 
-### Offline Desteği (İleri Seviye)
+#### Offline Desteği (İleri Seviye)
 - [ ] AsyncStorage ile local cache
 - [ ] Offline modda entry ekleme
 - [ ] İnternet gelince sync
 
----
+### 🟡 UX İyileştirmeleri
 
-## 🟡 UX İyileştirmeleri
-
-### Dashboard
-- [ ] Pull-to-refresh (5 dk)
+#### Dashboard
+- [ ] Pull-to-refresh
 - [ ] Skeleton loading states
 - [ ] Empty state (iş yokken güzel görsel)
 
-### Entry Yönetimi
-- [ ] Entry silme (swipe-to-delete)
+#### Entry Yönetimi
+- [x] Entry silme (swipe-to-delete)
 - [ ] Entry düzenleme
 
-### Job Yönetimi
+#### Job Yönetimi
 - [ ] Job düzenleme
-- [ ] Job silme (onay dialogu ile)
+- [x] Job silme (onay dialogu ile)
 - [ ] Job arşivleme
 
-### Auth
+#### Auth
 - [ ] Forgot password flow
 - [ ] Remember me checkbox
 - [ ] Biometric login (Face ID / Fingerprint)
 
----
+### 🟢 Yeni Özellikler
 
-## 🟢 Yeni Özellikler (Sonraki Fazlar)
-
-### Gider Takibi
-- [ ] Expense entity + API
+#### Gider Takibi
 - [ ] AddExpenseModal
 - [ ] ExpensesScreen
 - [ ] Kategoriler (yemek, ulaşım, vb)
 
-### Raporlama
+#### Raporlama
 - [ ] Haftalık/aylık özet grafikler
 - [ ] PDF export
-- [ ] Email ile rapor gönder
 
-### Diğer
+#### Diğer
 - [ ] Çoklu para birimi desteği
-- [ ] Bildirimler (vardiya hatırlatma)
 - [ ] Dark mode
 
 ---
 
-## ✅ Tamamlananlar (21 Aralık 2025)
+## 🖥️ BACKEND (API)
 
+### 🔴 Kritik / Güvenlik
+
+#### Input Validation (Data Annotations)
+- [ ] RegisterRequest: Email format kontrolü ([EmailAddress])
+- [ ] RegisterRequest: Password min 6 karakter ([MinLength(6)])
+- [ ] RegisterRequest: FullName zorunlu ([Required])
+- [ ] LoginRequest: Email ve Password zorunlu ([Required])
+- [ ] CreateJobRequest: Title zorunlu, HourlyRate > 0
+- [ ] CreateEntryRequest: Date zorunlu, TotalHours > 0
+
+#### Güvenlik
+- [ ] Rate limiting (brute force koruması)
+- [ ] Password complexity rules
+- [ ] Token refresh mechanism
+
+### 🟡 İyileştirmeler
+
+- [ ] Expense entity + API endpoints
+- [ ] Email ile rapor gönder
+- [ ] Bildirimler (push notification)
+
+---
+
+## ✅ Tamamlananlar
+
+### 1 Ocak 2026
+- [x] Tarih formatı güncellendi (gün/ay)
+- [x] Inline takvim picker (iOS/Android)
+- [x] Toast notifications sistemi
+
+### 21 Aralık 2025
 - [x] Swipe-to-dismiss modal
 - [x] Keyboard handling (KeyboardAwareScrollView)
 - [x] Date format (Dec 21, 2025)

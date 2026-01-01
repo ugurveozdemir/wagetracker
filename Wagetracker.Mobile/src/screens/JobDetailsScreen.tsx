@@ -10,7 +10,11 @@ import {
     SafeAreaView,
     StatusBar,
     Alert,
+    Modal,
+    Pressable,
+    Animated,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { MainStackParamList, WeeklyGroupResponse, EntryResponse } from '../types';
@@ -18,6 +22,7 @@ import { useEntriesStore, useJobsStore } from '../stores';
 import { Card } from '../components/ui';
 import { AddEntryModal } from '../components/AddEntryModal';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import Toast from 'react-native-toast-message';
 
 type JobDetailsNavigationProp = NativeStackNavigationProp<MainStackParamList, 'JobDetails'>;
 type JobDetailsRouteProp = RouteProp<MainStackParamList, 'JobDetails'>;
@@ -28,10 +33,11 @@ export const JobDetailsScreen: React.FC = () => {
     const { jobId } = route.params;
 
     const { jobDetails, weeks, isLoading, fetchJobDetails, deleteEntry, clearJobDetails } = useEntriesStore();
-    const { fetchDashboard } = useJobsStore();
+    const { fetchDashboard, deleteJob } = useJobsStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
     useEffect(() => {
         fetchJobDetails(jobId);
@@ -54,9 +60,59 @@ export const JobDetailsScreen: React.FC = () => {
                     text: 'Delete',
                     style: 'destructive',
                     onPress: async () => {
-                        await deleteEntry(entryId);
-                        fetchJobDetails(jobId);
-                        fetchDashboard();
+                        try {
+                            await deleteEntry(entryId);
+                            Toast.show({
+                                type: 'delete',
+                                text1: 'Entry Deleted',
+                                text2: 'The entry has been removed',
+                                visibilityTime: 2000,
+                            });
+                            fetchJobDetails(jobId);
+                            fetchDashboard();
+                        } catch (err) {
+                            Toast.show({
+                                type: 'error',
+                                text1: 'Error',
+                                text2: 'Failed to delete entry',
+                                visibilityTime: 3000,
+                            });
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleDeleteJob = () => {
+        setShowOptionsMenu(false);
+        Alert.alert(
+            'Delete Job',
+            'Are you sure you want to delete this job? All entries will also be deleted.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteJob(jobId);
+                            Toast.show({
+                                type: 'delete',
+                                text1: 'Job Deleted',
+                                text2: `${job?.title} has been removed`,
+                                visibilityTime: 2000,
+                            });
+                            fetchDashboard();
+                            navigation.goBack();
+                        } catch (err) {
+                            Toast.show({
+                                type: 'error',
+                                text1: 'Error',
+                                text2: 'Failed to delete job',
+                                visibilityTime: 3000,
+                            });
+                        }
                     },
                 },
             ]
@@ -98,8 +154,36 @@ export const JobDetailsScreen: React.FC = () => {
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>{job?.title}</Text>
-                <View style={styles.headerSpacer} />
+                <TouchableOpacity
+                    style={styles.optionsButton}
+                    onPress={() => setShowOptionsMenu(true)}
+                >
+                    <Text style={styles.optionsIcon}>⋮</Text>
+                </TouchableOpacity>
             </View>
+
+            {/* Options Menu Modal */}
+            <Modal
+                visible={showOptionsMenu}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowOptionsMenu(false)}
+            >
+                <Pressable
+                    style={styles.menuOverlay}
+                    onPress={() => setShowOptionsMenu(false)}
+                >
+                    <Pressable style={styles.menuContainer}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={handleDeleteJob}
+                        >
+                            <Text style={styles.menuItemIcon}>🗑️</Text>
+                            <Text style={styles.menuItemTextDanger}>Delete Job</Text>
+                        </TouchableOpacity>
+                    </Pressable>
+                </Pressable>
+            </Modal>
 
             <ScrollView
                 style={styles.container}
@@ -261,40 +345,72 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
         return 'Duration only';
     };
 
+    const renderRightActions = (
+        progress: Animated.AnimatedInterpolation<number>,
+        dragX: Animated.AnimatedInterpolation<number>
+    ) => {
+        const scale = dragX.interpolate({
+            inputRange: [-100, -50, 0],
+            outputRange: [1, 0.8, 0],
+            extrapolate: 'clamp',
+        });
+
+        const opacity = dragX.interpolate({
+            inputRange: [-80, -40, 0],
+            outputRange: [1, 0.5, 0],
+            extrapolate: 'clamp',
+        });
+
+        return (
+            <TouchableOpacity
+                style={styles.swipeDeleteAction}
+                onPress={onDelete}
+                activeOpacity={0.8}
+            >
+                <Animated.View style={{ transform: [{ scale }], opacity }}>
+                    <Text style={styles.swipeDeleteIcon}>🗑️</Text>
+                    <Text style={styles.swipeDeleteText}>Delete</Text>
+                </Animated.View>
+            </TouchableOpacity>
+        );
+    };
+
     return (
-        <View style={[styles.entryItem, !isLast && styles.entryItemBorder]}>
-            <View style={styles.entryLeft}>
-                <View style={styles.dateBox}>
-                    <Text style={styles.dateWeekday}>{entry.dayOfWeek.slice(0, 3).toUpperCase()}</Text>
-                    <Text style={styles.dateDay}>{entry.dayOfMonth}</Text>
-                </View>
-                <View style={styles.entryDetails}>
-                    <View style={styles.entryHoursRow}>
-                        <Text style={styles.entryHours}>{entry.totalHours} hrs</Text>
-                        {entry.hasOvertime && (
-                            <View style={styles.overtimeBadge}>
-                                <Text style={styles.overtimeBadgeText}>1.5x</Text>
-                            </View>
-                        )}
+        <Swipeable
+            renderRightActions={renderRightActions}
+            overshootRight={false}
+            friction={2}
+            rightThreshold={40}
+        >
+            <View style={[styles.entryItem, !isLast && styles.entryItemBorder]}>
+                <View style={styles.entryLeft}>
+                    <View style={styles.dateBox}>
+                        <Text style={styles.dateWeekday}>{entry.dayOfWeek.slice(0, 3).toUpperCase()}</Text>
+                        <Text style={styles.dateDay}>{entry.dayOfMonth}</Text>
                     </View>
-                    <View style={styles.entryMeta}>
-                        <Text style={styles.entryTime}>{getTimeDisplay()}</Text>
-                        {entry.tip > 0 && (
-                            <Text style={styles.entryTip}>• ${entry.tip} tip</Text>
-                        )}
-                        {entry.overtimeHours > 0 && (
-                            <Text style={styles.entryOT}>• {entry.overtimeHours.toFixed(1)}h OT</Text>
-                        )}
+                    <View style={styles.entryDetails}>
+                        <View style={styles.entryHoursRow}>
+                            <Text style={styles.entryHours}>{entry.totalHours} hrs</Text>
+                            {entry.hasOvertime && (
+                                <View style={styles.overtimeBadge}>
+                                    <Text style={styles.overtimeBadgeText}>1.5x</Text>
+                                </View>
+                            )}
+                        </View>
+                        <View style={styles.entryMeta}>
+                            <Text style={styles.entryTime}>{getTimeDisplay()}</Text>
+                            {entry.tip > 0 && (
+                                <Text style={styles.entryTip}>• ${entry.tip} tip</Text>
+                            )}
+                            {entry.overtimeHours > 0 && (
+                                <Text style={styles.entryOT}>• {entry.overtimeHours.toFixed(1)}h OT</Text>
+                            )}
+                        </View>
                     </View>
                 </View>
-            </View>
-            <View style={styles.entryRight}>
                 <Text style={styles.entryEarnings}>${entry.totalEarnings.toFixed(0)}</Text>
-                <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
-                    <Text style={styles.deleteIcon}>🗑</Text>
-                </TouchableOpacity>
             </View>
-        </View>
+        </Swipeable>
     );
 };
 
@@ -347,6 +463,54 @@ const styles = StyleSheet.create({
     },
     headerSpacer: {
         width: 40,
+    },
+    optionsButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    optionsIcon: {
+        fontSize: 24,
+        fontWeight: fontWeights.bold,
+        color: colors.slate700,
+    },
+
+    // Options Menu
+    menuOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(15, 23, 42, 0.3)',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-end',
+        paddingTop: 80,
+        paddingRight: spacing.lg,
+    },
+    menuContainer: {
+        backgroundColor: colors.white,
+        borderRadius: borderRadius.xl,
+        minWidth: 160,
+        overflow: 'hidden',
+        shadowColor: colors.slate900,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 24,
+        elevation: 8,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        gap: spacing.md,
+    },
+    menuItemIcon: {
+        fontSize: fontSizes.lg,
+    },
+    menuItemTextDanger: {
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.semibold,
+        color: colors.orange,
     },
 
     // Summary Cards
@@ -575,6 +739,22 @@ const styles = StyleSheet.create({
     deleteIcon: {
         fontSize: fontSizes.base,
         opacity: 0.5,
+    },
+    swipeDeleteAction: {
+        backgroundColor: colors.orange,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        height: '100%',
+    },
+    swipeDeleteIcon: {
+        fontSize: fontSizes.xl,
+        marginBottom: spacing.xs,
+    },
+    swipeDeleteText: {
+        color: colors.white,
+        fontWeight: fontWeights.bold,
+        fontSize: fontSizes.xs,
     },
 
     // Empty State

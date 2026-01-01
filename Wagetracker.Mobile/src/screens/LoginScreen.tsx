@@ -16,6 +16,7 @@ import { AuthStackParamList } from '../types';
 import { useAuthStore } from '../stores';
 import { Button, Input } from '../components/ui';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import Toast from 'react-native-toast-message';
 
 type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -88,8 +89,19 @@ export const LoginScreen: React.FC = () => {
 
         try {
             await login(email.trim(), password);
+            Toast.show({
+                type: 'success',
+                text1: 'Welcome back!',
+                text2: 'Login successful',
+                visibilityTime: 2000,
+            });
         } catch (err) {
-            // Error is handled by the store
+            Toast.show({
+                type: 'error',
+                text1: 'Login Failed',
+                text2: err instanceof Error ? err.message : 'Please check your credentials',
+                visibilityTime: 3000,
+            });
         }
     };
 

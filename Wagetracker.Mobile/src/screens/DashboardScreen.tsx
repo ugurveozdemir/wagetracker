@@ -20,6 +20,7 @@ import { Card } from '../components/ui';
 import { JobCard } from '../components/JobCard';
 import { CreateJobModal } from '../components/CreateJobModal';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import Toast from 'react-native-toast-message';
 
 type DashboardNavigationProp = NativeStackNavigationProp<MainStackParamList, 'Dashboard'>;
 
@@ -44,6 +45,12 @@ export const DashboardScreen: React.FC = () => {
     const handleLogout = async () => {
         setShowProfileMenu(false);
         await logout();
+        Toast.show({
+            type: 'info',
+            text1: 'Signed Out',
+            text2: 'See you next time!',
+            visibilityTime: 2000,
+        });
     };
 
     const today = new Date();
