@@ -23,6 +23,7 @@ import { Card } from '../components/ui';
 import { AddEntryModal } from '../components/AddEntryModal';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
 import Toast from 'react-native-toast-message';
+import Feather from 'react-native-vector-icons/Feather';
 
 type JobDetailsNavigationProp = NativeStackNavigationProp<MainStackParamList, 'JobDetails'>;
 type JobDetailsRouteProp = RouteProp<MainStackParamList, 'JobDetails'>;
@@ -349,29 +350,41 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
         progress: Animated.AnimatedInterpolation<number>,
         dragX: Animated.AnimatedInterpolation<number>
     ) => {
-        const scale = dragX.interpolate({
-            inputRange: [-100, -50, 0],
-            outputRange: [1, 0.8, 0],
+        // Animate the background using scaleX (width is not supported by native animated)
+        const bgScaleX = dragX.interpolate({
+            inputRange: [-100, 0],
+            outputRange: [1, 0],
             extrapolate: 'clamp',
         });
 
-        const opacity = dragX.interpolate({
-            inputRange: [-80, -40, 0],
-            outputRange: [1, 0.5, 0],
+        const bgOpacity = dragX.interpolate({
+            inputRange: [-60, -20, 0],
+            outputRange: [1, 0.6, 0],
             extrapolate: 'clamp',
         });
 
         return (
-            <TouchableOpacity
-                style={styles.swipeDeleteAction}
-                onPress={onDelete}
-                activeOpacity={0.8}
-            >
-                <Animated.View style={{ transform: [{ scale }], opacity }}>
-                    <Text style={styles.swipeDeleteIcon}>🗑️</Text>
-                    <Text style={styles.swipeDeleteText}>Delete</Text>
-                </Animated.View>
-            </TouchableOpacity>
+            <View style={styles.swipeDeleteContainer}>
+                <Animated.View
+                    style={[
+                        styles.swipeDeleteBackground,
+                        {
+                            transform: [{ scaleX: bgScaleX }],
+                            opacity: bgOpacity,
+                            transformOrigin: 'right center',
+                        }
+                    ]}
+                />
+                <TouchableOpacity
+                    style={styles.swipeDeleteAction}
+                    onPress={onDelete}
+                    activeOpacity={0.8}
+                >
+                    <Animated.View style={{ opacity: bgOpacity, transform: [{ scale: bgScaleX }] }}>
+                        <Feather name="trash-2" size={30} color={colors.white} />
+                    </Animated.View>
+                </TouchableOpacity>
+            </View>
         );
     };
 
@@ -510,7 +523,7 @@ const styles = StyleSheet.create({
     menuItemTextDanger: {
         fontSize: fontSizes.base,
         fontWeight: fontWeights.semibold,
-        color: colors.orange,
+        color: colors.danger,
     },
 
     // Summary Cards
@@ -740,21 +753,27 @@ const styles = StyleSheet.create({
         fontSize: fontSizes.base,
         opacity: 0.5,
     },
+    swipeDeleteContainer: {
+        width: 100,
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+    },
+    swipeDeleteBackground: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 100,
+        backgroundColor: colors.danger,
+    },
     swipeDeleteAction: {
-        backgroundColor: colors.orange,
         justifyContent: 'center',
         alignItems: 'center',
         width: 80,
         height: '100%',
-    },
-    swipeDeleteIcon: {
-        fontSize: fontSizes.xl,
-        marginBottom: spacing.xs,
-    },
-    swipeDeleteText: {
-        color: colors.white,
-        fontWeight: fontWeights.bold,
-        fontSize: fontSizes.xs,
+        zIndex: 1,
     },
 
     // Empty State

@@ -34,11 +34,11 @@ const styles = StyleSheet.create({
 const toastStyles = StyleSheet.create({
   deleteContainer: {
     width: '90%',
-    backgroundColor: colors.orange,
+    backgroundColor: colors.danger,
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 12,
-    shadowColor: colors.orange,
+    shadowColor: colors.danger,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

@@ -3,22 +3,27 @@ export const colors = {
   primary: '#7c3aed',
   primaryLight: '#a78bfa',
   primaryDark: '#5b21b6',
-  
+
   // Accent (Emerald for earnings)
   emerald: '#10b981',
   emeraldLight: '#34d399',
   emeraldGradientStart: '#34d399',
   emeraldGradientEnd: '#14b8a6',
-  
+
   // Violet gradient (hours)
   violetGradientStart: '#a78bfa',
   violetGradientEnd: '#d946ef',
-  
+
   // Orange (overtime)
   orange: '#f97316',
   orangeLight: '#fed7aa',
   orangeBg: '#fff7ed',
-  
+
+  // Delete/Danger
+  danger: '#D50032',
+  dangerLight: '#ff6b9d',
+  dangerBg: '#ffe5ed',
+
   // Neutrals - Slate palette
   slate50: '#f8fafc',
   slate100: '#f1f5f9',
@@ -30,7 +35,7 @@ export const colors = {
   slate700: '#334155',
   slate800: '#1e293b',
   slate900: '#0f172a',
-  
+
   // Base
   white: '#ffffff',
   black: '#000000',
