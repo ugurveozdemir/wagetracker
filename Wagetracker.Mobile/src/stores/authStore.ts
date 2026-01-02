@@ -74,9 +74,16 @@ export const useAuthStore = create<AuthState>((set) => ({
         try {
             const token = await getAuthToken();
             if (token) {
-                // For development, we'll skip token validation
-                // In production, you'd want to validate the token with the server
-                set({ isAuthenticated: true, isLoading: false });
+                // Validate token by making a real API call
+                try {
+                    const { apiClient } = await import('../api/client');
+                    await apiClient.get('/api/dashboard');
+                    set({ isAuthenticated: true, isLoading: false });
+                } catch (apiError) {
+                    // Token is invalid or expired - clear it
+                    await removeAuthToken();
+                    set({ isAuthenticated: false, isLoading: false });
+                }
             } else {
                 set({ isAuthenticated: false, isLoading: false });
             }
