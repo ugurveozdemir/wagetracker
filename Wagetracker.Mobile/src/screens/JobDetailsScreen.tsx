@@ -381,7 +381,7 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
                     activeOpacity={0.8}
                 >
                     <Animated.View style={{ opacity: bgOpacity, transform: [{ scale: bgScaleX }] }}>
-                        <Feather name="trash-2" size={30} color={colors.white} />
+                        <Feather name="trash-2" size={24} color={colors.white} />
                     </Animated.View>
                 </TouchableOpacity>
             </View>
