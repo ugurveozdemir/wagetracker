@@ -27,7 +27,7 @@ type DashboardNavigationProp = NativeStackNavigationProp<MainStackParamList, 'Da
 export const DashboardScreen: React.FC = () => {
     const navigation = useNavigation<DashboardNavigationProp>();
     const { summary, jobs, isLoading, error, fetchDashboard } = useJobsStore();
-    const { logout } = useAuthStore();
+    const { user, logout } = useAuthStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -87,7 +87,7 @@ export const DashboardScreen: React.FC = () => {
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.greeting}>
-                            Hi, <Text style={styles.greetingHighlight}>Creator!</Text> 👋
+                            Hi, <Text style={styles.greetingHighlight}>{user?.fullName?.split(' ')[0] || 'there'}!</Text> 👋
                         </Text>
                     </View>
 
@@ -206,6 +206,11 @@ export const DashboardScreen: React.FC = () => {
                         <View style={styles.menuHeader}>
                             <Text style={styles.menuTitle}>Account</Text>
                         </View>
+                        <View style={styles.menuItem}>
+                            <Text style={styles.menuItemIcon}>👤</Text>
+                            <Text style={styles.menuItemTextDisabled}>Profile</Text>
+                        </View>
+                        <View style={styles.menuDivider} />
                         <TouchableOpacity
                             style={styles.menuItem}
                             onPress={handleLogout}
@@ -316,8 +321,17 @@ const styles = StyleSheet.create({
         fontWeight: fontWeights.semibold,
         color: colors.slate700,
     },
+    menuItemTextDisabled: {
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.semibold,
+        color: colors.slate400,
+    },
+    menuDivider: {
+        height: 1,
+        backgroundColor: colors.slate100,
+        marginHorizontal: spacing.lg,
+    },
 
-    // Bento Grid
     bentoGrid: {
         marginBottom: spacing.xl,
     },
