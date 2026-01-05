@@ -21,9 +21,11 @@ import { MainStackParamList, WeeklyGroupResponse, EntryResponse } from '../types
 import { useEntriesStore, useJobsStore } from '../stores';
 import { Card } from '../components/ui';
 import { AddEntryModal } from '../components/AddEntryModal';
+import { EditJobModal } from '../components/EditJobModal';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
 import Toast from 'react-native-toast-message';
 import Feather from 'react-native-vector-icons/Feather';
+
 
 type JobDetailsNavigationProp = NativeStackNavigationProp<MainStackParamList, 'JobDetails'>;
 type JobDetailsRouteProp = RouteProp<MainStackParamList, 'JobDetails'>;
@@ -37,6 +39,7 @@ export const JobDetailsScreen: React.FC = () => {
     const { fetchDashboard, deleteJob } = useJobsStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
@@ -50,6 +53,11 @@ export const JobDetailsScreen: React.FC = () => {
         await fetchJobDetails(jobId);
         setRefreshing(false);
     }, [jobId, fetchJobDetails]);
+
+    const handleEditJob = () => {
+        setShowOptionsMenu(false);
+        setIsEditModalOpen(true);
+    };
 
     const handleDeleteEntry = (entryId: number) => {
         Alert.alert(
@@ -177,6 +185,14 @@ export const JobDetailsScreen: React.FC = () => {
                     <Pressable style={styles.menuContainer}>
                         <TouchableOpacity
                             style={styles.menuItem}
+                            onPress={handleEditJob}
+                        >
+                            <Text style={styles.menuItemIcon}>✏️</Text>
+                            <Text style={styles.menuItemText}>Edit Job</Text>
+                        </TouchableOpacity>
+                        <View style={styles.menuDivider} />
+                        <TouchableOpacity
+                            style={styles.menuItem}
                             onPress={handleDeleteJob}
                         >
                             <Text style={styles.menuItemIcon}>🗑️</Text>
@@ -254,6 +270,18 @@ export const JobDetailsScreen: React.FC = () => {
                 onClose={() => setIsModalOpen(false)}
                 onCreated={() => {
                     setIsModalOpen(false);
+                    fetchJobDetails(jobId);
+                    fetchDashboard();
+                }}
+            />
+
+            {/* Edit Job Modal */}
+            <EditJobModal
+                visible={isEditModalOpen}
+                job={jobDetails?.job || null}
+                onClose={() => setIsEditModalOpen(false)}
+                onUpdated={() => {
+                    setIsEditModalOpen(false);
                     fetchJobDetails(jobId);
                     fetchDashboard();
                 }}
@@ -524,6 +552,16 @@ const styles = StyleSheet.create({
         fontSize: fontSizes.base,
         fontWeight: fontWeights.semibold,
         color: colors.danger,
+    },
+    menuItemText: {
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.semibold,
+        color: colors.slate700,
+    },
+    menuDivider: {
+        height: 1,
+        backgroundColor: colors.slate100,
+        marginHorizontal: spacing.md,
     },
 
     // Summary Cards

@@ -1,17 +1,30 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace WageTracker.API.Models.DTOs
 {
     // ==================== AUTH DTOs ====================
     
     public class RegisterRequest
     {
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email format")]
         public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Password is required")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
         public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Full name is required")]
         public string FullName { get; set; } = string.Empty;
     }
 
     public class LoginRequest
     {
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email format")]
         public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Password is required")]
         public string Password { get; set; } = string.Empty;
     }
 
@@ -32,15 +45,27 @@ namespace WageTracker.API.Models.DTOs
 
     public class CreateJobRequest
     {
+        [Required(ErrorMessage = "Job title is required")]
+        [MinLength(1, ErrorMessage = "Job title cannot be empty")]
         public string Title { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Hourly rate is required")]
+        [Range(0.01, 10000, ErrorMessage = "Hourly rate must be between $0.01 and $10,000")]
         public decimal HourlyRate { get; set; }
+
         public DayOfWeek FirstDayOfWeek { get; set; }
     }
 
     public class UpdateJobRequest
     {
+        [Required(ErrorMessage = "Job title is required")]
+        [MinLength(1, ErrorMessage = "Job title cannot be empty")]
         public string Title { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Hourly rate is required")]
+        [Range(0.01, 10000, ErrorMessage = "Hourly rate must be between $0.01 and $10,000")]
         public decimal HourlyRate { get; set; }
+
         public DayOfWeek FirstDayOfWeek { get; set; }
     }
 
@@ -59,22 +84,41 @@ namespace WageTracker.API.Models.DTOs
 
     public class CreateEntryRequest
     {
+        [Required(ErrorMessage = "Job ID is required")]
+        [Range(1, int.MaxValue, ErrorMessage = "Invalid Job ID")]
         public int JobId { get; set; }
+
+        [Required(ErrorMessage = "Date is required")]
         public DateTime Date { get; set; }
+
         public TimeSpan? StartTime { get; set; }
         public TimeSpan? EndTime { get; set; }
+
+        [Range(0.01, 24, ErrorMessage = "Total hours must be between 0.01 and 24")]
         public decimal? TotalHours { get; set; }
+
+        [Range(0, 100000, ErrorMessage = "Tip must be between $0 and $100,000")]
         public decimal Tip { get; set; }
+
+        [MaxLength(500, ErrorMessage = "Note cannot exceed 500 characters")]
         public string? Note { get; set; }
     }
 
     public class UpdateEntryRequest
     {
+        [Required(ErrorMessage = "Date is required")]
         public DateTime Date { get; set; }
+
         public TimeSpan? StartTime { get; set; }
         public TimeSpan? EndTime { get; set; }
+
+        [Range(0.01, 24, ErrorMessage = "Total hours must be between 0.01 and 24")]
         public decimal? TotalHours { get; set; }
+
+        [Range(0, 100000, ErrorMessage = "Tip must be between $0 and $100,000")]
         public decimal Tip { get; set; }
+
+        [MaxLength(500, ErrorMessage = "Note cannot exceed 500 characters")]
         public string? Note { get; set; }
     }
 

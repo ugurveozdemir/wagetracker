@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { JobResponse, DashboardSummaryResponse, CreateJobRequest } from '../types';
+import { JobResponse, DashboardSummaryResponse, CreateJobRequest, UpdateJobRequest } from '../types';
 import { dashboardApi, jobsApi } from '../api';
 
 interface JobsState {
@@ -10,12 +10,14 @@ interface JobsState {
     // UI state
     isLoading: boolean;
     isCreating: boolean;
+    isUpdating: boolean;
     error: string | null;
 
     // Actions
     fetchDashboard: () => Promise<void>;
     fetchJobs: () => Promise<void>;
     createJob: (data: CreateJobRequest) => Promise<JobResponse>;
+    updateJob: (id: number, data: UpdateJobRequest) => Promise<JobResponse>;
     deleteJob: (id: number) => Promise<void>;
     clearError: () => void;
 }
@@ -25,6 +27,7 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     jobs: [],
     isLoading: false,
     isCreating: false,
+    isUpdating: false,
     error: null,
 
     fetchDashboard: async () => {
@@ -75,6 +78,24 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         }
     },
 
+    updateJob: async (id: number, data: UpdateJobRequest) => {
+        set({ isUpdating: true, error: null });
+        try {
+            const updatedJob = await jobsApi.update(id, data);
+            set((state) => ({
+                jobs: state.jobs.map(job => job.id === id ? updatedJob : job),
+                isUpdating: false
+            }));
+            return updatedJob;
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Failed to update job',
+                isUpdating: false
+            });
+            throw error;
+        }
+    },
+
     deleteJob: async (id: number) => {
         try {
             await jobsApi.delete(id);
@@ -91,3 +112,4 @@ export const useJobsStore = create<JobsState>((set, get) => ({
 
     clearError: () => set({ error: null }),
 }));
+
