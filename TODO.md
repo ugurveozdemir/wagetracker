@@ -2,9 +2,9 @@
 
 ---
 
-## � FRONTEND (Mobile App)
+## 📱 FRONTEND (Mobile App)
 
-### �🔴 Kritik / Öncelikli
+### 🔴 Kritik / Öncelikli
 
 #### Error Handling
 - [x] Toast notifications sistemi (react-native-toast-message)
@@ -27,9 +27,10 @@
 - [ ] Pull-to-refresh
 - [ ] Skeleton loading states
 - [ ] Empty state (iş yokken güzel görsel)
+- [x] Kişiselleştirilmiş karşılama ("Hi, [isim]!")
 
 #### Entry Yönetimi
-- [x] Entry silme (swipe-to-delete)
+- [x] Entry silme (swipe-to-delete + Feather icon)
 - [ ] Entry düzenleme
 
 #### Job Yönetimi
@@ -38,16 +39,31 @@
 - [ ] Job arşivleme
 
 #### Auth
+- [x] Token validasyonu (API çağrısı ile)
 - [ ] Forgot password flow
 - [ ] Remember me checkbox
 - [ ] Biometric login (Face ID / Fingerprint)
 
+#### Profile Sayfası
+- [ ] Kullanıcı bilgileri (ad, email, kayıt tarihi)
+- [ ] Dark Mode toggle
+- [ ] Para birimi seçimi
+- [ ] Overtime limit ayarı
+- [ ] Change Password
+- [ ] Export Data (CSV/PDF)
+
 ### 🟢 Yeni Özellikler
 
 #### Gider Takibi
-- [ ] AddExpenseModal
+- [ ] AddExpenseModal (manuel giriş)
 - [ ] ExpensesScreen
 - [ ] Kategoriler (yemek, ulaşım, vb)
+- [ ] 🤖 AI Fiş Tarama (fotoğraftan otomatik gider çıkarma)
+  - [ ] Kamera entegrasyonu
+  - [ ] OpenAI Vision API entegrasyonu
+  - [ ] Otomatik mağaza/tarih/tutar çıkarma
+  - [ ] Otomatik kategorilendirme
+  - [ ] Ürün listesi çıkarma
 
 #### Raporlama
 - [ ] Haftalık/aylık özet grafikler
@@ -79,12 +95,21 @@
 ### 🟡 İyileştirmeler
 
 - [ ] Expense entity + API endpoints
+- [ ] Receipt image upload endpoint
 - [ ] Email ile rapor gönder
 - [ ] Bildirimler (push notification)
 
 ---
 
 ## ✅ Tamamlananlar
+
+### 2-3 Ocak 2026
+- [x] Delete UI güncellendi (colors.danger #D50032)
+- [x] Swipe-to-delete Feather trash-2 icon eklendi
+- [x] react-native-vector-icons kuruldu
+- [x] Token validasyonu (API call ile geçerlilik kontrolü)
+- [x] Dashboard kişiselleştirme (kullanıcı adı)
+- [x] Profile menü item eklendi (disabled)
 
 ### 1 Ocak 2026
 - [x] Tarih formatı güncellendi (gün/ay)
