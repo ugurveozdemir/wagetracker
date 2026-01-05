@@ -13,6 +13,7 @@ import { RegisterScreen } from '../screens/RegisterScreen';
 // Main Screens
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { JobDetailsScreen } from '../screens/JobDetailsScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -46,6 +47,7 @@ const MainNavigator: React.FC = () => {
         >
             <MainStack.Screen name="Dashboard" component={DashboardScreen} />
             <MainStack.Screen name="JobDetails" component={JobDetailsScreen} />
+            <MainStack.Screen name="Profile" component={ProfileScreen} />
         </MainStack.Navigator>
     );
 };

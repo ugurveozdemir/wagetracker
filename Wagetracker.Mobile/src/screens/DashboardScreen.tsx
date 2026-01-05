@@ -206,10 +206,16 @@ export const DashboardScreen: React.FC = () => {
                         <View style={styles.menuHeader}>
                             <Text style={styles.menuTitle}>Account</Text>
                         </View>
-                        <View style={styles.menuItem}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => {
+                                setShowProfileMenu(false);
+                                navigation.navigate('Profile');
+                            }}
+                        >
                             <Text style={styles.menuItemIcon}>👤</Text>
-                            <Text style={styles.menuItemTextDisabled}>Profile</Text>
-                        </View>
+                            <Text style={styles.menuItemText}>Profile</Text>
+                        </TouchableOpacity>
                         <View style={styles.menuDivider} />
                         <TouchableOpacity
                             style={styles.menuItem}

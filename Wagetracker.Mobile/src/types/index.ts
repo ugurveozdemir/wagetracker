@@ -127,4 +127,5 @@ export type AuthStackParamList = {
 export type MainStackParamList = {
     Dashboard: undefined;
     JobDetails: { jobId: number };
+    Profile: undefined;
 };
