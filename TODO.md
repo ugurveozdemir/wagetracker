@@ -34,7 +34,7 @@
 - [ ] Entry düzenleme
 
 #### Job Yönetimi
-- [ ] Job düzenleme
+- [x] Job düzenleme
 - [x] Job silme (onay dialogu ile)
 - [ ] Job arşivleme
 
@@ -80,12 +80,12 @@
 ### 🔴 Kritik / Güvenlik
 
 #### Input Validation (Data Annotations)
-- [ ] RegisterRequest: Email format kontrolü ([EmailAddress])
-- [ ] RegisterRequest: Password min 6 karakter ([MinLength(6)])
-- [ ] RegisterRequest: FullName zorunlu ([Required])
-- [ ] LoginRequest: Email ve Password zorunlu ([Required])
-- [ ] CreateJobRequest: Title zorunlu, HourlyRate > 0
-- [ ] CreateEntryRequest: Date zorunlu, TotalHours > 0
+- [x] RegisterRequest: Email format kontrolü ([EmailAddress])
+- [x] RegisterRequest: Password min 6 karakter ([MinLength(6)])
+- [x] RegisterRequest: FullName zorunlu ([Required])
+- [x] LoginRequest: Email ve Password zorunlu ([Required])
+- [x] CreateJobRequest: Title zorunlu, HourlyRate > 0
+- [x] CreateEntryRequest: Date zorunlu, TotalHours > 0
 
 #### Güvenlik
 - [ ] Rate limiting (brute force koruması)
@@ -102,6 +102,10 @@
 ---
 
 ## ✅ Tamamlananlar
+
+### 5 Ocak 2026
+- [x] Job düzenleme (EditJobModal)
+- [x] Backend input validation (Data Annotations)
 
 ### 2-3 Ocak 2026
 - [x] Delete UI güncellendi (colors.danger #D50032)
