@@ -7,9 +7,9 @@ import {
     Platform,
     ScrollView,
     TouchableOpacity,
-    SafeAreaView,
     StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { AuthStackParamList } from '../types';
@@ -60,6 +60,25 @@ export const RegisterScreen: React.FC = () => {
         if (value.length < 6) return 'Password must be at least 6 characters';
         return '';
     };
+
+    // Password strength calculator
+    const getPasswordStrength = (value: string): { level: number; label: string; color: string } => {
+        if (!value) return { level: 0, label: '', color: colors.slate200 };
+
+        let score = 0;
+        if (value.length >= 6) score++;
+        if (value.length >= 10) score++;
+        if (/[A-Z]/.test(value)) score++;
+        if (/[0-9]/.test(value)) score++;
+        if (/[^A-Za-z0-9]/.test(value)) score++;
+
+        if (score <= 1) return { level: 1, label: 'Weak', color: colors.danger };
+        if (score <= 2) return { level: 2, label: 'Fair', color: colors.orange };
+        if (score <= 3) return { level: 3, label: 'Good', color: '#eab308' };
+        return { level: 4, label: 'Strong', color: colors.emerald };
+    };
+
+    const passwordStrength = getPasswordStrength(password);
 
     const validateConfirmPassword = (value: string, pwd: string): string => {
         if (!value) return 'Please confirm your password';
@@ -226,6 +245,30 @@ export const RegisterScreen: React.FC = () => {
                             autoComplete="password-new"
                         />
 
+                        {/* Password Strength Indicator */}
+                        {password.length > 0 && (
+                            <View style={styles.strengthContainer}>
+                                <View style={styles.strengthBarTrack}>
+                                    {[1, 2, 3, 4].map((segment) => (
+                                        <View
+                                            key={segment}
+                                            style={[
+                                                styles.strengthBarSegment,
+                                                {
+                                                    backgroundColor: segment <= passwordStrength.level
+                                                        ? passwordStrength.color
+                                                        : colors.slate200,
+                                                },
+                                            ]}
+                                        />
+                                    ))}
+                                </View>
+                                <Text style={[styles.strengthLabel, { color: passwordStrength.color }]}>
+                                    {passwordStrength.label}
+                                </Text>
+                            </View>
+                        )}
+
                         <Input
                             label="Confirm Password"
                             placeholder="••••••••"
@@ -341,5 +384,30 @@ const styles = StyleSheet.create({
         fontSize: fontSizes.base,
         color: colors.primary,
         fontWeight: fontWeights.bold,
+    },
+
+    // Password Strength
+    strengthContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginTop: -spacing.sm,
+        marginBottom: spacing.md,
+    },
+    strengthBarTrack: {
+        flex: 1,
+        flexDirection: 'row',
+        gap: 4,
+    },
+    strengthBarSegment: {
+        flex: 1,
+        height: 4,
+        borderRadius: 2,
+    },
+    strengthLabel: {
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        minWidth: 45,
+        textAlign: 'right',
     },
 });

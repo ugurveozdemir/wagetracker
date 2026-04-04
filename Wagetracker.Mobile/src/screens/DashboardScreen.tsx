@@ -6,12 +6,12 @@ import {
     ScrollView,
     RefreshControl,
     TouchableOpacity,
-    ActivityIndicator,
-    SafeAreaView,
     StatusBar,
     Modal,
     Pressable,
+    Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { MainStackParamList } from '../types';
@@ -64,11 +64,50 @@ export const DashboardScreen: React.FC = () => {
         })}`;
     };
 
+    // Skeleton loading
     if (isLoading && !refreshing && !summary) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </View>
+            <SafeAreaView style={styles.safeArea}>
+                <StatusBar barStyle="dark-content" backgroundColor={colors.slate50} />
+                <View style={styles.skeletonContainer}>
+                    {/* Header skeleton */}
+                    <View style={styles.skeletonHeader}>
+                        <View style={[styles.skeletonBlock, { width: 180, height: 32, borderRadius: 8 }]} />
+                        <View style={[styles.skeletonBlock, { width: 44, height: 44, borderRadius: 22 }]} />
+                    </View>
+                    {/* Today card skeleton */}
+                    <View style={[styles.skeletonCard, { height: 160 }]} />
+                    {/* Stats cards skeleton */}
+                    <View style={[styles.skeletonCard, { height: 150, backgroundColor: colors.slate200 }]} />
+                    <View style={[styles.skeletonCard, { height: 150, backgroundColor: colors.slate200 }]} />
+                    {/* Section title skeleton */}
+                    <View style={[styles.skeletonBlock, { width: 100, height: 24, marginTop: spacing.lg, marginBottom: spacing.md, borderRadius: 6 }]} />
+                    {/* Job cards skeleton */}
+                    <View style={[styles.skeletonCard, { height: 90 }]} />
+                    <View style={[styles.skeletonCard, { height: 90 }]} />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    // Network error state with retry
+    if (error && !summary && !isLoading) {
+        return (
+            <SafeAreaView style={styles.safeArea}>
+                <StatusBar barStyle="dark-content" backgroundColor={colors.slate50} />
+                <View style={styles.errorStateContainer}>
+                    <Text style={styles.errorStateEmoji}>📡</Text>
+                    <Text style={styles.errorStateTitle}>Connection Error</Text>
+                    <Text style={styles.errorStateMessage}>{error}</Text>
+                    <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={() => fetchDashboard()}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.retryButtonText}>Try Again</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
         );
     }
 
@@ -152,11 +191,21 @@ export const DashboardScreen: React.FC = () => {
 
                     {jobs.length === 0 ? (
                         <View style={styles.emptyState}>
-                            <Text style={styles.emptyText}>No jobs created yet.</Text>
+                            <View style={styles.emptyIllustration}>
+                                <Text style={styles.emptyMainEmoji}>💼</Text>
+                                <View style={styles.emptySparkles}>
+                                    <Text style={styles.emptySparkle}>✨</Text>
+                                    <Text style={[styles.emptySparkle, { top: -8, right: -4, fontSize: 14 }]}>✨</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.emptyTitle}>No jobs yet</Text>
+                            <Text style={styles.emptyText}>Start tracking your earnings by{"\n"}creating your first job</Text>
                             <TouchableOpacity
                                 style={styles.emptyButton}
                                 onPress={() => setIsModalOpen(true)}
+                                activeOpacity={0.8}
                             >
+                                <Text style={styles.emptyButtonIcon}>+</Text>
                                 <Text style={styles.emptyButtonText}>Create your first job</Text>
                             </TouchableOpacity>
                         </View>
@@ -441,27 +490,134 @@ const styles = StyleSheet.create({
         paddingLeft: spacing.sm,
     },
 
+    // Skeleton Loading
+    skeletonContainer: {
+        flex: 1,
+        padding: spacing.lg,
+    },
+    skeletonHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.xl,
+    },
+    skeletonBlock: {
+        backgroundColor: colors.slate200,
+        borderRadius: borderRadius.xl,
+    },
+    skeletonCard: {
+        backgroundColor: colors.slate100,
+        borderRadius: borderRadius['3xl'],
+        marginBottom: spacing.md,
+        height: 120,
+    },
+
+    // Error State
+    errorStateContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: spacing['3xl'],
+    },
+    errorStateEmoji: {
+        fontSize: 64,
+        marginBottom: spacing.lg,
+    },
+    errorStateTitle: {
+        fontSize: fontSizes['2xl'],
+        fontWeight: fontWeights.bold,
+        color: colors.slate800,
+        marginBottom: spacing.sm,
+    },
+    errorStateMessage: {
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.medium,
+        color: colors.slate400,
+        textAlign: 'center',
+        marginBottom: spacing.xl,
+        lineHeight: 22,
+    },
+    retryButton: {
+        backgroundColor: colors.primary,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing['3xl'],
+        borderRadius: borderRadius['3xl'],
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    retryButtonText: {
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.bold,
+        color: colors.white,
+    },
+
     // Empty State
     emptyState: {
         alignItems: 'center',
-        padding: spacing['3xl'],
+        paddingVertical: spacing['4xl'],
+        paddingHorizontal: spacing['3xl'],
         backgroundColor: colors.white,
         borderRadius: borderRadius['3xl'],
         borderWidth: 2,
         borderColor: colors.slate200,
         borderStyle: 'dashed',
     },
+    emptyIllustration: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: colors.primaryLight + '20',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: spacing.xl,
+    },
+    emptyMainEmoji: {
+        fontSize: 48,
+    },
+    emptySparkles: {
+        position: 'absolute',
+        top: 4,
+        right: 4,
+    },
+    emptySparkle: {
+        fontSize: 18,
+        position: 'absolute',
+    },
+    emptyTitle: {
+        fontSize: fontSizes.xl,
+        fontWeight: fontWeights.bold,
+        color: colors.slate800,
+        marginBottom: spacing.sm,
+    },
     emptyText: {
         fontSize: fontSizes.base,
         fontWeight: fontWeights.medium,
         color: colors.slate400,
-        marginBottom: spacing.lg,
+        marginBottom: spacing.xl,
+        textAlign: 'center',
+        lineHeight: 22,
     },
     emptyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: colors.primary,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.xl,
         borderRadius: borderRadius['3xl'],
+        gap: spacing.sm,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    emptyButtonIcon: {
+        fontSize: fontSizes.xl,
+        fontWeight: fontWeights.bold,
+        color: colors.white,
     },
     emptyButtonText: {
         fontSize: fontSizes.base,

@@ -9,11 +9,11 @@
 #### Error Handling
 - [x] Toast notifications sistemi (react-native-toast-message)
 - [x] API hata mesajlarını kullanıcıya göster
-- [ ] Network hatalarında retry butonu
+- [x] Network hatalarında retry butonu
 
 #### Form Validation (UX için)
 - [x] Email format kontrolü (regex)
-- [ ] Password strength indicator
+- [x] Password strength indicator
 - [x] Boş alan uyarıları
 
 #### Offline Desteği (İleri Seviye)
@@ -24,24 +24,21 @@
 ### 🟡 UX İyileştirmeleri
 
 #### Dashboard
-- [ ] Pull-to-refresh
-- [ ] Skeleton loading states
-- [ ] Empty state (iş yokken güzel görsel)
+- [x] Pull-to-refresh
+- [x] Skeleton loading states
+- [x] Empty state (iş yokken güzel görsel)
 - [x] Kişiselleştirilmiş karşılama ("Hi, [isim]!")
 
 #### Entry Yönetimi
 - [x] Entry silme (swipe-to-delete + Feather icon)
-- [ ] Entry düzenleme
 
 #### Job Yönetimi
 - [x] Job düzenleme
 - [x] Job silme (onay dialogu ile)
-- [ ] Job arşivleme
 
 #### Auth
 - [x] Token validasyonu (API çağrısı ile)
 - [ ] Forgot password flow
-- [ ] Remember me checkbox
 - [ ] Biometric login (Face ID / Fingerprint)
 
 #### Profile Sayfası

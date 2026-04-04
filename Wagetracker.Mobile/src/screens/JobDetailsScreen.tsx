@@ -7,13 +7,13 @@ import {
     RefreshControl,
     TouchableOpacity,
     ActivityIndicator,
-    SafeAreaView,
     StatusBar,
     Alert,
     Modal,
     Pressable,
     Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
