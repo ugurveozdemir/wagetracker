@@ -5,7 +5,7 @@ import { colors, borderRadius, spacing } from '../../theme';
 
 interface CardProps {
     children: React.ReactNode;
-    variant?: 'default' | 'earnings' | 'hours';
+    variant?: 'default' | 'earnings' | 'hours' | 'loss';
     style?: StyleProp<ViewStyle>;
 }
 
@@ -31,6 +31,19 @@ export const Card: React.FC<CardProps> = ({
         return (
             <LinearGradient
                 colors={[colors.violetGradientStart, colors.violetGradientEnd]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.base, styles.gradient, style]}
+            >
+                {children}
+            </LinearGradient>
+        );
+    }
+
+    if (variant === 'loss') {
+        return (
+            <LinearGradient
+                colors={['#ef4444', '#dc2626']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[styles.base, styles.gradient, style]}

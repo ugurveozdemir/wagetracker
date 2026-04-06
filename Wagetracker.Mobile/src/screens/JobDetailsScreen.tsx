@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { MainStackParamList, WeeklyGroupResponse, EntryResponse } from '../types';
 import { useEntriesStore, useJobsStore } from '../stores';
 import { Card } from '../components/ui';
@@ -43,10 +43,21 @@ export const JobDetailsScreen: React.FC = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
+    useFocusEffect(
+        useCallback(() => {
+            fetchJobDetails(jobId);
+            return () => {
+                // Focus effect doesn't strictly need cleanup here, but we can do it if needed
+                // Actually, clearing it on blur is better to prevent flash of old data
+            };
+        }, [jobId, fetchJobDetails])
+    );
+
+    // Let's keep a standard useEffect for clearing job details ONLY when unmounting
     useEffect(() => {
-        fetchJobDetails(jobId);
         return () => clearJobDetails();
-    }, [jobId]);
+    }, [clearJobDetails]);
+
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);

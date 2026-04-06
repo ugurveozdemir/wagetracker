@@ -221,7 +221,7 @@ const tabStyles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: -24,
+        marginTop: -12,
     },
     centerButtonInner: {
         width: 56,

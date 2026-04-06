@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { MainStackParamList } from '../types';
 import { useJobsStore, useAuthStore } from '../stores';
 import { Card } from '../components/ui';
@@ -32,9 +32,11 @@ export const DashboardScreen: React.FC = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-    useEffect(() => {
-        fetchDashboard();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchDashboard();
+        }, [fetchDashboard])
+    );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -188,7 +190,7 @@ export const DashboardScreen: React.FC = () => {
                             </Card>
 
                             {/* Weekly Expenses */}
-                            <View style={[styles.expenseCard, { flex: 1, marginLeft: spacing.sm }]}>
+                            <Card variant="loss" style={[styles.statsCard, { flex: 1, marginLeft: spacing.sm }]}>
                                 <View style={styles.statsHeader}>
                                     <View style={styles.statsIconLoss}>
                                         <Text style={styles.statsEmoji}>💸</Text>
@@ -198,7 +200,7 @@ export const DashboardScreen: React.FC = () => {
                                 <Text style={[styles.statsValueSmall, { color: colors.white }]}>
                                     {formatCurrency(summary?.weeklyExpenses || 0)}
                                 </Text>
-                            </View>
+                            </Card>
                         </View>
 
                          {/* Hours Card */}
@@ -670,17 +672,7 @@ const styles = StyleSheet.create({
     hoursCard: {
         padding: spacing.lg,
     },
-    expenseCard: {
-        backgroundColor: '#ef4444',
-        borderRadius: borderRadius['3xl'],
-        padding: spacing.lg,
-        minHeight: 140,
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 2,
-    },
+
     statsIconLoss: {
         padding: spacing.sm,
         backgroundColor: 'rgba(255,255,255,0.2)',

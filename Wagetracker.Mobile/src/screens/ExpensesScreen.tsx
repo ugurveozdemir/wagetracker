@@ -11,21 +11,25 @@ import {
     Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useExpenseStore } from '../stores';
 import { EXPENSE_CATEGORIES, ExpenseResponse } from '../types';
 import { AddExpenseModal } from '../components/AddExpenseModal';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
 import Toast from 'react-native-toast-message';
+import Feather from 'react-native-vector-icons/Feather';
 
 export const ExpensesScreen: React.FC = () => {
     const { expenses, isLoading, fetchExpenses, deleteExpense } = useExpenseStore();
     const [refreshing, setRefreshing] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
 
-    useEffect(() => {
-        fetchExpenses();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchExpenses();
+        }, [fetchExpenses])
+    );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -103,11 +107,47 @@ export const ExpensesScreen: React.FC = () => {
         })}`;
     };
 
-    const renderSwipeAction = () => (
-        <View style={styles.swipeAction}>
-            <Text style={styles.swipeActionText}>🗑️</Text>
-        </View>
-    );
+    const renderRightActions = (
+        progress: Animated.AnimatedInterpolation<number>,
+        dragX: Animated.AnimatedInterpolation<number>,
+        item: ExpenseResponse
+    ) => {
+        const bgScaleX = dragX.interpolate({
+            inputRange: [-100, 0],
+            outputRange: [1, 0],
+            extrapolate: 'clamp',
+        });
+
+        const bgOpacity = dragX.interpolate({
+            inputRange: [-60, -20, 0],
+            outputRange: [1, 0.6, 0],
+            extrapolate: 'clamp',
+        });
+
+        return (
+            <View style={styles.swipeDeleteContainer}>
+                <Animated.View
+                    style={[
+                        styles.swipeDeleteBackground,
+                        {
+                            transform: [{ scaleX: bgScaleX }],
+                            opacity: bgOpacity,
+                            transformOrigin: 'right center',
+                        }
+                    ]}
+                />
+                <TouchableOpacity
+                    style={styles.swipeDeleteAction}
+                    onPress={() => handleDelete(item)}
+                    activeOpacity={0.8}
+                >
+                    <Animated.View style={{ opacity: bgOpacity, transform: [{ scale: bgScaleX }] }}>
+                        <Feather name="trash-2" size={24} color={colors.white} />
+                    </Animated.View>
+                </TouchableOpacity>
+            </View>
+        );
+    };
 
     const renderExpenseItem = ({ item }: { item: ExpenseResponse }) => {
         const cat = EXPENSE_CATEGORIES[item.category] || EXPENSE_CATEGORIES[7];
@@ -119,8 +159,10 @@ export const ExpensesScreen: React.FC = () => {
 
         return (
             <Swipeable
-                renderRightActions={renderSwipeAction}
-                onSwipeableOpen={() => handleDelete(item)}
+                renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
+                overshootRight={false}
+                friction={2}
+                rightThreshold={40}
             >
                 <View style={styles.expenseItem}>
                     <View style={[styles.categoryBadge, { backgroundColor: cat.color + '20' }]}>
@@ -339,17 +381,29 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
 
-    // Swipe
-    swipeAction: {
-        backgroundColor: '#ef4444',
+    // Swipe to Delete
+    swipeDeleteContainer: {
+        width: 100,
+        height: '100%',
         justifyContent: 'center',
-        alignItems: 'flex-end',
-        paddingHorizontal: spacing.xl,
-        borderRadius: borderRadius.xl,
+        alignItems: 'center',
+        position: 'relative',
         marginBottom: spacing.sm,
     },
-    swipeActionText: {
-        fontSize: 24,
+    swipeDeleteBackground: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 100,
+        backgroundColor: colors.danger,
+    },
+    swipeDeleteAction: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        height: '100%',
+        zIndex: 1,
     },
 
     // Empty State
