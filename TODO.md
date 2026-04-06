@@ -52,9 +52,11 @@
 ### 🟢 Yeni Özellikler
 
 #### Gider Takibi
-- [ ] AddExpenseModal (manuel giriş)
-- [ ] ExpensesScreen
-- [ ] Kategoriler (yemek, ulaşım, vb)
+- [x] AddExpenseModal (manuel giriş)
+- [x] ExpensesScreen
+- [x] Kategoriler (yemek, ulaşım, alışveriş, fatura, vb.)
+- [x] Bottom tab navigation + merkezi (+) butonu entegrasyonu
+- [x] Expense silme işlemleri (swipe-to-delete animasyonlu)
 - [ ] 🤖 AI Fiş Tarama (fotoğraftan otomatik gider çıkarma)
   - [ ] Kamera entegrasyonu
   - [ ] OpenAI Vision API entegrasyonu
@@ -91,7 +93,8 @@
 
 ### 🟡 İyileştirmeler
 
-- [ ] Expense entity + API endpoints
+- [x] Expense entity + API endpoints
+- [x] PostgreSQL Expense tables migration
 - [ ] Receipt image upload endpoint
 - [ ] Email ile rapor gönder
 - [ ] Bildirimler (push notification)
@@ -99,6 +102,15 @@
 ---
 
 ## ✅ Tamamlananlar
+
+### 6 Nisan 2026
+- [x] Gider (Expense) takip ekranı ve modeli oluşturuldu.
+- [x] Context-aware akıllı artı (+) butonlu Instagram tarzı Bottom Tab eklendi.
+- [x] Expense entity backend'e eklendi ve migration çalıştırıldı.
+- [x] AddExpenseModal yeniden tasarlandı ve AddEntryModal boyutlarına getirildi.
+- [x] Expense silmede `trash-2` animasyonlu swipe efekti eklendi.
+- [x] Dashboard UI (Earnings & Expenses kartları) simetrik olarak hizalandı.
+- [x] Ekleme sonrasında anasayfa ve job verilerinin otomatik yenilenmesi (auto-refetch) çözüldü.
 
 ### 5 Ocak 2026
 - [x] Job düzenleme (EditJobModal)
