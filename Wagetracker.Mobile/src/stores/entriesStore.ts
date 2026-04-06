@@ -6,6 +6,7 @@ import {
     CreateEntryRequest
 } from '../types';
 import { entriesApi } from '../api';
+import { useJobsStore } from './jobsStore';
 
 interface EntriesState {
     // Job details page data
@@ -26,7 +27,7 @@ interface EntriesState {
     clearError: () => void;
 }
 
-export const useEntriesStore = create<EntriesState>((set) => ({
+export const useEntriesStore = create<EntriesState>((set, get) => ({
     jobDetails: null,
     weeks: [],
     isLoading: false,
@@ -55,6 +56,13 @@ export const useEntriesStore = create<EntriesState>((set) => ({
         set({ isCreating: true, error: null });
         try {
             const newEntry = await entriesApi.create(data);
+            
+            // Automatically refresh the job details to show the new entry immediately
+            await get().fetchJobDetails(data.jobId);
+            
+            // Also refresh the dashboard so its total stats are up-to-date
+            useJobsStore.getState().fetchDashboard().catch(console.error);
+
             set({ isCreating: false });
             return newEntry;
         } catch (error) {
@@ -70,6 +78,14 @@ export const useEntriesStore = create<EntriesState>((set) => ({
         set({ isDeleting: true, error: null });
         try {
             await entriesApi.delete(id);
+
+            // Using current job details id to refresh
+             const currentJobId = get().jobDetails?.job.id;
+             if (currentJobId) {
+                 await get().fetchJobDetails(currentJobId);
+                 useJobsStore.getState().fetchDashboard().catch(console.error);
+             }
+
             set({ isDeleting: false });
         } catch (error) {
             set({
