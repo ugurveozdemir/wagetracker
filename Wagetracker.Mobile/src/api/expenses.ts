@@ -1,0 +1,28 @@
+import { apiClient } from './client';
+import { ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest } from '../types';
+
+export const expensesApi = {
+    getAll: async (): Promise<ExpenseResponse[]> => {
+        const response = await apiClient.get<ExpenseResponse[]>('/api/expenses');
+        return response.data;
+    },
+
+    getById: async (id: number): Promise<ExpenseResponse> => {
+        const response = await apiClient.get<ExpenseResponse>(`/api/expenses/${id}`);
+        return response.data;
+    },
+
+    create: async (data: CreateExpenseRequest): Promise<ExpenseResponse> => {
+        const response = await apiClient.post<ExpenseResponse>('/api/expenses', data);
+        return response.data;
+    },
+
+    update: async (id: number, data: UpdateExpenseRequest): Promise<ExpenseResponse> => {
+        const response = await apiClient.put<ExpenseResponse>(`/api/expenses/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id: number): Promise<void> => {
+        await apiClient.delete(`/api/expenses/${id}`);
+    },
+};

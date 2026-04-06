@@ -155,34 +155,66 @@ export const DashboardScreen: React.FC = () => {
                         </View>
                     </Card>
 
-                    {/* Earnings Card */}
-                    <Card variant="earnings" style={styles.statsCard}>
-                        <View style={styles.statsHeader}>
-                            <View style={styles.statsIcon}>
-                                <Text style={styles.statsEmoji}>💰</Text>
-                            </View>
-                            <Text style={styles.statsLabel}>TOTAL EARNINGS</Text>
-                        </View>
-                        <Text style={styles.statsValue}>
-                            {formatCurrency(summary?.totalEarnings || 0)}
-                        </Text>
-                        <Text style={styles.statsSubtext}>All time</Text>
-                    </Card>
+                    {/* Weekly Stats Section */}
+                    <Text style={styles.sectionTitleWeekly}>This Week</Text>
 
-                    {/* Hours Card */}
-                    <Card variant="hours" style={styles.statsCard}>
-                        <View style={styles.statsHeader}>
-                            <View style={styles.statsIcon}>
-                                <Text style={styles.statsEmoji}>⏳</Text>
+                    <View style={styles.weeklyGrid}>
+                        {/* Weekly Net (Full Width) */}
+                        <Card style={styles.weeklyNetCard}>
+                            <View style={styles.statsHeader}>
+                                <View style={[styles.statsIcon, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                                    <Text style={styles.statsEmoji}>✨</Text>
+                                </View>
+                                <Text style={[styles.statsLabel, { color: colors.emerald }]}>WEEKLY NET</Text>
                             </View>
-                            <Text style={styles.statsLabel}>TOTAL HOURS</Text>
+                            <Text style={[styles.statsValue, { color: colors.slate800 }]}>
+                                {summary?.weeklyNet && summary.weeklyNet < 0 ? '-' : ''}
+                                {formatCurrency(Math.abs(summary?.weeklyNet || 0))}
+                            </Text>
+                        </Card>
+
+                        <View style={styles.weeklyRow}>
+                            {/* Weekly Earnings */}
+                            <Card variant="earnings" style={[styles.statsCard, { flex: 1, marginRight: spacing.sm }]}>
+                                <View style={styles.statsHeader}>
+                                    <View style={styles.statsIcon}>
+                                        <Text style={styles.statsEmoji}>💰</Text>
+                                    </View>
+                                    <Text style={styles.statsLabel}>EARNINGS</Text>
+                                </View>
+                                <Text style={styles.statsValueSmall}>
+                                    {formatCurrency(summary?.weeklyEarnings || 0)}
+                                </Text>
+                            </Card>
+
+                            {/* Weekly Expenses */}
+                            <View style={[styles.expenseCard, { flex: 1, marginLeft: spacing.sm }]}>
+                                <View style={styles.statsHeader}>
+                                    <View style={styles.statsIconLoss}>
+                                        <Text style={styles.statsEmoji}>💸</Text>
+                                    </View>
+                                    <Text style={[styles.statsLabel, { color: 'rgba(239, 68, 68, 0.8)' }]}>EXPENSES</Text>
+                                </View>
+                                <Text style={[styles.statsValueSmall, { color: colors.white }]}>
+                                    {formatCurrency(summary?.weeklyExpenses || 0)}
+                                </Text>
+                            </View>
                         </View>
-                        <Text style={styles.statsValue}>
-                            {summary?.totalHours?.toFixed(1) || '0.0'}
-                            <Text style={styles.statsUnit}>h</Text>
-                        </Text>
-                        <Text style={styles.statsSubtext}>Across all jobs</Text>
-                    </Card>
+
+                         {/* Hours Card */}
+                        <Card variant="hours" style={styles.hoursCard}>
+                            <View style={styles.statsHeader}>
+                                <View style={styles.statsIcon}>
+                                    <Text style={styles.statsEmoji}>⏳</Text>
+                                </View>
+                                <Text style={styles.statsLabel}>WEEKLY HOURS</Text>
+                            </View>
+                            <Text style={styles.statsValueSmall}>
+                                {summary?.weeklyHours?.toFixed(1) || '0.0'}
+                                <Text style={styles.statsUnit}>h</Text>
+                            </Text>
+                        </Card>
+                    </View>
                 </View>
 
                 {/* My Jobs Section */}
@@ -221,15 +253,6 @@ export const DashboardScreen: React.FC = () => {
                 </View>
             </ScrollView>
 
-            {/* Floating Action Button */}
-            <TouchableOpacity
-                style={styles.fab}
-                onPress={() => setIsModalOpen(true)}
-                activeOpacity={0.8}
-            >
-                <Text style={styles.fabIcon}>+</Text>
-            </TouchableOpacity>
-
             {/* Create Job Modal */}
             <CreateJobModal
                 visible={isModalOpen}
@@ -259,7 +282,7 @@ export const DashboardScreen: React.FC = () => {
                             style={styles.menuItem}
                             onPress={() => {
                                 setShowProfileMenu(false);
-                                navigation.navigate('Profile');
+                                (navigation as any).navigate('ProfileTab');
                             }}
                         >
                             <Text style={styles.menuItemIcon}>👤</Text>
@@ -625,27 +648,46 @@ const styles = StyleSheet.create({
         color: colors.white,
     },
 
-    // FAB
-    fab: {
-        position: 'absolute',
-        bottom: 24,
-        right: 24,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
-        elevation: 8,
-    },
-    fabIcon: {
-        fontSize: 32,
+    sectionTitleWeekly: {
+        fontSize: fontSizes.lg,
         fontWeight: fontWeights.bold,
+        color: colors.slate800,
+        marginBottom: spacing.md,
+        paddingLeft: spacing.sm,
+        marginTop: spacing.md,
+    },
+    weeklyGrid: {
+        gap: spacing.sm,
+    },
+    weeklyRow: {
+        flexDirection: 'row',
+        marginBottom: spacing.sm,
+    },
+    weeklyNetCard: {
+        marginBottom: spacing.sm,
+        padding: spacing.lg,
+    },
+    hoursCard: {
+        padding: spacing.lg,
+    },
+    expenseCard: {
+        backgroundColor: '#ef4444',
+        borderRadius: borderRadius['3xl'],
+        padding: spacing.lg,
+        shadowColor: colors.slate900,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 2,
+    },
+    statsIconLoss: {
+        padding: spacing.sm,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: borderRadius.xl,
+    },
+    statsValueSmall: {
+        fontSize: fontSizes['3xl'],
+        fontWeight: fontWeights.extrabold,
         color: colors.white,
-        lineHeight: 34,
     },
 });

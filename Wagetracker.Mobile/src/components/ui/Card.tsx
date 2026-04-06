@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, borderRadius, spacing } from '../../theme';
 
 interface CardProps {
     children: React.ReactNode;
     variant?: 'default' | 'earnings' | 'hours';
-    style?: ViewStyle;
+    style?: StyleProp<ViewStyle>;
 }
 
 export const Card: React.FC<CardProps> = ({

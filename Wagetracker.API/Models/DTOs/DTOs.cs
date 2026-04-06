@@ -161,13 +161,71 @@ namespace WageTracker.API.Models.DTOs
         public List<WeeklyGroupResponse> Weeks { get; set; } = new();
     }
 
+    // ==================== EXPENSE DTOs ====================
+
+    public class CreateExpenseRequest
+    {
+        [Required(ErrorMessage = "Amount is required")]
+        [Range(0.01, 1000000, ErrorMessage = "Amount must be between $0.01 and $1,000,000")]
+        public decimal Amount { get; set; }
+
+        [Required(ErrorMessage = "Category is required")]
+        public int Category { get; set; }
+
+        [Required(ErrorMessage = "Date is required")]
+        public DateTime Date { get; set; }
+
+        [MaxLength(250, ErrorMessage = "Description cannot exceed 250 characters")]
+        public string? Description { get; set; }
+    }
+
+    public class UpdateExpenseRequest
+    {
+        [Required(ErrorMessage = "Amount is required")]
+        [Range(0.01, 1000000, ErrorMessage = "Amount must be between $0.01 and $1,000,000")]
+        public decimal Amount { get; set; }
+
+        [Required(ErrorMessage = "Category is required")]
+        public int Category { get; set; }
+
+        [Required(ErrorMessage = "Date is required")]
+        public DateTime Date { get; set; }
+
+        [MaxLength(250, ErrorMessage = "Description cannot exceed 250 characters")]
+        public string? Description { get; set; }
+    }
+
+    public class ExpenseResponse
+    {
+        public int Id { get; set; }
+        public decimal Amount { get; set; }
+        public int Category { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public DateTime Date { get; set; }
+        public string? Description { get; set; }
+        public string Source { get; set; } = "Manual";
+        public string? ReceiptImageUrl { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
     // ==================== DASHBOARD DTOs ====================
 
     public class DashboardSummaryResponse
     {
+        // All-time totals (Overview ekranı için de kullanılır)
         public decimal TotalEarnings { get; set; }
         public decimal TotalHours { get; set; }
+        public decimal TotalExpenses { get; set; }
         public int ActiveJobsCount { get; set; }
         public List<JobResponse> Jobs { get; set; } = new();
+
+        // Weekly summary (Dashboard haftalık özet)
+        public decimal WeeklyEarnings { get; set; }
+        public decimal WeeklyExpenses { get; set; }
+        public decimal WeeklyNet { get; set; }
+        public decimal WeeklyHours { get; set; }
+
+        // Son giderler (Dashboard'da gösterilecek)
+        public List<ExpenseResponse> RecentExpenses { get; set; } = new();
     }
 }

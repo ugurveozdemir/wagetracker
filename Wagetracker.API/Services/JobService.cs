@@ -126,6 +126,7 @@ namespace WageTracker.API.Services
 
         public async Task<DashboardSummaryResponse> GetDashboardSummaryAsync(int userId)
         {
+            // --- All-time data ---
             var jobs = await _context.Jobs
                 .Where(j => j.UserId == userId)
                 .ToListAsync();
@@ -134,9 +135,53 @@ namespace WageTracker.API.Services
                 .Where(e => e.UserId == userId)
                 .ToListAsync();
 
+            var allExpenses = await _context.Expenses
+                .Where(e => e.UserId == userId)
+                .ToListAsync();
+
             var totalEarnings = allEntries.Sum(e => e.TotalEarnings);
             var totalHours = allEntries.Sum(e => e.TotalHours);
+            var totalExpenses = allExpenses.Sum(e => e.Amount);
 
+            // --- Weekly calculations (Monday-Sunday) ---
+            var today = DateTime.UtcNow.Date;
+            var daysSinceMonday = ((int)today.DayOfWeek + 6) % 7; // Monday=0, Sunday=6
+            var weekStart = today.AddDays(-daysSinceMonday); // This Monday
+            var weekEnd = weekStart.AddDays(7); // Next Monday (exclusive)
+
+            var weeklyEntries = allEntries
+                .Where(e => e.Date.Date >= weekStart && e.Date.Date < weekEnd)
+                .ToList();
+
+            var weeklyExpensesList = allExpenses
+                .Where(e => e.Date.Date >= weekStart && e.Date.Date < weekEnd)
+                .ToList();
+
+            var weeklyEarnings = weeklyEntries.Sum(e => e.TotalEarnings);
+            var weeklyHours = weeklyEntries.Sum(e => e.TotalHours);
+            var weeklyExpensesTotal = weeklyExpensesList.Sum(e => e.Amount);
+            var weeklyNet = weeklyEarnings - weeklyExpensesTotal;
+
+            // --- Recent expenses (son 5 gider) ---
+            var recentExpenses = allExpenses
+                .OrderByDescending(e => e.Date)
+                .ThenByDescending(e => e.CreatedAt)
+                .Take(5)
+                .Select(e => new ExpenseResponse
+                {
+                    Id = e.Id,
+                    Amount = e.Amount,
+                    Category = (int)e.Category,
+                    CategoryName = ExpenseService.GetCategoryName((int)e.Category),
+                    Date = e.Date,
+                    Description = e.Description,
+                    Source = e.Source.ToString(),
+                    ReceiptImageUrl = e.ReceiptImageUrl,
+                    CreatedAt = e.CreatedAt
+                })
+                .ToList();
+
+            // --- Job responses ---
             var jobResponses = new List<JobResponse>();
             foreach (var job in jobs)
             {
@@ -155,11 +200,23 @@ namespace WageTracker.API.Services
 
             return new DashboardSummaryResponse
             {
+                // All-time
                 TotalEarnings = totalEarnings,
                 TotalHours = totalHours,
+                TotalExpenses = totalExpenses,
                 ActiveJobsCount = jobs.Count,
-                Jobs = jobResponses.OrderByDescending(j => j.CreatedAt).ToList()
+                Jobs = jobResponses.OrderByDescending(j => j.CreatedAt).ToList(),
+
+                // Weekly
+                WeeklyEarnings = weeklyEarnings,
+                WeeklyExpenses = weeklyExpensesTotal,
+                WeeklyNet = weeklyNet,
+                WeeklyHours = weeklyHours,
+
+                // Recent
+                RecentExpenses = recentExpenses
             };
         }
     }
 }
+

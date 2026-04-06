@@ -18,6 +18,7 @@ builder.Services.AddScoped<WageTracker.API.Services.IAuthService, WageTracker.AP
 builder.Services.AddScoped<WageTracker.API.Services.IJobService, WageTracker.API.Services.JobService>();
 builder.Services.AddScoped<WageTracker.API.Services.IDailyEntryService, WageTracker.API.Services.DailyEntryService>();
 builder.Services.AddScoped<WageTracker.API.Services.IDashboardService, WageTracker.API.Services.DashboardService>();
+builder.Services.AddScoped<WageTracker.API.Services.IExpenseService, WageTracker.API.Services.ExpenseService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");

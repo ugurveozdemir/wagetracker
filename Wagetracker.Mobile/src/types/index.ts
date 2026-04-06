@@ -85,6 +85,57 @@ export interface UpdateEntryRequest {
     note: string | null;
 }
 
+// ==================== EXPENSE TYPES ====================
+
+export enum ExpenseCategory {
+    FoodAndDrinks = 0,
+    Transport = 1,
+    Shopping = 2,
+    BillsAndUtilities = 3,
+    Entertainment = 4,
+    Health = 5,
+    Education = 6,
+    Other = 7,
+}
+
+// Kategori bilgileri (icon, renk, isim)
+export const EXPENSE_CATEGORIES = [
+    { id: 0, name: 'Food & Drinks', icon: '🍔', color: '#f97316' },
+    { id: 1, name: 'Transport', icon: '🚌', color: '#3b82f6' },
+    { id: 2, name: 'Shopping', icon: '🛒', color: '#8b5cf6' },
+    { id: 3, name: 'Bills & Utilities', icon: '💡', color: '#eab308' },
+    { id: 4, name: 'Entertainment', icon: '🎬', color: '#ec4899' },
+    { id: 5, name: 'Health', icon: '🏥', color: '#10b981' },
+    { id: 6, name: 'Education', icon: '📚', color: '#06b6d4' },
+    { id: 7, name: 'Other', icon: '📦', color: '#64748b' },
+] as const;
+
+export interface ExpenseResponse {
+    id: number;
+    amount: number;
+    category: number;
+    categoryName: string;
+    date: string;
+    description: string | null;
+    source: string;
+    receiptImageUrl: string | null;
+    createdAt: string;
+}
+
+export interface CreateExpenseRequest {
+    amount: number;
+    category: number;
+    date: string; // ISO date string
+    description?: string;
+}
+
+export interface UpdateExpenseRequest {
+    amount: number;
+    category: number;
+    date: string;
+    description?: string;
+}
+
 // ==================== WEEKLY GROUPING TYPES ====================
 
 export interface WeeklyGroupResponse {
@@ -106,14 +157,35 @@ export interface JobDetailsResponse {
 // ==================== DASHBOARD TYPES ====================
 
 export interface DashboardSummaryResponse {
+    // All-time totals
     totalEarnings: number;
     totalHours: number;
+    totalExpenses: number;
     activeJobsCount: number;
     jobs: JobResponse[];
+
+    // Weekly summary
+    weeklyEarnings: number;
+    weeklyExpenses: number;
+    weeklyNet: number;
+    weeklyHours: number;
+
+    // Recent expenses
+    recentExpenses: ExpenseResponse[];
 }
 
 // ==================== NAVIGATION TYPES ====================
 
+// Bottom Tab Navigator
+export type TabParamList = {
+    HomeTab: undefined;
+    ExpensesTab: undefined;
+    AddTab: undefined;
+    OverviewTab: undefined;
+    ProfileTab: undefined;
+};
+
+// Root Stack (Auth vs Main)
 export type RootStackParamList = {
     Auth: undefined;
     Main: undefined;
@@ -124,8 +196,12 @@ export type AuthStackParamList = {
     Register: undefined;
 };
 
-export type MainStackParamList = {
+// Nested stacks inside tabs
+export type HomeStackParamList = {
     Dashboard: undefined;
     JobDetails: { jobId: number };
-    Profile: undefined;
 };
+
+// Backward compat alias
+export type MainStackParamList = HomeStackParamList;
+

@@ -17,6 +17,7 @@ namespace WageTracker.API.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Job> Jobs { get; set; }
         public DbSet<DailyEntry> DailyEntries { get; set; }
+        public DbSet<Expense> Expenses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -83,6 +84,29 @@ namespace WageTracker.API.Data
                 entity.HasOne(e => e.Job)
                     .WithMany()
                     .HasForeignKey(e => e.JobId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Expense Configuration
+            modelBuilder.Entity<Expense>(entity =>
+            {
+                entity.ToTable("Expenses");
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => new { e.UserId, e.Date });
+
+                entity.Property(e => e.Amount).IsRequired().HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Category).IsRequired();
+                entity.Property(e => e.Date).IsRequired();
+                entity.Property(e => e.Description).HasMaxLength(250);
+                entity.Property(e => e.Source).IsRequired();
+                entity.Property(e => e.ReceiptImageUrl).HasMaxLength(500);
+                entity.Property(e => e.CreatedAt).IsRequired();
+
+                // Relationship: Expense -> User
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }

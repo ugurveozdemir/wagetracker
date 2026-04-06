@@ -16,7 +16,7 @@ import { useAuthStore } from '../stores';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
 import Toast from 'react-native-toast-message';
 
-type ProfileNavigationProp = NativeStackNavigationProp<MainStackParamList, 'Profile'>;
+type ProfileNavigationProp = any;
 
 export const ProfileScreen: React.FC = () => {
     const navigation = useNavigation<ProfileNavigationProp>();
