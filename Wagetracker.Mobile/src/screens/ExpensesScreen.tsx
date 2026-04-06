@@ -224,14 +224,6 @@ export const ExpensesScreen: React.FC = () => {
                 />
             )}
 
-            {/* FAB */}
-            <TouchableOpacity
-                style={styles.fab}
-                onPress={() => setShowAddModal(true)}
-                activeOpacity={0.8}
-            >
-                <Text style={styles.fabIcon}>+</Text>
-            </TouchableOpacity>
 
             <AddExpenseModal
                 visible={showAddModal}
@@ -413,27 +405,4 @@ const styles = StyleSheet.create({
         color: colors.white,
     },
 
-    // FAB
-    fab: {
-        position: 'absolute',
-        bottom: 24,
-        right: 24,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
-        elevation: 8,
-    },
-    fabIcon: {
-        fontSize: 32,
-        fontWeight: fontWeights.bold,
-        color: colors.white,
-        lineHeight: 34,
-    },
 });

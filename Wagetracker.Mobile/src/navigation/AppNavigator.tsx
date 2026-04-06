@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, createContext, useContext } from 'react';
 import {
     ActivityIndicator,
     View,
     StyleSheet,
     TouchableOpacity,
     Text,
-    ActionSheetIOS,
     Platform,
-    Alert,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
@@ -19,7 +17,7 @@ import {
     TabParamList,
 } from '../types';
 import { useAuthStore } from '../stores';
-import { colors, spacing, fontSizes, fontWeights } from '../theme';
+import { colors, spacing, fontWeights } from '../theme';
 
 // Auth Screens
 import { LoginScreen } from '../screens/LoginScreen';
@@ -34,7 +32,27 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 
 // Modals
 import { AddExpenseModal } from '../components/AddExpenseModal';
+import { AddEntryModal } from '../components/AddEntryModal';
 import { CreateJobModal } from '../components/CreateJobModal';
+
+// Context for "+" button action
+type AddAction = {
+    openAddEntry: (jobId: number) => void;
+    openAddExpense: () => void;
+    openCreateJob: () => void;
+    setCurrentJobId: (jobId: number | null) => void;
+    setCurrentScreen: (screen: string) => void;
+};
+
+export const AddActionContext = createContext<AddAction>({
+    openAddEntry: () => {},
+    openAddExpense: () => {},
+    openCreateJob: () => {},
+    setCurrentJobId: () => {},
+    setCurrentScreen: () => {},
+});
+
+export const useAddAction = () => useContext(AddActionContext);
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -99,7 +117,7 @@ const CustomTabBar: React.FC<any> = ({
 
                     const onPress = () => {
                         if (tab.isCenter) {
-                            onAddPress();
+                            onAddPress(state);
                             return;
                         }
 
@@ -226,44 +244,52 @@ const tabStyles = StyleSheet.create({
     },
 });
 
+// Helper: extract the active route name from nested nav state
+function getActiveRouteName(state: any): { routeName: string; params?: any } {
+    if (!state) return { routeName: 'Dashboard' };
+
+    const route = state.routes[state.index];
+
+    // If there's a nested navigator
+    if (route.state) {
+        return getActiveRouteName(route.state);
+    }
+
+    return { routeName: route.name, params: route.params };
+}
+
 // Main Tab Navigator
 const MainNavigator: React.FC = () => {
     const [showExpenseModal, setShowExpenseModal] = useState(false);
     const [showJobModal, setShowJobModal] = useState(false);
+    const [showEntryModal, setShowEntryModal] = useState(false);
+    const [activeJobId, setActiveJobId] = useState<number | null>(null);
 
-    const handleAddPress = () => {
-        if (Platform.OS === 'ios') {
-            ActionSheetIOS.showActionSheetWithOptions(
-                {
-                    options: ['Cancel', '💼  New Work Entry', '💸  New Expense'],
-                    cancelButtonIndex: 0,
-                    title: 'What would you like to add?',
-                },
-                (buttonIndex) => {
-                    if (buttonIndex === 1) {
-                        setShowJobModal(true);
-                    } else if (buttonIndex === 2) {
-                        setShowExpenseModal(true);
-                    }
+    const handleAddPress = (tabState: any) => {
+        // Determine current active tab
+        const activeTabRoute = tabState.routes[tabState.index];
+        const tabName = activeTabRoute.name;
+
+        if (tabName === 'ExpensesTab') {
+            // On Expenses screen → add expense
+            setShowExpenseModal(true);
+        } else if (tabName === 'HomeTab') {
+            // Check if we're inside JobDetails or Dashboard
+            const nestedState = activeTabRoute.state;
+            if (nestedState) {
+                const innerRoute = nestedState.routes[nestedState.index];
+                if (innerRoute.name === 'JobDetails' && innerRoute.params?.jobId) {
+                    // Inside a job → add entry
+                    setActiveJobId(innerRoute.params.jobId);
+                    setShowEntryModal(true);
+                    return;
                 }
-            );
+            }
+            // On Dashboard → create job
+            setShowJobModal(true);
         } else {
-            // Android: Simple Alert as action sheet
-            Alert.alert(
-                'What would you like to add?',
-                '',
-                [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                        text: '💼 New Work Entry',
-                        onPress: () => setShowJobModal(true),
-                    },
-                    {
-                        text: '💸 New Expense',
-                        onPress: () => setShowExpenseModal(true),
-                    },
-                ]
-            );
+            // Overview, Profile → default to add expense
+            setShowExpenseModal(true);
         }
     };
 
@@ -295,6 +321,20 @@ const MainNavigator: React.FC = () => {
                 onClose={() => setShowJobModal(false)}
                 onCreated={() => setShowJobModal(false)}
             />
+            {activeJobId && (
+                <AddEntryModal
+                    visible={showEntryModal}
+                    jobId={activeJobId}
+                    onClose={() => {
+                        setShowEntryModal(false);
+                        setActiveJobId(null);
+                    }}
+                    onCreated={() => {
+                        setShowEntryModal(false);
+                        setActiveJobId(null);
+                    }}
+                />
+            )}
         </>
     );
 };

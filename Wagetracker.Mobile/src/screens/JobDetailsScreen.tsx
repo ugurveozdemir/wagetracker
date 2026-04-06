@@ -254,14 +254,7 @@ export const JobDetailsScreen: React.FC = () => {
                 )}
             </ScrollView>
 
-            {/* Floating Action Button */}
-            <TouchableOpacity
-                style={styles.fab}
-                onPress={() => setIsModalOpen(true)}
-                activeOpacity={0.8}
-            >
-                <Text style={styles.fabIcon}>+</Text>
-            </TouchableOpacity>
+
 
             {/* Add Entry Modal */}
             <AddEntryModal

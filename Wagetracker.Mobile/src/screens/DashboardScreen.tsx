@@ -193,7 +193,7 @@ export const DashboardScreen: React.FC = () => {
                                     <View style={styles.statsIconLoss}>
                                         <Text style={styles.statsEmoji}>💸</Text>
                                     </View>
-                                    <Text style={[styles.statsLabel, { color: 'rgba(239, 68, 68, 0.8)' }]}>EXPENSES</Text>
+                                    <Text style={[styles.statsLabel, { color: 'rgba(255, 255, 255, 0.8)' }]}>EXPENSES</Text>
                                 </View>
                                 <Text style={[styles.statsValueSmall, { color: colors.white }]}>
                                     {formatCurrency(summary?.weeklyExpenses || 0)}
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     // Stats Cards
     statsCard: {
         marginBottom: spacing.md,
-        minHeight: 150,
+        minHeight: 140,
     },
     statsHeader: {
         flexDirection: 'row',
@@ -674,6 +674,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#ef4444',
         borderRadius: borderRadius['3xl'],
         padding: spacing.lg,
+        minHeight: 140,
         shadowColor: colors.slate900,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,

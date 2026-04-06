@@ -1,22 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    Modal,
-    Pressable,
     TouchableOpacity,
-    TextInput,
-    ScrollView,
-    KeyboardAvoidingView,
     Platform,
+    Modal,
+    Animated,
+    PanResponder,
+    Dimensions,
     Keyboard,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { EXPENSE_CATEGORIES, CreateExpenseRequest } from '../types';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useExpenseStore } from '../stores';
+import { EXPENSE_CATEGORIES } from '../types';
+import { Button, Input } from './ui';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
 import Toast from 'react-native-toast-message';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const DISMISS_THRESHOLD = 150;
 
 interface AddExpenseModalProps {
     visible: boolean;
@@ -29,279 +33,344 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     onClose,
     onCreated,
 }) => {
-    const { createExpense } = useExpenseStore();
+    const { createExpense, isLoading } = useExpenseStore();
+    const translateY = useRef(new Animated.Value(0)).current;
+
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState(7); // Default: Other
     const [date, setDate] = useState(new Date());
     const [description, setDescription] = useState('');
+    const [error, setError] = useState<string | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Reset form on open
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                return gestureState.dy > 10;
+            },
+            onPanResponderMove: (_, gestureState) => {
+                if (gestureState.dy > 0) {
+                    translateY.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy > DISMISS_THRESHOLD) {
+                    Animated.timing(translateY, {
+                        toValue: SCREEN_HEIGHT,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }).start(() => {
+                        translateY.setValue(0);
+                        onClose();
+                    });
+                } else {
+                    Animated.spring(translateY, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                        bounciness: 8,
+                    }).start();
+                }
+            },
+        })
+    ).current;
+
     useEffect(() => {
         if (visible) {
+            translateY.setValue(0);
             setAmount('');
             setCategory(7);
             setDate(new Date());
             setDescription('');
+            setError(null);
+            setShowDatePicker(false);
         }
     }, [visible]);
 
     const handleSubmit = async () => {
+        Keyboard.dismiss();
+
         const parsedAmount = parseFloat(amount);
         if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
-            Toast.show({
-                type: 'error',
-                text1: 'Invalid Amount',
-                text2: 'Please enter a valid amount',
-            });
+            setError('Please enter a valid amount');
             return;
         }
 
-        setIsSubmitting(true);
         try {
-            const data: CreateExpenseRequest = {
+            await createExpense({
                 amount: parsedAmount,
                 category,
-                date: date.toISOString(),
+                date: date.toISOString().split('T')[0],
                 description: description.trim() || undefined,
-            };
-            await createExpense(data);
+            });
             Toast.show({
                 type: 'success',
                 text1: 'Expense Added',
-                text2: `$${parsedAmount.toFixed(2)} - ${EXPENSE_CATEGORIES[category]?.name || 'Other'}`,
+                text2: `$${parsedAmount.toFixed(2)} recorded successfully`,
+                visibilityTime: 2000,
             });
             onCreated();
-        } catch (error: any) {
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to add expense';
+            setError(errorMessage);
             Toast.show({
                 type: 'error',
                 text1: 'Error',
-                text2: error.message || 'Failed to add expense',
+                text2: errorMessage,
+                visibilityTime: 3000,
             });
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
-    const formatDate = (d: Date) => {
-        return d.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
+    const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+        }
+        if (selectedDate) {
+            setDate(selectedDate);
+        }
     };
 
-    const selectedCategory = EXPENSE_CATEGORIES[category];
+    const categoryEntries = Object.entries(EXPENSE_CATEGORIES);
 
     return (
         <Modal
             visible={visible}
             animationType="slide"
-            presentationStyle="pageSheet"
+            transparent={true}
             onRequestClose={onClose}
         >
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.container}
-            >
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={onClose}>
-                        <Text style={styles.cancelButton}>Cancel</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.title}>New Expense</Text>
-                    <TouchableOpacity
-                        onPress={handleSubmit}
-                        disabled={isSubmitting || !amount}
-                    >
-                        <Text
-                            style={[
-                                styles.saveButton,
-                                (!amount || isSubmitting) && styles.saveButtonDisabled,
-                            ]}
-                        >
-                            {isSubmitting ? 'Saving...' : 'Save'}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                <ScrollView
-                    style={styles.content}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
+            <View style={styles.overlay}>
+                <Animated.View
+                    style={[
+                        styles.content,
+                        { transform: [{ translateY }] }
+                    ]}
                 >
-                    {/* Amount Input */}
-                    <View style={styles.amountContainer}>
-                        <Text style={styles.currencySymbol}>$</Text>
-                        <TextInput
-                            style={styles.amountInput}
-                            value={amount}
-                            onChangeText={setAmount}
-                            placeholder="0.00"
-                            placeholderTextColor={colors.slate300}
-                            keyboardType="decimal-pad"
-                            autoFocus
-                        />
+                    {/* Swipe Handle */}
+                    <View {...panResponder.panHandlers} style={styles.handleArea}>
+                        <View style={styles.handleBar} />
                     </View>
 
-                    {/* Category Selection */}
-                    <Text style={styles.sectionLabel}>CATEGORY</Text>
-                    <View style={styles.categoryGrid}>
-                        {EXPENSE_CATEGORIES.map((cat) => (
-                            <TouchableOpacity
-                                key={cat.id}
-                                style={[
-                                    styles.categoryItem,
-                                    category === cat.id && {
-                                        backgroundColor: cat.color + '20',
-                                        borderColor: cat.color,
-                                    },
-                                ]}
-                                onPress={() => setCategory(cat.id)}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                                <Text
-                                    style={[
-                                        styles.categoryName,
-                                        category === cat.id && { color: cat.color },
-                                    ]}
-                                    numberOfLines={1}
-                                >
-                                    {cat.name}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    {/* Date Selection */}
-                    <Text style={styles.sectionLabel}>DATE</Text>
-                    <TouchableOpacity
-                        style={styles.dateButton}
-                        onPress={() => {
-                            Keyboard.dismiss();
-                            setShowDatePicker(true);
-                        }}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.dateIcon}>📅</Text>
-                        <Text style={styles.dateText}>{formatDate(date)}</Text>
-                    </TouchableOpacity>
-
-                    {showDatePicker && (
-                        <DateTimePicker
-                            value={date}
-                            mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            onChange={(event, selectedDate) => {
-                                if (Platform.OS === 'android') {
-                                    setShowDatePicker(false);
-                                }
-                                if (selectedDate) {
-                                    setDate(selectedDate);
-                                }
-                            }}
-                            themeVariant="dark"
-                        />
-                    )}
-                    {Platform.OS === 'ios' && showDatePicker && (
-                        <TouchableOpacity
-                            style={styles.pickerDone}
-                            onPress={() => setShowDatePicker(false)}
-                        >
-                            <Text style={styles.pickerDoneText}>Done</Text>
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <Text style={styles.title}>Add Expense 💸</Text>
+                        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                            <Text style={styles.closeIcon}>×</Text>
                         </TouchableOpacity>
-                    )}
+                    </View>
 
-                    {/* Description */}
-                    <Text style={styles.sectionLabel}>DESCRIPTION (OPTIONAL)</Text>
-                    <TextInput
-                        style={styles.descriptionInput}
-                        value={description}
-                        onChangeText={setDescription}
-                        placeholder="What was this expense for?"
-                        placeholderTextColor={colors.slate400}
-                        multiline
-                        maxLength={250}
-                    />
-                </ScrollView>
-            </KeyboardAvoidingView>
+                    <KeyboardAwareScrollView
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={styles.scrollContent}
+                        enableOnAndroid={true}
+                        extraScrollHeight={40}
+                        extraHeight={60}
+                    >
+                        {/* Error Message */}
+                        {error && (
+                            <View style={styles.errorContainer}>
+                                <Text style={styles.errorText}>{error}</Text>
+                            </View>
+                        )}
+
+                        {/* Form */}
+                        <View style={styles.form}>
+                            {/* Amount Input */}
+                            <Input
+                                label="Amount ($)"
+                                placeholder="e.g. 25.50"
+                                value={amount}
+                                onChangeText={setAmount}
+                                keyboardType="decimal-pad"
+                            />
+
+                            {/* Category Selection */}
+                            <View style={styles.inputSection}>
+                                <Text style={styles.label}>CATEGORY</Text>
+                                <View style={styles.categoryGrid}>
+                                    {categoryEntries.map(([key, cat]) => {
+                                        const catIndex = parseInt(key);
+                                        const isSelected = category === catIndex;
+                                        return (
+                                            <TouchableOpacity
+                                                key={key}
+                                                style={[
+                                                    styles.categoryItem,
+                                                    isSelected && styles.categoryItemSelected,
+                                                ]}
+                                                onPress={() => {
+                                                    Keyboard.dismiss();
+                                                    setCategory(catIndex);
+                                                }}
+                                                activeOpacity={0.7}
+                                            >
+                                                <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                                                <Text
+                                                    style={[
+                                                        styles.categoryName,
+                                                        isSelected && styles.categoryNameSelected,
+                                                    ]}
+                                                    numberOfLines={1}
+                                                >
+                                                    {cat.name}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+
+                            {/* Date Picker */}
+                            <View style={styles.inputSection}>
+                                <Text style={styles.label}>DATE</Text>
+                                <TouchableOpacity
+                                    style={styles.dateButton}
+                                    onPress={() => {
+                                        Keyboard.dismiss();
+                                        setShowDatePicker(true);
+                                    }}
+                                >
+                                    <Text style={styles.dateButtonText}>
+                                        {date.toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                        })}
+                                    </Text>
+                                    <Text style={styles.calendarIcon}>📅</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* iOS Date Picker */}
+                            {showDatePicker && Platform.OS === 'ios' && (
+                                <View style={styles.pickerContainerDark}>
+                                    <View style={styles.pickerHeaderDark}>
+                                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                            <Text style={styles.pickerDoneLight}>Done</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <DateTimePicker
+                                        value={date}
+                                        mode="date"
+                                        display="inline"
+                                        onChange={onDateChange}
+                                        themeVariant="dark"
+                                    />
+                                </View>
+                            )}
+                            {showDatePicker && Platform.OS === 'android' && (
+                                <DateTimePicker
+                                    value={date}
+                                    mode="date"
+                                    display="calendar"
+                                    onChange={onDateChange}
+                                />
+                            )}
+
+                            {/* Description */}
+                            <Input
+                                label="Description (Optional)"
+                                placeholder="What was this expense for?"
+                                value={description}
+                                onChangeText={setDescription}
+                            />
+
+                            {/* Submit Button */}
+                            <Button
+                                title="Add Expense"
+                                onPress={handleSubmit}
+                                loading={isLoading}
+                                size="lg"
+                                fullWidth
+                            />
+                        </View>
+                    </KeyboardAwareScrollView>
+                </Animated.View>
+            </View>
         </Modal>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    overlay: {
         flex: 1,
-        backgroundColor: colors.slate50,
+        backgroundColor: 'rgba(15, 23, 42, 0.4)',
+        justifyContent: 'flex-end',
+    },
+    content: {
+        backgroundColor: colors.white,
+        borderTopLeftRadius: borderRadius['3xl'],
+        borderTopRightRadius: borderRadius['3xl'],
+        maxHeight: '85%',
+    },
+    handleArea: {
+        paddingVertical: spacing.md,
+        alignItems: 'center',
+    },
+    handleBar: {
+        width: 48,
+        height: 5,
+        backgroundColor: colors.slate300,
+        borderRadius: 3,
+    },
+    scrollContent: {
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing['4xl'],
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.slate200,
-        backgroundColor: colors.white,
-    },
-    cancelButton: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.semibold,
-        color: colors.slate500,
+        marginBottom: spacing.md,
     },
     title: {
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.bold,
-        color: colors.slate800,
-    },
-    saveButton: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-        color: colors.primary,
-    },
-    saveButtonDisabled: {
-        color: colors.slate300,
-    },
-    content: {
-        flex: 1,
-        padding: spacing.lg,
-    },
-
-    // Amount
-    amountContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: spacing['3xl'],
-        marginBottom: spacing.xl,
-    },
-    currencySymbol: {
-        fontSize: 48,
-        fontWeight: fontWeights.bold,
-        color: colors.slate300,
-        marginRight: spacing.sm,
-    },
-    amountInput: {
-        fontSize: 48,
+        fontSize: fontSizes['2xl'],
         fontWeight: fontWeights.extrabold,
         color: colors.slate800,
-        minWidth: 120,
-        textAlign: 'center',
     },
-
-    // Section
-    sectionLabel: {
+    closeButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.slate100,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    closeIcon: {
+        fontSize: 22,
+        fontWeight: fontWeights.bold,
+        color: colors.slate500,
+        lineHeight: 24,
+    },
+    errorContainer: {
+        backgroundColor: colors.orangeBg,
+        padding: spacing.md,
+        borderRadius: borderRadius.xl,
+        marginBottom: spacing.md,
+    },
+    errorText: {
+        color: colors.orange,
+        fontWeight: fontWeights.semibold,
+        fontSize: fontSizes.sm,
+    },
+    form: {
+        gap: spacing.sm,
+    },
+    inputSection: {
+        marginBottom: spacing.sm,
+    },
+    label: {
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.bold,
-        color: colors.slate400,
+        color: colors.slate500,
         letterSpacing: 1,
-        marginBottom: spacing.md,
-        marginTop: spacing.lg,
+        marginBottom: spacing.xs,
+        marginLeft: spacing.sm,
     },
 
-    // Categories
+    // Category Grid
     categoryGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -309,65 +378,65 @@ const styles = StyleSheet.create({
     },
     categoryItem: {
         width: '23%',
-        aspectRatio: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.white,
-        borderRadius: borderRadius.xl,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius['2xl'],
+        backgroundColor: colors.slate50,
+    },
+    categoryItemSelected: {
+        backgroundColor: colors.primary + '15',
         borderWidth: 2,
-        borderColor: colors.slate200,
-        padding: spacing.sm,
+        borderColor: colors.primary,
     },
     categoryIcon: {
         fontSize: 24,
         marginBottom: spacing.xs,
     },
     categoryName: {
-        fontSize: 10,
+        fontSize: fontSizes.xs,
         fontWeight: fontWeights.semibold,
         color: colors.slate500,
         textAlign: 'center',
+    },
+    categoryNameSelected: {
+        color: colors.primary,
+        fontWeight: fontWeights.bold,
     },
 
     // Date
     dateButton: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: colors.white,
-        padding: spacing.lg,
+        backgroundColor: colors.slate50,
+        padding: spacing.md,
+        borderRadius: borderRadius['2xl'],
+    },
+    dateButtonText: {
+        fontSize: fontSizes.lg,
+        fontWeight: fontWeights.bold,
+        color: colors.slate800,
+    },
+    calendarIcon: {
+        fontSize: fontSizes.lg,
+    },
+    pickerContainerDark: {
+        backgroundColor: colors.slate800,
         borderRadius: borderRadius.xl,
-        borderWidth: 1,
-        borderColor: colors.slate200,
-        gap: spacing.md,
+        marginBottom: spacing.md,
+        overflow: 'hidden',
     },
-    dateIcon: {
-        fontSize: 20,
+    pickerHeaderDark: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        padding: spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.slate600,
     },
-    dateText: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.semibold,
-        color: colors.slate700,
-    },
-    pickerDone: {
-        alignItems: 'flex-end',
-        paddingVertical: spacing.sm,
-    },
-    pickerDoneText: {
+    pickerDoneLight: {
         fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
-        color: colors.primary,
-    },
-
-    // Description
-    descriptionInput: {
-        backgroundColor: colors.white,
-        padding: spacing.lg,
-        borderRadius: borderRadius.xl,
-        borderWidth: 1,
-        borderColor: colors.slate200,
-        fontSize: fontSizes.base,
-        color: colors.slate700,
-        minHeight: 80,
-        textAlignVertical: 'top',
+        color: colors.primaryLight,
     },
 });
