@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -22,15 +22,6 @@ interface CreateJobModalProps {
     onCreated: () => void;
 }
 
-const categories = [
-    { id: 'housekeeper', label: 'HOUSEKEEPER', icon: 'cleaning-services' },
-    { id: 'server', label: 'SERVER', icon: 'restaurant' },
-    { id: 'driver', label: 'DRIVER', icon: 'directions-car' },
-    { id: 'retail', label: 'RETAIL', icon: 'storefront' },
-    { id: 'lifeguard', label: 'LIFEGUARD', icon: 'pool' },
-    { id: 'barista', label: 'BARISTA', icon: 'local-cafe' },
-] as const;
-
 const weekStartDays = [
     { value: 0, label: 'Sun' },
     { value: 1, label: 'Mon' },
@@ -49,7 +40,6 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
 
     const [title, setTitle] = useState('');
     const [hourlyRate, setHourlyRate] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<string>(categories[0].id);
     const [firstDayOfWeek, setFirstDayOfWeek] = useState(1);
     const [error, setError] = useState<string | null>(null);
 
@@ -57,15 +47,10 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
         if (visible) {
             setTitle('');
             setHourlyRate('');
-            setSelectedCategory(categories[0].id);
             setFirstDayOfWeek(1);
             setError(null);
         }
     }, [visible]);
-
-    const titlePlaceholder = useMemo(() => {
-        return `e.g. ${categories.find((item) => item.id === selectedCategory)?.label ?? 'Seasonal Role'}`;
-    }, [selectedCategory]);
 
     const handleSubmit = async () => {
         if (!title.trim()) {
@@ -127,41 +112,14 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                         </View>
                     ) : null}
 
-                    <View style={[styles.categoryPanel, { borderRadius: 999 }]}>
-                        <Text style={styles.categoryTitle}>Select Job Category</Text>
-                        <View style={styles.categoryGrid}>
-                            {categories.map((item) => {
-                                const active = selectedCategory === item.id;
-                                return (
-                                    <TouchableOpacity
-                                        key={item.id}
-                                        style={[styles.categoryItem, active && styles.categoryItemActive]}
-                                        activeOpacity={0.88}
-                                        onPress={() => setSelectedCategory(item.id)}
-                                    >
-                                        <MaterialIcons
-                                            name={item.icon}
-                                            size={22}
-                                            color={active ? colors.primary : '#8a948d'}
-                                            style={styles.categoryIcon}
-                                        />
-                                        <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>
-                                            {item.label}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
-                    </View>
-
-                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}>
+                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}> 
                         <View style={styles.fieldLabelRow}>
                             <MaterialIcons name="work" size={16} color={colors.primary} />
                             <Text style={styles.fieldLabel}>JOB TITLE</Text>
                         </View>
                         <TextInput
                             style={styles.fieldInput}
-                            placeholder={titlePlaceholder}
+                            placeholder="e.g. Resort Manager"
                             placeholderTextColor="#bec9bf"
                             value={title}
                             onChangeText={setTitle}
@@ -261,44 +219,6 @@ const styles = StyleSheet.create({
         color: '#ba1a1a',
         fontSize: 14,
         fontWeight: '700',
-    },
-    categoryPanel: {
-        backgroundColor: '#f1f5ef',
-        paddingHorizontal: 18,
-        paddingVertical: 24,
-        marginBottom: 18,
-    },
-    categoryTitle: {
-        color: '#2b7a57',
-        fontSize: 16,
-        fontWeight: '700',
-        textAlign: 'center',
-        marginBottom: 18,
-    },
-    categoryGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        gap: 12,
-    },
-    categoryItem: {
-        width: '28%',
-        minWidth: 82,
-        alignItems: 'center',
-    },
-    categoryItemActive: {},
-    categoryIcon: {
-        marginBottom: 6,
-    },
-    categoryLabel: {
-        color: '#8a948d',
-        fontSize: 9,
-        fontWeight: '700',
-        letterSpacing: 0.6,
-        textAlign: 'center',
-    },
-    categoryLabelActive: {
-        color: '#006D44',
     },
     fieldCard: {
         backgroundColor: '#f5f4eb',

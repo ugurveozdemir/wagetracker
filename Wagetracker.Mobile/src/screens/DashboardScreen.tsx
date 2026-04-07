@@ -7,7 +7,6 @@ import {
     RefreshControl,
     TouchableOpacity,
     StatusBar,
-    Image,
     useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,9 +19,6 @@ import { CreateJobModal } from '../components/CreateJobModal';
 import { colors } from '../theme';
 
 type DashboardNavigationProp = NativeStackNavigationProp<MainStackParamList, 'Dashboard'>;
-
-const PROFILE_IMAGE_URI =
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuCBko3OImouiS8kFbSbaWowPUn1Ra9b3jM81WBVZiRS4P04jztGsUtI84-UQDRc71sWzvbuKAnx2xOXCpBoWrm4tJokRICcHE4AJ2cfMF7wAZS_HBVlHj-GOEUaMgRqDNwsTkB5VS4ObTRfUC4-KkEeYBv7czd8aIZ1qcn_V40T5nZVJZCrCcYK3MJkhC32DU4BQX9TGsIr-TCkE6UA8i5_qF2tIhwpzrxUzfoW-0UsRkBHoLAnxqTaGmTzlwgPyp1gjFwYWBOePRMm';
 
 const emptyChartPoints = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((dayLabel, index) => ({
     date: `placeholder-${index}`,
@@ -96,7 +92,7 @@ export const DashboardScreen: React.FC = () => {
                         onPress={() => (navigation as any).navigate('ProfileTab')}
                     >
                         <View style={styles.avatarFrame}>
-                            <Image source={{ uri: PROFILE_IMAGE_URI }} style={styles.avatarImage} />
+                            <Text style={styles.avatarInitials}>TL</Text>
                         </View>
                         <Text style={styles.brandText}>The Kinetic Ledger</Text>
                     </TouchableOpacity>
@@ -330,12 +326,15 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        overflow: 'hidden',
         backgroundColor: '#efeee5',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    avatarImage: {
-        width: '100%',
-        height: '100%',
+    avatarInitials: {
+        color: '#006D44',
+        fontSize: 15,
+        fontWeight: '800',
+        letterSpacing: 0.4,
     },
     brandText: {
         color: '#006D44',

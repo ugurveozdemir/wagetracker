@@ -21,7 +21,12 @@ namespace WageTracker.API.Controllers
         private int GetUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
+            if (!int.TryParse(userIdClaim, out var userId))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            return userId;
         }
 
         [HttpGet("summary")]

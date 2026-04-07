@@ -66,6 +66,13 @@ export const useJobsStore = create<JobsState>((set, get) => ({
             const newJob = await jobsApi.create(data);
             set((state) => ({
                 jobs: [newJob, ...state.jobs],
+                summary: state.summary
+                    ? {
+                        ...state.summary,
+                        activeJobsCount: state.summary.activeJobsCount + 1,
+                        jobs: [newJob, ...state.summary.jobs],
+                    }
+                    : state.summary,
                 isCreating: false
             }));
             return newJob;
@@ -84,6 +91,12 @@ export const useJobsStore = create<JobsState>((set, get) => ({
             const updatedJob = await jobsApi.update(id, data);
             set((state) => ({
                 jobs: state.jobs.map(job => job.id === id ? updatedJob : job),
+                summary: state.summary
+                    ? {
+                        ...state.summary,
+                        jobs: state.summary.jobs.map(job => job.id === id ? updatedJob : job),
+                    }
+                    : state.summary,
                 isUpdating: false
             }));
             return updatedJob;
@@ -100,7 +113,14 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         try {
             await jobsApi.delete(id);
             set((state) => ({
-                jobs: state.jobs.filter(job => job.id !== id)
+                jobs: state.jobs.filter(job => job.id !== id),
+                summary: state.summary
+                    ? {
+                        ...state.summary,
+                        activeJobsCount: Math.max(0, state.summary.activeJobsCount - 1),
+                        jobs: state.summary.jobs.filter(job => job.id !== id),
+                    }
+                    : state.summary,
             }));
         } catch (error) {
             set({
