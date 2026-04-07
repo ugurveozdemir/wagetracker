@@ -11,12 +11,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useJobsStore } from '../stores';
+import { OverviewStackParamList } from '../types';
 import { colors } from '../theme';
+
+type OverviewNavigationProp = NativeStackNavigationProp<OverviewStackParamList, 'Overview'>;
+
+const overviewCardThemes = [
+    { tone: 'primary', icon: 'cleaning-services' },
+    { tone: 'secondary', icon: 'local-bar' },
+    { tone: 'tertiary', icon: 'directions-car' },
+    { tone: 'quaternary', icon: 'storefront' },
+] as const;
 
 export const OverviewScreen: React.FC = () => {
     const { width } = useWindowDimensions();
+    const navigation = useNavigation<OverviewNavigationProp>();
     const { summary, fetchDashboard } = useJobsStore();
     const [refreshing, setRefreshing] = useState(false);
     const scale = Math.min(Math.max(width / 393, 0.84), 1);
@@ -44,10 +56,9 @@ export const OverviewScreen: React.FC = () => {
 
     const cards = useMemo(
         () =>
-            jobs.slice(0, 2).map((job, index) => ({
+            jobs.map((job, index) => ({
                 ...job,
-                tone: index === 0 ? 'primary' : 'secondary',
-                icon: index === 0 ? 'cleaning-services' : 'local-bar',
+                ...overviewCardThemes[index % overviewCardThemes.length],
             })),
         [jobs]
     );
@@ -72,9 +83,16 @@ export const OverviewScreen: React.FC = () => {
                         <TouchableOpacity
                             key={job.id}
                             activeOpacity={0.9}
+                            onPress={() => navigation.navigate('JobDetails', { jobId: job.id })}
                             style={[
                                 styles.jobCard,
-                                job.tone === 'primary' ? styles.jobCardPrimary : styles.jobCardSecondary,
+                                job.tone === 'primary'
+                                    ? styles.jobCardPrimary
+                                    : job.tone === 'secondary'
+                                      ? styles.jobCardSecondary
+                                      : job.tone === 'tertiary'
+                                        ? styles.jobCardTertiary
+                                        : styles.jobCardQuaternary,
                                 {
                                     minHeight: 256 * scale,
                                     padding: 22 * scale,
@@ -83,17 +101,14 @@ export const OverviewScreen: React.FC = () => {
                             ]}
                         >
                             <View
-                                style={[
-                                    styles.cardGlow,
-                                    job.tone === 'primary' ? styles.cardGlowPrimary : styles.cardGlowSecondary,
-                                ]}
+                                style={styles.cardGlow}
                             />
 
                             <View style={styles.jobTop}>
                                 <MaterialIcons
                                     name={job.icon}
                                     size={Math.round(32 * scale)}
-                                    color={job.tone === 'primary' ? colors.primary : colors.secondary}
+                                    color={colors.white}
                                 />
                             </View>
 
@@ -176,38 +191,35 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     jobCard: {
+        position: 'relative',
         overflow: 'hidden',
         justifyContent: 'space-between',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.16,
+        shadowRadius: 20,
+        elevation: 8,
     },
     jobCardPrimary: {
-        backgroundColor: '#ffffff',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.04,
-        shadowRadius: 40,
-        elevation: 4,
+        backgroundColor: '#006D44',
     },
     jobCardSecondary: {
-        backgroundColor: '#f5f4eb',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.02,
-        shadowRadius: 30,
-        elevation: 2,
+        backgroundColor: '#00429B',
+    },
+    jobCardTertiary: {
+        backgroundColor: '#0d9488',
+    },
+    jobCardQuaternary: {
+        backgroundColor: '#64748b',
     },
     cardGlow: {
         position: 'absolute',
         top: -16,
         right: -16,
-        width: 128,
-        height: 128,
+        width: 96,
+        height: 96,
         borderRadius: 999,
-    },
-    cardGlowPrimary: {
-        backgroundColor: 'rgba(0,109,68,0.05)',
-    },
-    cardGlowSecondary: {
-        backgroundColor: 'rgba(255,138,0,0.10)',
+        backgroundColor: 'rgba(255,255,255,0.10)',
     },
     jobTop: {
         flexDirection: 'row',
@@ -216,7 +228,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     jobName: {
-        color: '#181d19',
+        color: colors.white,
         fontSize: 27,
         fontWeight: '700',
         marginBottom: 18,
@@ -229,13 +241,13 @@ const styles = StyleSheet.create({
         borderRadius: 999,
     },
     ratePillPrimary: {
-        backgroundColor: '#f5f4eb',
+        backgroundColor: 'rgba(255,255,255,0.20)',
     },
     ratePillSecondary: {
-        backgroundColor: '#ffffff',
+        backgroundColor: 'rgba(255,255,255,0.20)',
     },
     rateLabel: {
-        color: '#6f7a71',
+        color: 'rgba(255,255,255,0.80)',
         fontSize: 10,
         fontWeight: '700',
         letterSpacing: 1.5,
@@ -246,15 +258,16 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     rateValuePrimary: {
-        color: '#006D44',
+        color: colors.white,
     },
     rateValueSecondary: {
-        color: '#613100',
+        color: colors.white,
     },
     rateSuffix: {
-        color: '#6f7a71',
+        color: colors.white,
         fontSize: 14,
         fontWeight: '400',
+        opacity: 0.6,
     },
     earnedSection: {
         paddingTop: 18,
@@ -262,14 +275,14 @@ const styles = StyleSheet.create({
     },
     earnedSectionPrimary: {
         borderTopWidth: 1,
-        borderTopColor: '#f5f4eb',
+        borderTopColor: 'rgba(255,255,255,0.20)',
     },
     earnedSectionSecondary: {
         borderTopWidth: 1,
-        borderTopColor: 'rgba(228,227,218,0.20)',
+        borderTopColor: 'rgba(255,255,255,0.20)',
     },
     earnedLabel: {
-        color: '#6f7a71',
+        color: 'rgba(255,255,255,0.80)',
         fontSize: 12,
         fontWeight: '700',
         letterSpacing: 1.6,
@@ -281,10 +294,10 @@ const styles = StyleSheet.create({
         letterSpacing: -1,
     },
     earnedValuePrimary: {
-        color: '#006D44',
+        color: colors.white,
     },
     earnedValueSecondary: {
-        color: '#613100',
+        color: colors.white,
     },
     addJobCard: {
         backgroundColor: 'transparent',

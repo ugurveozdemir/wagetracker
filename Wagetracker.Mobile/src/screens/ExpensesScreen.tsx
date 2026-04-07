@@ -10,14 +10,18 @@ import {
     useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useExpenseStore } from '../stores';
-import { EXPENSE_CATEGORIES } from '../types';
+import { EXPENSE_CATEGORIES, ExpenseStackParamList } from '../types';
 import { colors } from '../theme';
+
+type ExpensesNavigationProp = NativeStackNavigationProp<ExpenseStackParamList, 'Expenses'>;
 
 export const ExpensesScreen: React.FC = () => {
     const { width } = useWindowDimensions();
+    const navigation = useNavigation<ExpensesNavigationProp>();
     const { expenses, fetchExpenses } = useExpenseStore();
     const [refreshing, setRefreshing] = useState(false);
     const compact = width < 380;
@@ -42,7 +46,7 @@ export const ExpensesScreen: React.FC = () => {
             maximumFractionDigits: 2,
         })}`;
 
-    const monthlyTotal = useMemo(() => expenses.reduce((sum, expense) => sum + expense.amount, 0), [expenses]);
+    const totalSpending = useMemo(() => expenses.reduce((sum, expense) => sum + expense.amount, 0), [expenses]);
 
     const categoryTotals = useMemo(() => {
         const totals = new Map<number, number>();
@@ -163,13 +167,18 @@ export const ExpensesScreen: React.FC = () => {
                     </View>
                 </View>
 
-                <View style={[styles.heroCard, { borderRadius: 40 * scale, padding: 32 * scale }]}>
-                    <Text style={styles.heroLabel}>TOTAL MONTHLY SPENDING</Text>
-                    <Text style={[styles.heroValue, { fontSize: compact ? 44 : 52 }]}>{formatCurrency(monthlyTotal)}</Text>
+                <TouchableOpacity
+                    activeOpacity={0.92}
+                    onPress={() => navigation.navigate('ExpenseHistory')}
+                    style={[styles.heroCard, { borderRadius: 40 * scale, padding: 32 * scale }]}
+                >
+                    <Text style={styles.heroLabel}>TOTAL SPENDING TO DATE</Text>
+                    <Text style={[styles.heroValue, { fontSize: compact ? 44 : 52 }]}>{formatCurrency(totalSpending)}</Text>
+                    <Text style={styles.heroSubtext}>Tap to view every expense grouped by Monday-start weeks.</Text>
                     <View style={styles.heroGhost}>
                         <MaterialIcons name="receipt-long" size={88} color="rgba(65,33,0,0.10)" />
                     </View>
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Breakdown</Text>
@@ -323,7 +332,13 @@ const styles = StyleSheet.create({
         color: '#412100',
         fontWeight: '800',
         letterSpacing: -1,
-        marginBottom: 18,
+        marginBottom: 10,
+    },
+    heroSubtext: {
+        color: 'rgba(65,33,0,0.80)',
+        fontSize: 14,
+        lineHeight: 22,
+        maxWidth: '78%',
     },
     heroGhost: {
         position: 'absolute',

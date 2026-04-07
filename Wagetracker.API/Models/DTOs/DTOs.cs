@@ -208,6 +208,14 @@ namespace WageTracker.API.Models.DTOs
         public DateTime CreatedAt { get; set; }
     }
 
+    public class WeeklyExpenseGroupResponse
+    {
+        public DateTime WeekStart { get; set; }
+        public DateTime WeekEnd { get; set; }
+        public decimal TotalAmount { get; set; }
+        public List<ExpenseResponse> Expenses { get; set; } = new();
+    }
+
     // ==================== DASHBOARD DTOs ====================
 
     public class DailyEarningsPointResponse

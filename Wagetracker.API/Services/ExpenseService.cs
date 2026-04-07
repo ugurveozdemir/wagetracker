@@ -116,10 +116,41 @@ namespace WageTracker.API.Services
             return expenses.Select(MapToResponse).ToList();
         }
 
+        public async Task<List<WeeklyExpenseGroupResponse>> GetWeeklyExpenseGroupsAsync(int userId)
+        {
+            var expenses = await _context.Expenses
+                .Where(e => e.UserId == userId)
+                .OrderByDescending(e => e.Date)
+                .ThenByDescending(e => e.CreatedAt)
+                .ToListAsync();
+
+            return expenses
+                .GroupBy(e => GetWeekStartMonday(e.Date.Date))
+                .OrderByDescending(group => group.Key)
+                .Select(group => new WeeklyExpenseGroupResponse
+                {
+                    WeekStart = group.Key,
+                    WeekEnd = group.Key.AddDays(6),
+                    TotalAmount = group.Sum(e => e.Amount),
+                    Expenses = group
+                        .OrderByDescending(e => e.Date)
+                        .ThenByDescending(e => e.CreatedAt)
+                        .Select(MapToResponse)
+                        .ToList()
+                })
+                .ToList();
+        }
+
         // Static helper: Kategori int'inden isim döndürür (DashboardService'ten de kullanılır)
         public static string GetCategoryName(int category)
         {
             return CategoryNames.TryGetValue(category, out var name) ? name : "Other";
+        }
+
+        private static DateTime GetWeekStartMonday(DateTime date)
+        {
+            var daysSinceMonday = ((int)date.DayOfWeek + 6) % 7;
+            return date.AddDays(-daysSinceMonday);
         }
 
         private static ExpenseResponse MapToResponse(Expense expense)

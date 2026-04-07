@@ -29,7 +29,16 @@ const categories = [
     { id: 'retail', label: 'RETAIL', icon: 'storefront' },
     { id: 'lifeguard', label: 'LIFEGUARD', icon: 'pool' },
     { id: 'barista', label: 'BARISTA', icon: 'local-cafe' },
-    { id: 'custom', label: 'CUSTOM', icon: 'add' },
+] as const;
+
+const weekStartDays = [
+    { value: 0, label: 'Sun' },
+    { value: 1, label: 'Mon' },
+    { value: 2, label: 'Tue' },
+    { value: 3, label: 'Wed' },
+    { value: 4, label: 'Thu' },
+    { value: 5, label: 'Fri' },
+    { value: 6, label: 'Sat' },
 ] as const;
 
 export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose, onCreated }) => {
@@ -40,20 +49,21 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
 
     const [title, setTitle] = useState('');
     const [hourlyRate, setHourlyRate] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<string>('custom');
+    const [selectedCategory, setSelectedCategory] = useState<string>(categories[0].id);
+    const [firstDayOfWeek, setFirstDayOfWeek] = useState(1);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (visible) {
             setTitle('');
             setHourlyRate('');
-            setSelectedCategory('custom');
+            setSelectedCategory(categories[0].id);
+            setFirstDayOfWeek(1);
             setError(null);
         }
     }, [visible]);
 
     const titlePlaceholder = useMemo(() => {
-        if (selectedCategory === 'custom') return 'e.g. Resort Manager';
         return `e.g. ${categories.find((item) => item.id === selectedCategory)?.label ?? 'Seasonal Role'}`;
     }, [selectedCategory]);
 
@@ -72,7 +82,7 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
             await createJob({
                 title: title.trim(),
                 hourlyRate: parseFloat(hourlyRate),
-                firstDayOfWeek: 1,
+                firstDayOfWeek,
             });
 
             Toast.show({
@@ -110,9 +120,6 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                     </TouchableOpacity>
 
                     <Text style={[styles.heading, { fontSize: compact ? 40 : 46 }]}>New Adventure.</Text>
-                    <Text style={styles.subheading}>
-                        Let's track your next summer workspace. Fill in the details to start monitoring your earnings.
-                    </Text>
 
                     {error ? (
                         <View style={styles.errorBanner}>
@@ -132,13 +139,12 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                                         activeOpacity={0.88}
                                         onPress={() => setSelectedCategory(item.id)}
                                     >
-                                        <View style={[styles.categoryIconWrap, active && styles.categoryIconWrapActive]}>
-                                            <MaterialIcons
-                                                name={item.icon}
-                                                size={22}
-                                                color={active ? colors.primary : '#8a948d'}
-                                            />
-                                        </View>
+                                        <MaterialIcons
+                                            name={item.icon}
+                                            size={22}
+                                            color={active ? colors.primary : '#8a948d'}
+                                            style={styles.categoryIcon}
+                                        />
                                         <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>
                                             {item.label}
                                         </Text>
@@ -162,7 +168,7 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                         />
                     </View>
 
-                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}>
+                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}> 
                         <View style={styles.fieldLabelRow}>
                             <MaterialIcons name="payments" size={16} color={colors.primary} />
                             <Text style={styles.fieldLabel}>HOURLY RATE</Text>
@@ -181,14 +187,36 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                         </View>
                     </View>
 
+                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}>
+                        <View style={styles.fieldLabelRow}>
+                            <MaterialIcons name="event-repeat" size={16} color={colors.primary} />
+                            <Text style={styles.fieldLabel}>WEEK STARTS ON</Text>
+                        </View>
+                        <View style={styles.weekdayRow}>
+                            {weekStartDays.map((day) => {
+                                const active = firstDayOfWeek === day.value;
+                                return (
+                                    <TouchableOpacity
+                                        key={day.value}
+                                        style={[styles.weekdayChip, active && styles.weekdayChipActive]}
+                                        activeOpacity={0.88}
+                                        onPress={() => setFirstDayOfWeek(day.value)}
+                                    >
+                                        <Text style={[styles.weekdayChipText, active && styles.weekdayChipTextActive]}>{day.label}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+
                     <TouchableOpacity
                         style={[styles.submitButton, isCreating && styles.submitButtonDisabled]}
                         activeOpacity={0.9}
                         onPress={handleSubmit}
                         disabled={isCreating}
                     >
-                        <Text style={styles.submitButtonText}>{isCreating ? 'Saving...' : 'Save Job'}</Text>
-                        <MaterialIcons name="rocket-launch" size={18} color="#412100" />
+                        <Text style={styles.submitButtonText}>{isCreating ? 'Saving...' : 'Save'}</Text>
+                        <MaterialIcons name="rocket-launch" size={18} color="#ffffff" />
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -220,12 +248,6 @@ const styles = StyleSheet.create({
         color: '#006D44',
         fontWeight: '800',
         letterSpacing: -1.2,
-        marginBottom: 10,
-    },
-    subheading: {
-        color: '#3f4942',
-        fontSize: 17,
-        lineHeight: 27,
         marginBottom: 18,
     },
     errorBanner: {
@@ -265,19 +287,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     categoryItemActive: {},
-    categoryIconWrap: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#ffffff',
-        alignItems: 'center',
-        justifyContent: 'center',
+    categoryIcon: {
         marginBottom: 6,
-    },
-    categoryIconWrapActive: {
-        backgroundColor: '#ecf8f0',
-        borderWidth: 1,
-        borderColor: 'rgba(0,109,68,0.18)',
     },
     categoryLabel: {
         color: '#8a948d',
@@ -334,17 +345,45 @@ const styles = StyleSheet.create({
     moneyInput: {
         flex: 1,
         color: '#181d19',
-        fontSize: 34,
+        fontSize: 24,
+        lineHeight: 28,
         fontWeight: '700',
+        paddingTop: 4,
+        paddingBottom: 2,
     },
     moneySuffix: {
         color: '#6f7a71',
         fontSize: 14,
         fontWeight: '600',
     },
+    weekdayRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        paddingHorizontal: 6,
+    },
+    weekdayChip: {
+        minWidth: 54,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        borderRadius: 999,
+        backgroundColor: '#ffffff',
+        alignItems: 'center',
+    },
+    weekdayChipActive: {
+        backgroundColor: '#006D44',
+    },
+    weekdayChipText: {
+        color: '#6f7a71',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    weekdayChipTextActive: {
+        color: '#ffffff',
+    },
     submitButton: {
         marginTop: 8,
-        backgroundColor: '#ff8a00',
+        backgroundColor: '#006D44',
         minHeight: 66,
         borderRadius: 999,
         flexDirection: 'row',
@@ -356,7 +395,7 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     submitButtonText: {
-        color: '#412100',
+        color: '#ffffff',
         fontSize: 22,
         fontWeight: '800',
         letterSpacing: 0.2,

@@ -166,7 +166,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                                     <Text style={styles.pickerDone}>Done</Text>
                                 </TouchableOpacity>
                             </View>
-                            <DateTimePicker value={date} mode="date" display="inline" onChange={onDateChange} />
+                            <DateTimePicker value={date} mode="date" display="inline" onChange={onDateChange} themeVariant="dark" />
                         </View>
                     ) : null}
 
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     pickerWrap: {
-        backgroundColor: '#ffffff',
+        backgroundColor: '#111827',
         borderRadius: 24,
         overflow: 'hidden',
         marginBottom: 18,
@@ -446,9 +446,10 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
         paddingHorizontal: 16,
         paddingVertical: 12,
+        backgroundColor: '#111827',
     },
     pickerDone: {
-        color: '#006D44',
+        color: '#ffffff',
         fontSize: 16,
         fontWeight: '700',
     },

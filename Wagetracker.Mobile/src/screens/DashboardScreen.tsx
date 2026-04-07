@@ -30,6 +30,13 @@ const emptyChartPoints = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((
     totalEarnings: 0,
 }));
 
+const gigCardThemes = [
+    { backgroundStyle: 'gigCardPrimary', icon: 'hotel' },
+    { backgroundStyle: 'gigCardTertiary', icon: 'restaurant' },
+    { backgroundStyle: 'gigCardTeal', icon: 'cleaning-services' },
+    { backgroundStyle: 'gigCardSlate', icon: 'work' },
+] as const;
+
 export const DashboardScreen: React.FC = () => {
     const { width } = useWindowDimensions();
     const navigation = useNavigation<DashboardNavigationProp>();
@@ -172,6 +179,18 @@ export const DashboardScreen: React.FC = () => {
                     </View>
                 </View>
 
+                <View style={[styles.spendingCard, { borderRadius: 28 * scale, padding: 24 * scale }]}>
+                    <View style={styles.spendingCardHeader}>
+                        <Text style={styles.spendingLabel}>Total Spending Since Monday</Text>
+                        <View style={styles.spendingIconWrap}>
+                            <MaterialIcons name="receipt-long" size={18} color="#ffffff" />
+                        </View>
+                    </View>
+                    <Text style={[styles.spendingValue, { fontSize: isCompact ? 28 : 32 }]}>
+                        {formatCurrency(summary?.weeklyExpenses ?? 0)}
+                    </Text>
+                </View>
+
                 <View style={styles.sectionHeader}>
                     <Text style={[styles.sectionTitle, { fontSize: sectionTitleSize }]}>Active Gigs</Text>
                     <Text style={styles.sectionMeta}>{jobs.length} Active</Text>
@@ -187,8 +206,16 @@ export const DashboardScreen: React.FC = () => {
                         paddingBottom: 8,
                     }}
                 >
-                    {jobs.slice(0, 2).map((job, index) => {
-                        const isPrimary = index === 0;
+                    {jobs.map((job, index) => {
+                        const theme = gigCardThemes[index % gigCardThemes.length];
+                        const backgroundStyle =
+                            theme.backgroundStyle === 'gigCardPrimary'
+                                ? styles.gigCardPrimary
+                                : theme.backgroundStyle === 'gigCardTertiary'
+                                  ? styles.gigCardTertiary
+                                  : theme.backgroundStyle === 'gigCardTeal'
+                                    ? styles.gigCardTeal
+                                    : styles.gigCardSlate;
                         return (
                             <TouchableOpacity
                                 key={job.id}
@@ -200,7 +227,7 @@ export const DashboardScreen: React.FC = () => {
                                         padding: 20 * scale,
                                         borderRadius: 28 * scale,
                                     },
-                                    isPrimary ? styles.gigCardPrimary : styles.gigCardTertiary,
+                                    backgroundStyle,
                                 ]}
                                 activeOpacity={0.9}
                                 onPress={() => navigation.navigate('JobDetails', { jobId: job.id })}
@@ -210,20 +237,20 @@ export const DashboardScreen: React.FC = () => {
                                 <View>
                                     <View style={styles.gigTopRow}>
                                         <MaterialIcons
-                                            name={isPrimary ? 'hotel' : 'restaurant'}
+                                            name={theme.icon}
                                             size={Math.round(32 * scale)}
                                             color={colors.white}
                                         />
                                         <View style={styles.gigBadge}>
                                             <Text style={styles.gigBadgeText}>
-                                                {isPrimary ? 'Main Job' : 'Part-time'}
+                                                Job {index + 1}
                                             </Text>
                                         </View>
                                     </View>
 
                                     <Text style={[styles.gigTitle, { fontSize: isCompact ? 18 : 21 }]}>{job.title}</Text>
                                     <Text style={[styles.gigSubtitle, { fontSize: isCompact ? 12 : 13 }]}>
-                                        {isPrimary ? 'Grand Canyon Lodge' : 'Sunset Grill & Bar'}
+                                        Active income stream
                                     </Text>
                                 </View>
 
@@ -394,6 +421,36 @@ const styles = StyleSheet.create({
     chartLabelActive: {
         color: '#006D44',
     },
+    spendingCard: {
+        backgroundColor: '#ff8a00',
+        marginBottom: 28,
+    },
+    spendingCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 14,
+    },
+    spendingLabel: {
+        color: 'rgba(65,33,0,0.80)',
+        fontSize: 12,
+        fontWeight: '700',
+        letterSpacing: 1.5,
+        textTransform: 'uppercase',
+    },
+    spendingIconWrap: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: 'rgba(65,33,0,0.24)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    spendingValue: {
+        color: '#412100',
+        fontWeight: '800',
+        letterSpacing: -0.8,
+    },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -425,6 +482,12 @@ const styles = StyleSheet.create({
     },
     gigCardTertiary: {
         backgroundColor: '#00429B',
+    },
+    gigCardTeal: {
+        backgroundColor: '#0d9488',
+    },
+    gigCardSlate: {
+        backgroundColor: '#64748b',
     },
     gigGlow: {
         position: 'absolute',

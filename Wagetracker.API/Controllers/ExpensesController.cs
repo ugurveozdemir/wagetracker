@@ -32,6 +32,14 @@ namespace WageTracker.API.Controllers
             return Ok(expenses);
         }
 
+        [HttpGet("weekly")]
+        public async Task<ActionResult<List<WeeklyExpenseGroupResponse>>> GetWeekly()
+        {
+            var userId = GetUserId();
+            var weeklyGroups = await _expenseService.GetWeeklyExpenseGroupsAsync(userId);
+            return Ok(weeklyGroups);
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<ExpenseResponse>> GetById(int id)
         {

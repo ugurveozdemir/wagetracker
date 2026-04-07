@@ -179,7 +179,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                                     <Text style={styles.pickerDone}>Done</Text>
                                 </TouchableOpacity>
                             </View>
-                            <DateTimePicker value={date} mode="date" display="inline" onChange={onDateChange} />
+                            <DateTimePicker value={date} mode="date" display="inline" onChange={onDateChange} themeVariant="dark" />
                         </View>
                     ) : null}
 
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     submitButton: { marginTop: 8, backgroundColor: '#ff8a00', minHeight: 64, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
     submitButtonDisabled: { opacity: 0.7 },
     submitButtonText: { color: '#412100', fontSize: 20, fontWeight: '800' },
-    pickerWrap: { backgroundColor: '#ffffff', borderRadius: 24, overflow: 'hidden', marginBottom: 18 },
-    pickerHeader: { alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 12 },
-    pickerDone: { color: '#006D44', fontSize: 16, fontWeight: '700' },
+    pickerWrap: { backgroundColor: '#111827', borderRadius: 24, overflow: 'hidden', marginBottom: 18 },
+    pickerHeader: { alignItems: 'flex-end', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#111827' },
+    pickerDone: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
 });

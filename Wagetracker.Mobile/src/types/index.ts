@@ -122,6 +122,13 @@ export interface ExpenseResponse {
     createdAt: string;
 }
 
+export interface WeeklyExpenseGroupResponse {
+    weekStart: string;
+    weekEnd: string;
+    totalAmount: number;
+    expenses: ExpenseResponse[];
+}
+
 export interface CreateExpenseRequest {
     amount: number;
     category: number;
@@ -207,6 +214,16 @@ export type AuthStackParamList = {
 export type HomeStackParamList = {
     Dashboard: undefined;
     JobDetails: { jobId: number };
+};
+
+export type OverviewStackParamList = {
+    Overview: undefined;
+    JobDetails: { jobId: number };
+};
+
+export type ExpenseStackParamList = {
+    Expenses: undefined;
+    ExpenseHistory: undefined;
 };
 
 // Backward compat alias

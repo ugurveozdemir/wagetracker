@@ -16,6 +16,8 @@ import {
     RootStackParamList,
     AuthStackParamList,
     HomeStackParamList,
+    ExpenseStackParamList,
+    OverviewStackParamList,
     TabParamList,
 } from '../types';
 import { useAuthStore } from '../stores';
@@ -25,6 +27,7 @@ import { RegisterScreen } from '../screens/RegisterScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { JobDetailsScreen } from '../screens/JobDetailsScreen';
 import { ExpensesScreen } from '../screens/ExpensesScreen';
+import { ExpenseHistoryScreen } from '../screens/ExpenseHistoryScreen';
 import { OverviewScreen } from '../screens/OverviewScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { AddExpenseModal } from '../components/AddExpenseModal';
@@ -34,6 +37,8 @@ import { CreateJobModal } from '../components/CreateJobModal';
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const ExpenseStack = createNativeStackNavigator<ExpenseStackParamList>();
+const OverviewStack = createNativeStackNavigator<OverviewStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
 const AuthNavigator: React.FC = () => {
@@ -63,6 +68,36 @@ const HomeNavigator: React.FC = () => {
             <HomeStack.Screen name="Dashboard" component={DashboardScreen} />
             <HomeStack.Screen name="JobDetails" component={JobDetailsScreen} />
         </HomeStack.Navigator>
+    );
+};
+
+const OverviewNavigator: React.FC = () => {
+    return (
+        <OverviewStack.Navigator
+            screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.surface },
+                animation: 'slide_from_right',
+            }}
+        >
+            <OverviewStack.Screen name="Overview" component={OverviewScreen} />
+            <OverviewStack.Screen name="JobDetails" component={JobDetailsScreen} />
+        </OverviewStack.Navigator>
+    );
+};
+
+const ExpenseNavigator: React.FC = () => {
+    return (
+        <ExpenseStack.Navigator
+            screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.surface },
+                animation: 'slide_from_right',
+            }}
+        >
+            <ExpenseStack.Screen name="Expenses" component={ExpensesScreen} />
+            <ExpenseStack.Screen name="ExpenseHistory" component={ExpenseHistoryScreen} />
+        </ExpenseStack.Navigator>
     );
 };
 
@@ -178,6 +213,22 @@ const MainNavigator: React.FC = () => {
     const [showEntryModal, setShowEntryModal] = React.useState(false);
     const [activeJobId, setActiveJobId] = React.useState<number | null>(null);
 
+    const openEntryModalFromNestedRoute = (activeTabRoute: any) => {
+        const nestedState = activeTabRoute.state;
+        if (!nestedState) {
+            return false;
+        }
+
+        const innerRoute = nestedState.routes[nestedState.index];
+        if (innerRoute.name === 'JobDetails' && innerRoute.params?.jobId) {
+            setActiveJobId(innerRoute.params.jobId);
+            setShowEntryModal(true);
+            return true;
+        }
+
+        return false;
+    };
+
     const handleAddPress = (tabState: any) => {
         const activeTabRoute = tabState.routes[tabState.index];
         const tabName = activeTabRoute.name;
@@ -188,14 +239,17 @@ const MainNavigator: React.FC = () => {
         }
 
         if (tabName === 'HomeTab') {
-            const nestedState = activeTabRoute.state;
-            if (nestedState) {
-                const innerRoute = nestedState.routes[nestedState.index];
-                if (innerRoute.name === 'JobDetails' && innerRoute.params?.jobId) {
-                    setActiveJobId(innerRoute.params.jobId);
-                    setShowEntryModal(true);
-                    return;
-                }
+            if (openEntryModalFromNestedRoute(activeTabRoute)) {
+                return;
+            }
+
+            setShowJobModal(true);
+            return;
+        }
+
+        if (tabName === 'OverviewTab') {
+            if (openEntryModalFromNestedRoute(activeTabRoute)) {
+                return;
             }
 
             setShowJobModal(true);
@@ -215,9 +269,9 @@ const MainNavigator: React.FC = () => {
                 }}
             >
                 <Tab.Screen name="HomeTab" component={HomeNavigator} />
-                <Tab.Screen name="ExpensesTab" component={ExpensesScreen} />
+                <Tab.Screen name="ExpensesTab" component={ExpenseNavigator} />
                 <Tab.Screen name="AddTab" component={DummyScreen} />
-                <Tab.Screen name="OverviewTab" component={OverviewScreen} />
+                <Tab.Screen name="OverviewTab" component={OverviewNavigator} />
                 <Tab.Screen name="ProfileTab" component={ProfileScreen} />
             </Tab.Navigator>
 

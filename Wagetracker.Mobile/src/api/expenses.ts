@@ -1,9 +1,14 @@
 import { apiClient } from './client';
-import { ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest } from '../types';
+import { ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest, WeeklyExpenseGroupResponse } from '../types';
 
 export const expensesApi = {
     getAll: async (): Promise<ExpenseResponse[]> => {
         const response = await apiClient.get<ExpenseResponse[]>('/api/expenses');
+        return response.data;
+    },
+
+    getWeekly: async (): Promise<WeeklyExpenseGroupResponse[]> => {
+        const response = await apiClient.get<WeeklyExpenseGroupResponse[]>('/api/expenses/weekly');
         return response.data;
     },
 
