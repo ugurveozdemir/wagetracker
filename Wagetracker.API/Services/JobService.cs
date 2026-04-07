@@ -162,6 +162,23 @@ namespace WageTracker.API.Services
             var weeklyExpensesTotal = weeklyExpensesList.Sum(e => e.Amount);
             var weeklyNet = weeklyEarnings - weeklyExpensesTotal;
 
+            var dailyEarningsSinceMonday = Enumerable.Range(0, 7)
+                .Select(offset =>
+                {
+                    var dayDate = weekStart.AddDays(offset);
+                    var dayTotal = weeklyEntries
+                        .Where(e => e.Date.Date == dayDate)
+                        .Sum(e => e.TotalEarnings);
+
+                    return new DailyEarningsPointResponse
+                    {
+                        Date = dayDate,
+                        DayLabel = dayDate.ToString("ddd"),
+                        TotalEarnings = dayTotal
+                    };
+                })
+                .ToList();
+
             // --- Recent expenses (son 5 gider) ---
             var recentExpenses = allExpenses
                 .OrderByDescending(e => e.Date)
@@ -212,6 +229,7 @@ namespace WageTracker.API.Services
                 WeeklyExpenses = weeklyExpensesTotal,
                 WeeklyNet = weeklyNet,
                 WeeklyHours = weeklyHours,
+                DailyEarningsSinceMonday = dailyEarningsSinceMonday,
 
                 // Recent
                 RecentExpenses = recentExpenses

@@ -210,6 +210,13 @@ namespace WageTracker.API.Models.DTOs
 
     // ==================== DASHBOARD DTOs ====================
 
+    public class DailyEarningsPointResponse
+    {
+        public DateTime Date { get; set; }
+        public string DayLabel { get; set; } = string.Empty;
+        public decimal TotalEarnings { get; set; }
+    }
+
     public class DashboardSummaryResponse
     {
         // All-time totals (Overview ekranı için de kullanılır)
@@ -224,6 +231,7 @@ namespace WageTracker.API.Models.DTOs
         public decimal WeeklyExpenses { get; set; }
         public decimal WeeklyNet { get; set; }
         public decimal WeeklyHours { get; set; }
+        public List<DailyEarningsPointResponse> DailyEarningsSinceMonday { get; set; } = new();
 
         // Son giderler (Dashboard'da gösterilecek)
         public List<ExpenseResponse> RecentExpenses { get; set; } = new();

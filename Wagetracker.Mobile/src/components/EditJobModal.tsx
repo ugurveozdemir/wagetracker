@@ -32,14 +32,12 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({ visible, job, onClos
 
     const [title, setTitle] = useState('');
     const [hourlyRate, setHourlyRate] = useState('');
-    const [location, setLocation] = useState('');
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (visible && job) {
             setTitle(job.title);
             setHourlyRate(job.hourlyRate.toString());
-            setLocation('');
             setError(null);
         }
     }, [visible, job]);
@@ -101,9 +99,7 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({ visible, job, onClos
                     </TouchableOpacity>
 
                     <Text style={[styles.heading, { fontSize: compact ? 40 : 46 }]}>Refine Role.</Text>
-                    <Text style={styles.subheading}>
-                        Update the tracked role without changing any backend workflow or ledger structure.
-                    </Text>
+                    <Text style={styles.subheading}>Update the tracked job details used by the backend ledger.</Text>
 
                     {error ? (
                         <View style={styles.errorBanner}>
@@ -144,21 +140,6 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({ visible, job, onClos
                         </View>
                     </View>
 
-                    <View style={[styles.fieldCard, styles.locationCard, { borderRadius: 32 * scale }]}>
-                        <Text style={styles.locationTitle}>Company Location</Text>
-                        <Text style={styles.locationSubtitle}>Local detail for UI continuity. Backend contract is unchanged.</Text>
-                        <View style={styles.locationInputWrap}>
-                            <MaterialIcons name="location-on" size={18} color={colors.primary} />
-                            <TextInput
-                                style={styles.locationInput}
-                                placeholder="Enter City, State"
-                                placeholderTextColor="#bec9bf"
-                                value={location}
-                                onChangeText={setLocation}
-                            />
-                        </View>
-                    </View>
-
                     <TouchableOpacity
                         style={[styles.submitButton, isUpdating && styles.submitButtonDisabled]}
                         activeOpacity={0.9}
@@ -191,11 +172,6 @@ const styles = StyleSheet.create({
     moneyPrefix: { color: '#6f7a71', fontSize: 22, fontWeight: '700', marginRight: 8 },
     moneyInput: { flex: 1, color: '#181d19', fontSize: 34, fontWeight: '700' },
     moneySuffix: { color: '#6f7a71', fontSize: 14, fontWeight: '600' },
-    locationCard: { paddingTop: 22, paddingBottom: 22 },
-    locationTitle: { color: '#006D44', fontSize: 22, fontWeight: '700', marginBottom: 4 },
-    locationSubtitle: { color: '#6f7a71', fontSize: 13, marginBottom: 16 },
-    locationInputWrap: { backgroundColor: '#ffffff', borderRadius: 999, paddingHorizontal: 20, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', gap: 10 },
-    locationInput: { flex: 1, color: '#181d19', fontSize: 17, fontWeight: '600' },
     submitButton: { marginTop: 8, backgroundColor: '#ff8a00', minHeight: 66, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
     submitButtonDisabled: { opacity: 0.7 },
     submitButtonText: { color: '#412100', fontSize: 22, fontWeight: '800', letterSpacing: 0.2 },

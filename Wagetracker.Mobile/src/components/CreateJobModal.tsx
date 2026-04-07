@@ -40,7 +40,6 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
 
     const [title, setTitle] = useState('');
     const [hourlyRate, setHourlyRate] = useState('');
-    const [companyLocation, setCompanyLocation] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('custom');
     const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +47,6 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
         if (visible) {
             setTitle('');
             setHourlyRate('');
-            setCompanyLocation('');
             setSelectedCategory('custom');
             setError(null);
         }
@@ -180,21 +178,6 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                                 keyboardType="decimal-pad"
                             />
                             <Text style={styles.moneySuffix}>/ hr</Text>
-                        </View>
-                    </View>
-
-                    <View style={[styles.fieldCard, styles.locationCard, { borderRadius: 32 * scale }]}>
-                        <Text style={styles.locationTitle}>Company Location</Text>
-                        <Text style={styles.locationSubtitle}>Where will you be working this summer?</Text>
-                        <View style={styles.locationInputWrap}>
-                            <MaterialIcons name="location-on" size={18} color={colors.primary} />
-                            <TextInput
-                                style={styles.locationInput}
-                                placeholder="Enter City, State"
-                                placeholderTextColor="#bec9bf"
-                                value={companyLocation}
-                                onChangeText={setCompanyLocation}
-                            />
                         </View>
                     </View>
 
@@ -357,36 +340,6 @@ const styles = StyleSheet.create({
     moneySuffix: {
         color: '#6f7a71',
         fontSize: 14,
-        fontWeight: '600',
-    },
-    locationCard: {
-        paddingTop: 22,
-        paddingBottom: 22,
-    },
-    locationTitle: {
-        color: '#006D44',
-        fontSize: 22,
-        fontWeight: '700',
-        marginBottom: 4,
-    },
-    locationSubtitle: {
-        color: '#6f7a71',
-        fontSize: 13,
-        marginBottom: 16,
-    },
-    locationInputWrap: {
-        backgroundColor: '#ffffff',
-        borderRadius: 999,
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    locationInput: {
-        flex: 1,
-        color: '#181d19',
-        fontSize: 17,
         fontWeight: '600',
     },
     submitButton: {

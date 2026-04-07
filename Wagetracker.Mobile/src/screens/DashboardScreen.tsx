@@ -24,8 +24,11 @@ type DashboardNavigationProp = NativeStackNavigationProp<MainStackParamList, 'Da
 const PROFILE_IMAGE_URI =
     'https://lh3.googleusercontent.com/aida-public/AB6AXuCBko3OImouiS8kFbSbaWowPUn1Ra9b3jM81WBVZiRS4P04jztGsUtI84-UQDRc71sWzvbuKAnx2xOXCpBoWrm4tJokRICcHE4AJ2cfMF7wAZS_HBVlHj-GOEUaMgRqDNwsTkB5VS4ObTRfUC4-KkEeYBv7czd8aIZ1qcn_V40T5nZVJZCrCcYK3MJkhC32DU4BQX9TGsIr-TCkE6UA8i5_qF2tIhwpzrxUzfoW-0UsRkBHoLAnxqTaGmTzlwgPyp1gjFwYWBOePRMm';
 
-const chartHeights = [40, 65, 55, 85, 70, 100, 10];
-const chartLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const emptyChartPoints = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((dayLabel, index) => ({
+    date: `placeholder-${index}`,
+    dayLabel,
+    totalEarnings: 0,
+}));
 
 export const DashboardScreen: React.FC = () => {
     const { width } = useWindowDimensions();
@@ -42,6 +45,10 @@ export const DashboardScreen: React.FC = () => {
     const gigCardWidth = Math.min(Math.max(width - 104, 228), 264);
     const addGigCardWidth = Math.min(Math.max(width - 176, 168), 188);
     const horizontalPadding = isCompact ? 18 : 24;
+    const chartPoints = summary?.dailyEarningsSinceMonday?.length
+        ? summary.dailyEarningsSinceMonday
+        : emptyChartPoints;
+    const maxChartValue = Math.max(...chartPoints.map((point) => point.totalEarnings), 0);
 
     useFocusEffect(
         useCallback(() => {
@@ -107,7 +114,7 @@ export const DashboardScreen: React.FC = () => {
                     </View>
 
                     <View style={styles.heroInner}>
-                        <Text style={styles.heroLabel}>Total Earnings This Week</Text>
+                        <Text style={styles.heroLabel}>Total Earnings Since Monday</Text>
                         <Text
                             style={[
                                 styles.heroValue,
@@ -121,23 +128,26 @@ export const DashboardScreen: React.FC = () => {
                         </Text>
 
                         <View style={styles.chartRow}>
-                            {chartHeights.map((height, index) => {
+                            {chartPoints.map((point, index) => {
+                                const barHeight = maxChartValue > 0
+                                    ? Math.max((point.totalEarnings / maxChartValue) * 100, point.totalEarnings > 0 ? 10 : 4)
+                                    : 4;
                                 const backgroundColor =
-                                    index === 5
+                                    point.totalEarnings === maxChartValue && maxChartValue > 0
                                         ? colors.primary
-                                        : index === 4
+                                        : point.totalEarnings > 0
                                           ? 'rgba(0, 109, 68, 0.20)'
-                                          : index === 6
+                                          : index >= 5
                                             ? colors.surfaceContainerHigh
                                             : 'rgba(0, 109, 68, 0.10)';
 
                                 return (
                                     <View
-                                        key={chartLabels[index]}
+                                        key={point.date}
                                         style={[
                                             styles.chartBar,
                                             {
-                                                height: `${height}%`,
+                                                height: `${barHeight}%`,
                                                 backgroundColor,
                                             },
                                         ]}
@@ -147,9 +157,15 @@ export const DashboardScreen: React.FC = () => {
                         </View>
 
                         <View style={styles.chartLabelsRow}>
-                            {chartLabels.map((label, index) => (
-                                <Text key={label} style={[styles.chartLabel, index === 5 && styles.chartLabelActive]}>
-                                    {label}
+                            {chartPoints.map((point) => (
+                                <Text
+                                    key={point.date}
+                                    style={[
+                                        styles.chartLabel,
+                                        point.totalEarnings === maxChartValue && maxChartValue > 0 && styles.chartLabelActive,
+                                    ]}
+                                >
+                                    {point.dayLabel}
                                 </Text>
                             ))}
                         </View>

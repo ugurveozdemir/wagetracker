@@ -111,9 +111,9 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     </TouchableOpacity>
 
                     <View style={[styles.heroCard, { borderRadius: 40 * scale, padding: 28 * scale }]}>
-                        <Text style={styles.heroLabel}>TOTAL MONTHLY SPENDING</Text>
+                        <Text style={styles.heroLabel}>NEW EXPENSE</Text>
                         <Text style={[styles.heroValue, { fontSize: compact ? 42 : 50 }]}>${amount || '0.00'}</Text>
-                        <Text style={styles.heroSubtext}>Capture every outgoing line item in the same ledger rhythm.</Text>
+                        <Text style={styles.heroSubtext}>Record the amount, category, date and an optional description.</Text>
                     </View>
 
                     {error ? (

@@ -16,9 +16,6 @@ import { useExpenseStore } from '../stores';
 import { EXPENSE_CATEGORIES } from '../types';
 import { colors } from '../theme';
 
-const PROFILE_IMAGE_URI =
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuAA6ezxhx8SxXnwh3pz1JUFfmVlK2JSP0dLc2zc6PW8fmNxJrcpoj3ZDMxYGL5U2W0h3tMghQZuVg7890ZZ95548-Yj3BO8nFSl7bMUrx4PodtkIdetnblPM17siW52eNDiwrHtPIaz4oTSQHmzOOkDM08ir2LXQp4B3lNS928byvLUcMATaLVnKaJlK9g-rzQIVIMdudErNkzbAGKmEJa1jy9jsdccqgsnB3mufPdL9_mMWOrxpTjgX1N5SS1sDU2S5tG9_Z2U3cbZ';
-
 export const ExpensesScreen: React.FC = () => {
     const { width } = useWindowDimensions();
     const { expenses, fetchExpenses } = useExpenseStore();
@@ -55,12 +52,65 @@ export const ExpensesScreen: React.FC = () => {
         return totals;
     }, [expenses]);
 
-    const breakdownCards = [
-        { label: 'Rent & Utilities', amount: categoryTotals.get(3) ?? 850, icon: 'home', tint: '#93ecb8', tone: colors.primary },
-        { label: 'Food', amount: categoryTotals.get(0) ?? 422.3, icon: 'restaurant', tint: '#ffdcc4', tone: '#ab3600' },
-        { label: 'Travel', amount: categoryTotals.get(1) ?? 310.2, icon: 'flight-takeoff', tint: '#d9e2ff', tone: '#00429B' },
-        { label: 'Fun & Entertainment', amount: categoryTotals.get(4) ?? 260, icon: 'theater-comedy', tint: '#ffffff', tone: '#181d19', wide: true },
-    ];
+    const currentMonthLabel = useMemo(
+        () =>
+            new Date().toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric',
+            }),
+        []
+    );
+
+    const breakdownCards = useMemo(() => {
+        const iconMap: Record<number, string> = {
+            0: 'restaurant',
+            1: 'directions-car',
+            2: 'shopping-bag',
+            3: 'lightbulb',
+            4: 'theater-comedy',
+            5: 'local-hospital',
+            6: 'school',
+            7: 'receipt-long',
+        };
+
+        const tintMap: Record<number, string> = {
+            0: '#ffdcc4',
+            1: '#d9e2ff',
+            2: '#efe0ff',
+            3: '#fff1bf',
+            4: '#ffffff',
+            5: '#d5f7e3',
+            6: '#d7f5fb',
+            7: '#eae8e0',
+        };
+
+        const toneMap: Record<number, string> = {
+            0: '#ab3600',
+            1: '#00429B',
+            2: '#6f42c1',
+            3: '#8a6200',
+            4: '#181d19',
+            5: colors.primary,
+            6: '#006a7a',
+            7: '#4f5a53',
+        };
+
+        return Array.from(categoryTotals.entries())
+            .filter(([, amount]) => amount > 0)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4)
+            .map(([categoryId, amount], index) => {
+                const category = EXPENSE_CATEGORIES[categoryId] ?? EXPENSE_CATEGORIES[7];
+                return {
+                    label: category.name,
+                    amount,
+                    icon: iconMap[categoryId] ?? 'receipt-long',
+                    tint: tintMap[categoryId] ?? '#eae8e0',
+                    tone: toneMap[categoryId] ?? '#4f5a53',
+                    wide: index === 3,
+                };
+            });
+    }, [categoryTotals]);
 
     const recentItems = useMemo(
         () =>
@@ -77,7 +127,7 @@ export const ExpensesScreen: React.FC = () => {
                         month: 'short',
                         day: 'numeric',
                     }),
-                    description: expense.description?.trim() || expense.source || '',
+                    description: expense.description?.trim() || '',
                     amount: `-${formatCurrency(expense.amount)}`,
                     icon: iconMap[index] ?? 'shopping-bag',
                     iconBg: bgMap[index] ?? 'rgba(255,220,196,0.30)',
@@ -115,11 +165,7 @@ export const ExpensesScreen: React.FC = () => {
 
                 <View style={[styles.heroCard, { borderRadius: 40 * scale, padding: 32 * scale }]}>
                     <Text style={styles.heroLabel}>TOTAL MONTHLY SPENDING</Text>
-                    <Text style={[styles.heroValue, { fontSize: compact ? 44 : 52 }]}>{formatCurrency(monthlyTotal || 1842.5)}</Text>
-                    <View style={styles.heroTrendPill}>
-                        <MaterialIcons name="trending-up" size={16} color="#412100" />
-                        <Text style={styles.heroTrendText}>12% more than last month</Text>
-                    </View>
+                    <Text style={[styles.heroValue, { fontSize: compact ? 44 : 52 }]}>{formatCurrency(monthlyTotal)}</Text>
                     <View style={styles.heroGhost}>
                         <MaterialIcons name="receipt-long" size={88} color="rgba(65,33,0,0.10)" />
                     </View>
@@ -128,7 +174,7 @@ export const ExpensesScreen: React.FC = () => {
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Breakdown</Text>
                     <View style={styles.monthPill}>
-                        <Text style={styles.monthText}>August 2024</Text>
+                        <Text style={styles.monthText}>{currentMonthLabel}</Text>
                     </View>
                 </View>
 
@@ -164,10 +210,7 @@ export const ExpensesScreen: React.FC = () => {
                 </View>
 
                 <View style={[styles.recentPanel, { borderRadius: 40 * scale, padding: 28 * scale }]}>
-                    <View style={[styles.sectionHeader, styles.recentHeader]}>
-                        <Text style={[styles.sectionTitle, { fontSize: compact ? 24 : 27 }]}>Recent Spending</Text>
-                        <Text style={styles.viewAllText}>View All</Text>
-                    </View>
+                    <Text style={[styles.sectionTitle, styles.recentTitleHeading, { fontSize: compact ? 24 : 27 }]}>Recent Spending</Text>
 
                     <View style={styles.recentList}>
                         {recentItems.map((item) => (
@@ -282,21 +325,6 @@ const styles = StyleSheet.create({
         letterSpacing: -1,
         marginBottom: 18,
     },
-    heroTrendPill: {
-        alignSelf: 'flex-start',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        backgroundColor: 'rgba(255,255,255,0.20)',
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 999,
-    },
-    heroTrendText: {
-        color: '#412100',
-        fontSize: 13,
-        fontWeight: '700',
-    },
     heroGhost: {
         position: 'absolute',
         right: 16,
@@ -379,10 +407,8 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
         gap: 12,
     },
-    viewAllText: {
-        color: '#006D44',
-        fontSize: 12,
-        fontWeight: '800',
+    recentTitleHeading: {
+        marginBottom: 16,
     },
     recentList: {
         gap: 14,

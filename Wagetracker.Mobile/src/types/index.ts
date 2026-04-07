@@ -169,9 +169,16 @@ export interface DashboardSummaryResponse {
     weeklyExpenses: number;
     weeklyNet: number;
     weeklyHours: number;
+    dailyEarningsSinceMonday: DailyEarningsPointResponse[];
 
     // Recent expenses
     recentExpenses: ExpenseResponse[];
+}
+
+export interface DailyEarningsPointResponse {
+    date: string;
+    dayLabel: string;
+    totalEarnings: number;
 }
 
 // ==================== NAVIGATION TYPES ====================

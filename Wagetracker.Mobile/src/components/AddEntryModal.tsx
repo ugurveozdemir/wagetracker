@@ -121,25 +121,20 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                         <Text style={styles.currencyText}>USD ($)</Text>
                     </View>
 
-                    <View style={styles.roleRow}>
-                        <MaterialIcons name="work" size={14} color="#94a3b8" />
-                        <Text style={styles.roleText}>HOUSEKEEPER ROLE</Text>
-                    </View>
-
                     <View style={[styles.heroCard, { borderRadius: 48 * scale, padding: 28 * scale }]}>
                         <View>
-                            <Text style={styles.heroLabel}>Total Earned Today</Text>
-                            <Text style={[styles.heroValue, { fontSize: compact ? 48 : 54 }]}>$130.00</Text>
+                            <Text style={styles.heroLabel}>New Work Entry</Text>
+                            <Text style={[styles.heroValue, { fontSize: compact ? 36 : 40 }]}>Log today&apos;s shift</Text>
                         </View>
 
                         <View style={styles.heroPillsRow}>
                             <View style={styles.heroPill}>
-                                <Text style={styles.heroPillLabel}>RATE</Text>
-                                <Text style={styles.heroPillValue}>$15/hr</Text>
+                                <Text style={styles.heroPillLabel}>HOURS</Text>
+                                <Text style={styles.heroPillValue}>{totalHours.toFixed(1)} hrs</Text>
                             </View>
                             <View style={styles.heroPill}>
-                                <Text style={styles.heroPillLabel}>BONUS</Text>
-                                <Text style={styles.heroPillBonus}>+$10 Tips</Text>
+                                <Text style={styles.heroPillLabel}>TIPS</Text>
+                                <Text style={styles.heroPillBonus}>${totalTips.toFixed(2)}</Text>
                             </View>
                         </View>
 
@@ -236,9 +231,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                         <View style={styles.successIcon}>
                             <MaterialIcons name="check" size={14} color="#ffffff" />
                         </View>
-                        <Text style={styles.successText}>
-                            Your hourly rate is locked at <Text style={styles.successTextStrong}>$15.00/hr</Text> for this position.
-                        </Text>
+                        <Text style={styles.successText}>Hours, tips, date and optional note will be saved for this entry.</Text>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -285,18 +278,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '700',
     },
-    roleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        marginBottom: 18,
-    },
-    roleText: {
-        color: '#94a3b8',
-        fontSize: 13,
-        fontWeight: '700',
-        letterSpacing: 0.8,
-    },
     heroCard: {
         backgroundColor: '#f1f5ef',
         overflow: 'hidden',
@@ -312,7 +293,7 @@ const styles = StyleSheet.create({
     heroValue: {
         color: '#006D44',
         fontWeight: '800',
-        letterSpacing: -1.3,
+        letterSpacing: -0.8,
         marginBottom: 18,
     },
     heroPillsRow: {
@@ -454,9 +435,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         lineHeight: 20,
         fontWeight: '600',
-    },
-    successTextStrong: {
-        fontWeight: '800',
     },
     pickerWrap: {
         backgroundColor: '#ffffff',

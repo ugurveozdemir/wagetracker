@@ -48,9 +48,6 @@ export const OverviewScreen: React.FC = () => {
                 ...job,
                 tone: index === 0 ? 'primary' : 'secondary',
                 icon: index === 0 ? 'cleaning-services' : 'local-bar',
-                status: index === 0 ? 'ACTIVE' : 'EVENING',
-                location: index === 0 ? 'Yellowstone Park Hotel' : 'The Grizzly Grill',
-                rateSuffix: index === 0 ? '/hr' : '/hr + Tips',
             })),
         [jobs]
     );
@@ -98,30 +95,10 @@ export const OverviewScreen: React.FC = () => {
                                     size={Math.round(32 * scale)}
                                     color={job.tone === 'primary' ? colors.primary : colors.secondary}
                                 />
-                                <View
-                                    style={[
-                                        styles.statusPill,
-                                        job.tone === 'primary' ? styles.statusPillPrimary : styles.statusPillSecondary,
-                                    ]}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.statusText,
-                                            job.tone === 'primary' ? styles.statusTextPrimary : styles.statusTextSecondary,
-                                        ]}
-                                    >
-                                        {job.status}
-                                    </Text>
-                                </View>
                             </View>
 
                             <View>
                                 <Text style={[styles.jobName, { fontSize: compact ? 24 : 27 }]}>{job.title}</Text>
-                                <View style={styles.locationRow}>
-                                    <MaterialIcons name="location-on" size={15} color="#6f7a71" />
-                                    <Text style={[styles.locationText, { fontSize: compact ? 13 : 14 }]}>{job.location}</Text>
-                                </View>
-
                                 <View
                                     style={[
                                         styles.ratePill,
@@ -136,7 +113,7 @@ export const OverviewScreen: React.FC = () => {
                                         ]}
                                     >
                                         ${job.hourlyRate.toFixed(2)}
-                                        <Text style={[styles.rateSuffix, { fontSize: compact ? 12 : 14 }]}>{job.rateSuffix}</Text>
+                                        <Text style={[styles.rateSuffix, { fontSize: compact ? 12 : 14 }]}>/hr</Text>
                                     </Text>
                                 </View>
                             </View>
@@ -238,44 +215,12 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         marginBottom: 20,
     },
-    statusPill: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 999,
-    },
-    statusPillPrimary: {
-        backgroundColor: 'rgba(0,109,68,0.10)',
-    },
-    statusPillSecondary: {
-        backgroundColor: '#fff1e8',
-    },
-    statusText: {
-        fontSize: 11,
-        fontWeight: '700',
-        letterSpacing: 0.8,
-    },
-    statusTextPrimary: {
-        color: '#006D44',
-    },
-    statusTextSecondary: {
-        color: '#ab3600',
-    },
     jobName: {
         color: '#181d19',
         fontSize: 27,
         fontWeight: '700',
-        marginBottom: 6,
-        letterSpacing: -0.6,
-    },
-    locationRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
         marginBottom: 18,
-    },
-    locationText: {
-        color: '#3f4942',
-        fontSize: 15,
+        letterSpacing: -0.6,
     },
     ratePill: {
         alignSelf: 'flex-start',
