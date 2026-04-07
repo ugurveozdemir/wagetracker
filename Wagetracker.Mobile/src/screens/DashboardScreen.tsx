@@ -7,30 +7,41 @@ import {
     RefreshControl,
     TouchableOpacity,
     StatusBar,
-    Modal,
-    Pressable,
+    Image,
+    useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import Feather from 'react-native-vector-icons/Feather';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { MainStackParamList } from '../types';
-import { useJobsStore, useAuthStore } from '../stores';
-import { Card } from '../components/ui';
-import { JobCard } from '../components/JobCard';
+import { useJobsStore } from '../stores';
 import { CreateJobModal } from '../components/CreateJobModal';
-import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
-import Toast from 'react-native-toast-message';
+import { colors } from '../theme';
 
 type DashboardNavigationProp = NativeStackNavigationProp<MainStackParamList, 'Dashboard'>;
 
+const PROFILE_IMAGE_URI =
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuCBko3OImouiS8kFbSbaWowPUn1Ra9b3jM81WBVZiRS4P04jztGsUtI84-UQDRc71sWzvbuKAnx2xOXCpBoWrm4tJokRICcHE4AJ2cfMF7wAZS_HBVlHj-GOEUaMgRqDNwsTkB5VS4ObTRfUC4-KkEeYBv7czd8aIZ1qcn_V40T5nZVJZCrCcYK3MJkhC32DU4BQX9TGsIr-TCkE6UA8i5_qF2tIhwpzrxUzfoW-0UsRkBHoLAnxqTaGmTzlwgPyp1gjFwYWBOePRMm';
+
+const chartHeights = [40, 65, 55, 85, 70, 100, 10];
+const chartLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 export const DashboardScreen: React.FC = () => {
+    const { width } = useWindowDimensions();
     const navigation = useNavigation<DashboardNavigationProp>();
-    const { summary, jobs, isLoading, error, fetchDashboard } = useJobsStore();
-    const { user, logout } = useAuthStore();
+    const { summary, jobs, error, fetchDashboard } = useJobsStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const scale = Math.min(Math.max(width / 393, 0.84), 1);
+    const isCompact = width < 380;
+    const heroPadding = 32 * scale;
+    const sectionTitleSize = isCompact ? 24 : 28;
+    const heroValueSize = isCompact ? 40 : 48;
+    const heroValueLineHeight = isCompact ? 46 : 56;
+    const gigCardWidth = Math.min(Math.max(width - 104, 228), 264);
+    const addGigCardWidth = Math.min(Math.max(width - 176, 168), 188);
+    const horizontalPadding = isCompact ? 18 : 24;
 
     useFocusEffect(
         useCallback(() => {
@@ -44,199 +55,200 @@ export const DashboardScreen: React.FC = () => {
         setRefreshing(false);
     }, [fetchDashboard]);
 
-    const handleLogout = async () => {
-        setShowProfileMenu(false);
-        await logout();
-        Toast.show({
-            type: 'info',
-            text1: 'Signed Out',
-            text2: 'See you next time.',
-            visibilityTime: 2000,
-        });
-    };
-
-    const formatCurrency = (amount: number) => {
-        return `$${amount.toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
+    const formatCurrency = (amount: number) =>
+        `$${amount.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         })}`;
-    };
-
-    const today = new Date();
-    const dayName = today.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-    const dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const firstName = user?.fullName?.split(' ')[0] || 'there';
-
-    const weeklyBars = (() => {
-        const weeklyTotal = summary?.weeklyEarnings || 0;
-        if (!weeklyTotal) {
-            return [18, 28, 22, 36, 30, 42, 12];
-        }
-        return [24, 40, 32, 58, 46, 72, 18];
-    })();
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
+            <StatusBar barStyle="dark-content" backgroundColor="#fbf9f1" />
 
             <ScrollView
                 style={styles.container}
-                contentContainerStyle={styles.contentContainer}
+                contentContainerStyle={{
+                    paddingHorizontal: horizontalPadding,
+                    paddingTop: 16,
+                    paddingBottom: isCompact ? 164 : 180,
+                }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.topBar}>
-                    <View style={styles.brandWrap}>
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarText}>{firstName.slice(0, 1).toUpperCase()}</Text>
-                        </View>
-                        <View>
-                            <Text style={styles.brand}>WageTracker</Text>
-                            <Text style={styles.subtitle}>Organic editorial ledger</Text>
-                        </View>
-                    </View>
-
                     <TouchableOpacity
-                        style={styles.currencyPill}
-                        onPress={() => setShowProfileMenu(true)}
-                        activeOpacity={0.8}
+                        style={styles.brandBlock}
+                        activeOpacity={0.85}
+                        onPress={() => (navigation as any).navigate('ProfileTab')}
                     >
-                        <Text style={styles.currencyText}>USD ($)</Text>
+                        <View style={styles.avatarFrame}>
+                            <Image source={{ uri: PROFILE_IMAGE_URI }} style={styles.avatarImage} />
+                        </View>
+                        <Text style={styles.brandText}>The Kinetic Ledger</Text>
                     </TouchableOpacity>
+
+                    <View style={styles.currencyPill}>
+                        <Text style={styles.currencyText}>USD ($)</Text>
+                    </View>
                 </View>
 
-                <View style={styles.heroCopy}>
-                    <Text style={styles.heroEyebrow}>Weekly Earnings</Text>
-                    <Text style={styles.heroGreeting}>Hi, {firstName}.</Text>
-                    <Text style={styles.heroSubcopy}>
-                        Track shifts, expenses, and momentum without changing the app logic.
-                    </Text>
-                </View>
+                <View
+                    style={[
+                        styles.heroCard,
+                        {
+                            padding: heroPadding,
+                            marginBottom: 32 * scale,
+                            borderRadius: 32 * scale,
+                        },
+                    ]}
+                >
+                    <View style={[styles.heroIconGhost, { padding: heroPadding }]}>
+                        <MaterialIcons name="trending-up" size={120 * scale} color={colors.primary} />
+                    </View>
 
-                <Card style={styles.heroCard}>
-                    <Text style={styles.heroLabel}>Total Earnings This Week</Text>
-                    <Text style={styles.heroValue}>{formatCurrency(summary?.weeklyEarnings || 0)}</Text>
-                    <View style={styles.heroMetaRow}>
-                        <View style={styles.heroMetaPill}>
-                            <Text style={styles.heroMetaTitle}>Day</Text>
-                            <Text style={styles.heroMetaValue}>
-                                {dayName} · {dateStr}
-                            </Text>
+                    <View style={styles.heroInner}>
+                        <Text style={styles.heroLabel}>Total Earnings This Week</Text>
+                        <Text
+                            style={[
+                                styles.heroValue,
+                                {
+                                    fontSize: heroValueSize,
+                                    lineHeight: heroValueLineHeight,
+                                },
+                            ]}
+                        >
+                            {formatCurrency(summary?.weeklyEarnings ?? 0)}
+                        </Text>
+
+                        <View style={styles.chartRow}>
+                            {chartHeights.map((height, index) => {
+                                const backgroundColor =
+                                    index === 5
+                                        ? colors.primary
+                                        : index === 4
+                                          ? 'rgba(0, 109, 68, 0.20)'
+                                          : index === 6
+                                            ? colors.surfaceContainerHigh
+                                            : 'rgba(0, 109, 68, 0.10)';
+
+                                return (
+                                    <View
+                                        key={chartLabels[index]}
+                                        style={[
+                                            styles.chartBar,
+                                            {
+                                                height: `${height}%`,
+                                                backgroundColor,
+                                            },
+                                        ]}
+                                    />
+                                );
+                            })}
                         </View>
-                        <View style={styles.heroMetaPill}>
-                            <Text style={styles.heroMetaTitle}>Hours</Text>
-                            <Text style={styles.heroMetaValue}>
-                                {(summary?.weeklyHours || 0).toFixed(1)}h
-                            </Text>
+
+                        <View style={styles.chartLabelsRow}>
+                            {chartLabels.map((label, index) => (
+                                <Text key={label} style={[styles.chartLabel, index === 5 && styles.chartLabelActive]}>
+                                    {label}
+                                </Text>
+                            ))}
                         </View>
                     </View>
-                    <View style={styles.chartRow}>
-                        {weeklyBars.map((height, index) => (
-                            <View key={index} style={styles.chartTrack}>
-                                <View
-                                    style={[
-                                        styles.chartBar,
-                                        {
-                                            height,
-                                            opacity: index === 5 ? 1 : 0.28 + index * 0.08,
-                                        },
-                                    ]}
-                                />
-                            </View>
-                        ))}
-                    </View>
-                    <View style={styles.chartLabels}>
-                        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((label, index) => (
-                            <Text key={`${label}-${index}`} style={styles.chartLabel}>
-                                {label}
-                            </Text>
-                        ))}
-                    </View>
-                </Card>
+                </View>
 
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Active Gigs</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: sectionTitleSize }]}>Active Gigs</Text>
                     <Text style={styles.sectionMeta}>{jobs.length} Active</Text>
                 </View>
 
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.jobsScroller}
+                    contentContainerStyle={{
+                        gap: 16 * scale,
+                        paddingLeft: 0,
+                        paddingRight: horizontalPadding,
+                        paddingBottom: 8,
+                    }}
                 >
-                    {jobs.map((job) => (
-                        <View key={job.id} style={styles.jobCardWrap}>
-                            <JobCard
-                                job={job}
+                    {jobs.slice(0, 2).map((job, index) => {
+                        const isPrimary = index === 0;
+                        return (
+                            <TouchableOpacity
+                                key={job.id}
+                                style={[
+                                    styles.gigCard,
+                                    {
+                                        minWidth: gigCardWidth,
+                                        height: 172 * scale,
+                                        padding: 20 * scale,
+                                        borderRadius: 28 * scale,
+                                    },
+                                    isPrimary ? styles.gigCardPrimary : styles.gigCardTertiary,
+                                ]}
+                                activeOpacity={0.9}
                                 onPress={() => navigation.navigate('JobDetails', { jobId: job.id })}
-                                style={styles.jobCard}
-                            />
-                        </View>
-                    ))}
+                            >
+                                <View style={styles.gigGlow} />
+
+                                <View>
+                                    <View style={styles.gigTopRow}>
+                                        <MaterialIcons
+                                            name={isPrimary ? 'hotel' : 'restaurant'}
+                                            size={Math.round(32 * scale)}
+                                            color={colors.white}
+                                        />
+                                        <View style={styles.gigBadge}>
+                                            <Text style={styles.gigBadgeText}>
+                                                {isPrimary ? 'Main Job' : 'Part-time'}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    <Text style={[styles.gigTitle, { fontSize: isCompact ? 18 : 21 }]}>{job.title}</Text>
+                                    <Text style={[styles.gigSubtitle, { fontSize: isCompact ? 12 : 13 }]}>
+                                        {isPrimary ? 'Grand Canyon Lodge' : 'Sunset Grill & Bar'}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.gigBottomRow}>
+                                    <Text style={[styles.gigRate, { fontSize: isCompact ? 22 : 24 }]}>
+                                        ${job.hourlyRate.toFixed(2)}
+                                        <Text style={[styles.gigRateSuffix, { fontSize: isCompact ? 11 : 12 }]}>/hr</Text>
+                                    </Text>
+
+                                    <View style={styles.gigArrowWrap}>
+                                        <MaterialIcons name="arrow-forward" size={15} color={colors.white} />
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
 
                     <TouchableOpacity
-                        style={styles.addGigCard}
+                        style={[
+                            styles.addGigCard,
+                            {
+                                minWidth: addGigCardWidth,
+                                height: 172 * scale,
+                                borderRadius: 28 * scale,
+                            },
+                        ]}
+                        activeOpacity={0.85}
                         onPress={() => setIsModalOpen(true)}
-                        activeOpacity={0.84}
                     >
-                        <View style={styles.addGigIcon}>
-                            <Feather name="plus" size={22} color={colors.primary} />
-                        </View>
-                        <Text style={styles.addGigTitle}>Add Gig</Text>
-                        <Text style={styles.addGigText}>Create a new role without leaving the dashboard.</Text>
+                        <MaterialIcons name="add-circle" size={Math.round(28 * scale)} color={colors.outline} />
+                        <Text style={styles.addGigText}>Add Gig</Text>
                     </TouchableOpacity>
                 </ScrollView>
 
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Recent Activity</Text>
-                    <Text style={styles.sectionMeta}>Live summary</Text>
+                {/*
+                <View style={styles.goalCard}>
+                    Travel goal is intentionally kept for later reuse.
                 </View>
+                */}
 
-                <View style={styles.activityList}>
-                    <View style={styles.activityItem}>
-                        <View style={[styles.activityIconWrap, { backgroundColor: 'rgba(0, 109, 68, 0.10)' }]}>
-                            <Feather name="trending-up" size={18} color={colors.primary} />
-                        </View>
-                        <View style={styles.activityCopy}>
-                            <Text style={styles.activityTitle}>Weekly net</Text>
-                            <Text style={styles.activityMeta}>Earnings minus expenses</Text>
-                        </View>
-                        <Text style={styles.activityAmount}>
-                            {formatCurrency(summary?.weeklyNet || 0)}
-                        </Text>
-                    </View>
-
-                    <View style={styles.activityItem}>
-                        <View style={[styles.activityIconWrap, { backgroundColor: 'rgba(254, 94, 30, 0.10)' }]}>
-                            <Feather name="credit-card" size={18} color={colors.secondaryContainer} />
-                        </View>
-                        <View style={styles.activityCopy}>
-                            <Text style={styles.activityTitle}>Expenses this week</Text>
-                            <Text style={styles.activityMeta}>Current period spend</Text>
-                        </View>
-                        <Text style={[styles.activityAmount, styles.expenseAmount]}>
-                            -{formatCurrency(summary?.weeklyExpenses || 0).replace('$', '$')}
-                        </Text>
-                    </View>
-
-                    <View style={styles.activityItem}>
-                        <View style={[styles.activityIconWrap, { backgroundColor: 'rgba(0, 82, 50, 0.10)' }]}>
-                            <Feather name="briefcase" size={18} color={colors.primary} />
-                        </View>
-                        <View style={styles.activityCopy}>
-                            <Text style={styles.activityTitle}>Active jobs</Text>
-                            <Text style={styles.activityMeta}>All-time tracked roles</Text>
-                        </View>
-                        <Text style={styles.activityAmount}>{summary?.activeJobsCount || 0}</Text>
-                    </View>
-                </View>
-
-                {error && !isLoading ? (
-                    <View style={styles.errorBanner}>
-                        <Feather name="wifi-off" size={16} color={colors.secondaryContainer} />
-                        <Text style={styles.errorText}>{error}</Text>
-                    </View>
-                ) : null}
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
             </ScrollView>
 
             <CreateJobModal
@@ -247,32 +259,6 @@ export const DashboardScreen: React.FC = () => {
                     fetchDashboard();
                 }}
             />
-
-            <Modal
-                visible={showProfileMenu}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowProfileMenu(false)}
-            >
-                <Pressable style={styles.menuOverlay} onPress={() => setShowProfileMenu(false)}>
-                    <Pressable style={styles.menuContainer}>
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={() => {
-                                setShowProfileMenu(false);
-                                (navigation as any).navigate('ProfileTab');
-                            }}
-                        >
-                            <Feather name="user" size={18} color={colors.primary} />
-                            <Text style={styles.menuItemText}>Profile</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-                            <Feather name="log-out" size={18} color={colors.secondaryContainer} />
-                            <Text style={[styles.menuItemText, styles.menuDangerText]}>Sign Out</Text>
-                        </TouchableOpacity>
-                    </Pressable>
-                </Pressable>
-            </Modal>
         </SafeAreaView>
     );
 };
@@ -280,294 +266,226 @@ export const DashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: colors.surfaceBright,
+        backgroundColor: '#fbf9f1',
     },
     container: {
         flex: 1,
     },
-    contentContainer: {
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.md,
-        paddingBottom: 120,
-    },
     topBar: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.xl,
+        justifyContent: 'space-between',
+        marginBottom: 16,
     },
-    brandWrap: {
+    brandBlock: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.md,
+        gap: 12,
+        flexShrink: 1,
     },
-    avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: colors.surfaceContainer,
-        alignItems: 'center',
-        justifyContent: 'center',
+    avatarFrame: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        overflow: 'hidden',
+        backgroundColor: '#efeee5',
     },
-    avatarText: {
-        color: colors.primary,
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.extrabold,
+    avatarImage: {
+        width: '100%',
+        height: '100%',
     },
-    brand: {
-        color: colors.primary,
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.extrabold,
-    },
-    subtitle: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.medium,
+    brandText: {
+        color: '#006D44',
+        fontSize: 20,
+        fontWeight: '800',
+        letterSpacing: -0.3,
+        flexShrink: 1,
     },
     currencyPill: {
-        backgroundColor: colors.surfaceContainerLow,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.full,
+        backgroundColor: '#f5f4eb',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 9999,
     },
     currencyText: {
-        color: colors.primary,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.bold,
-    },
-    heroCopy: {
-        marginBottom: spacing.xl,
-    },
-    heroEyebrow: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.4,
-        marginBottom: spacing.sm,
-    },
-    heroGreeting: {
-        color: colors.primary,
-        fontSize: fontSizes['4xl'],
-        fontWeight: fontWeights.extrabold,
-        marginBottom: spacing.sm,
-    },
-    heroSubcopy: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.base,
-        lineHeight: 22,
-        maxWidth: 320,
+        color: '#006D44',
+        fontSize: 14,
+        fontWeight: '700',
     },
     heroCard: {
-        marginBottom: spacing['3xl'],
-        padding: spacing['3xl'],
+        backgroundColor: colors.white,
+        overflow: 'hidden',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.04,
+        shadowRadius: 40,
+        elevation: 4,
+        position: 'relative',
+    },
+    heroIconGhost: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        opacity: 0.1,
+    },
+    heroInner: {
+        position: 'relative',
+        zIndex: 2,
+        alignItems: 'center',
     },
     heroLabel: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
+        color: '#6f7a71',
+        fontSize: 14,
         textTransform: 'uppercase',
-        letterSpacing: 1.5,
-        marginBottom: spacing.sm,
+        letterSpacing: 2,
+        fontWeight: '700',
+        marginBottom: 8,
     },
     heroValue: {
-        color: colors.primary,
-        fontSize: 46,
-        fontWeight: fontWeights.extrabold,
-        marginBottom: spacing.lg,
-    },
-    heroMetaRow: {
-        flexDirection: 'row',
-        gap: spacing.sm,
-        marginBottom: spacing.xl,
-    },
-    heroMetaPill: {
-        backgroundColor: colors.surfaceContainerLow,
-        borderRadius: borderRadius.full,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-    },
-    heroMetaTitle: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        marginBottom: 2,
-    },
-    heroMetaValue: {
-        color: colors.onSurface,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.semibold,
+        color: '#006D44',
+        fontWeight: '800',
+        letterSpacing: -1.2,
+        marginBottom: 24,
+        textAlign: 'center',
     },
     chartRow: {
-        height: 110,
+        width: '100%',
+        height: 128,
         flexDirection: 'row',
         alignItems: 'flex-end',
-        gap: spacing.sm,
-    },
-    chartTrack: {
-        flex: 1,
-        height: '100%',
-        justifyContent: 'flex-end',
+        gap: 8,
+        marginTop: 16,
     },
     chartBar: {
-        width: '100%',
-        backgroundColor: colors.primary,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
+        flex: 1,
+        borderTopLeftRadius: 9999,
+        borderTopRightRadius: 9999,
     },
-    chartLabels: {
+    chartLabelsRow: {
+        width: '100%',
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: spacing.md,
+        marginTop: 16,
+        paddingHorizontal: 4,
     },
     chartLabel: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
+        color: '#6f7a71',
+        fontSize: 10,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
+    },
+    chartLabelActive: {
+        color: '#006D44',
     },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.md,
+        alignItems: 'flex-end',
+        marginBottom: 16,
     },
     sectionTitle: {
-        color: colors.onSurface,
-        fontSize: fontSizes['2xl'],
-        fontWeight: fontWeights.extrabold,
+        color: '#1b1c17',
+        fontWeight: '700',
+        letterSpacing: -0.4,
     },
     sectionMeta: {
-        color: colors.primary,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.bold,
+        color: '#006D44',
+        fontSize: 14,
+        fontWeight: '600',
     },
-    jobsScroller: {
-        paddingBottom: spacing.sm,
-        paddingRight: spacing.md,
+    gigCard: {
+        position: 'relative',
+        overflow: 'hidden',
+        justifyContent: 'space-between',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.16,
+        shadowRadius: 20,
+        elevation: 8,
     },
-    jobCardWrap: {
-        width: 300,
-        marginRight: spacing.md,
+    gigCardPrimary: {
+        backgroundColor: '#006D44',
     },
-    jobCard: {
-        marginBottom: 0,
-        minHeight: 180,
+    gigCardTertiary: {
+        backgroundColor: '#00429B',
+    },
+    gigGlow: {
+        position: 'absolute',
+        right: -16,
+        top: -16,
+        width: 96,
+        height: 96,
+        borderRadius: 9999,
+        backgroundColor: 'rgba(255,255,255,0.10)',
+    },
+    gigTopRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 14,
+    },
+    gigBadge: {
+        backgroundColor: 'rgba(255,255,255,0.20)',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 9999,
+    },
+    gigBadgeText: {
+        color: colors.white,
+        fontSize: 11,
+        fontWeight: '700',
+    },
+    gigTitle: {
+        color: colors.white,
+        fontWeight: '700',
+        letterSpacing: -0.4,
+        marginBottom: 4,
+    },
+    gigSubtitle: {
+        color: 'rgba(255,255,255,0.80)',
+    },
+    gigBottomRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+    },
+    gigRate: {
+        color: colors.white,
+        fontWeight: '700',
+        letterSpacing: -0.5,
+    },
+    gigRateSuffix: {
+        opacity: 0.6,
+    },
+    gigArrowWrap: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: 'rgba(255,255,255,0.20)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     addGigCard: {
-        width: 220,
-        backgroundColor: colors.surfaceContainerLow,
-        borderRadius: borderRadius.lg,
-        padding: spacing['2xl'],
-        justifyContent: 'center',
-    },
-    addGigIcon: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: colors.surfaceContainerLowest,
+        borderWidth: 2,
+        borderStyle: 'dashed',
+        borderColor: '#bec9bf',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: spacing.lg,
-    },
-    addGigTitle: {
-        color: colors.onSurface,
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.extrabold,
-        marginBottom: spacing.sm,
+        gap: 8,
     },
     addGigText: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.sm,
-        lineHeight: 20,
-    },
-    activityList: {
-        gap: spacing.sm,
-        marginBottom: spacing.xl,
-    },
-    activityItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.surfaceContainerLow,
-        borderRadius: borderRadius.lg,
-        padding: spacing.xl,
-    },
-    activityIconWrap: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: spacing.md,
-    },
-    activityCopy: {
-        flex: 1,
-    },
-    activityTitle: {
-        color: colors.onSurface,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-        marginBottom: 2,
-    },
-    activityMeta: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.sm,
-    },
-    activityAmount: {
-        color: colors.primary,
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.extrabold,
-    },
-    expenseAmount: {
-        color: colors.secondaryContainer,
-    },
-    errorBanner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-        backgroundColor: 'rgba(254, 94, 30, 0.08)',
-        borderRadius: borderRadius.full,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
+        color: '#6f7a71',
+        fontSize: 14,
+        fontWeight: '700',
     },
     errorText: {
-        color: colors.secondaryContainer,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.semibold,
-        flex: 1,
+        marginTop: 16,
+        color: colors.secondary,
+        fontSize: 13,
+        fontWeight: '600',
     },
-    menuOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(24, 29, 25, 0.18)',
-        justifyContent: 'flex-start',
-        alignItems: 'flex-end',
-        paddingTop: 86,
-        paddingRight: spacing.lg,
-    },
-    menuContainer: {
-        backgroundColor: 'rgba(255,255,255,0.84)',
-        borderRadius: borderRadius.lg,
-        paddingVertical: spacing.sm,
-        minWidth: 180,
-        shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.08,
-        shadowRadius: 40,
-        elevation: 10,
-    },
-    menuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.md,
-    },
-    menuItemText: {
-        color: colors.onSurface,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.semibold,
-    },
-    menuDangerText: {
-        color: colors.secondaryContainer,
+    goalCard: {
+        display: 'none',
     },
 });

@@ -1,25 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
     Modal,
-    Animated,
-    PanResponder,
-    Dimensions,
-    Keyboard,
+    TextInput,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    useWindowDimensions,
 } from 'react-native';
-import Feather from 'react-native-vector-icons/Feather';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useJobsStore } from '../stores';
-import { Button, Input } from './ui';
-import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
 import { JobResponse } from '../types';
+import { colors } from '../theme';
 import Toast from 'react-native-toast-message';
-
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-const DISMISS_THRESHOLD = 150;
 
 interface EditJobModalProps {
     visible: boolean;
@@ -28,80 +24,37 @@ interface EditJobModalProps {
     onUpdated: () => void;
 }
 
-const DAYS_OF_WEEK = [
-    { id: 1, label: 'Mon' },
-    { id: 2, label: 'Tue' },
-    { id: 3, label: 'Wed' },
-    { id: 4, label: 'Thu' },
-    { id: 5, label: 'Fri' },
-    { id: 6, label: 'Sat' },
-    { id: 0, label: 'Sun' },
-];
-
-export const EditJobModal: React.FC<EditJobModalProps> = ({
-    visible,
-    job,
-    onClose,
-    onUpdated,
-}) => {
+export const EditJobModal: React.FC<EditJobModalProps> = ({ visible, job, onClose, onUpdated }) => {
+    const { width } = useWindowDimensions();
     const { updateJob, isUpdating } = useJobsStore();
-    const translateY = useRef(new Animated.Value(0)).current;
+    const compact = width < 380;
+    const scale = Math.min(Math.max(width / 393, 0.84), 1);
 
     const [title, setTitle] = useState('');
     const [hourlyRate, setHourlyRate] = useState('');
-    const [firstDayOfWeek, setFirstDayOfWeek] = useState(1);
+    const [location, setLocation] = useState('');
     const [error, setError] = useState<string | null>(null);
-
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
-            onPanResponderMove: (_, gestureState) => {
-                if (gestureState.dy > 0) {
-                    translateY.setValue(gestureState.dy);
-                }
-            },
-            onPanResponderRelease: (_, gestureState) => {
-                if (gestureState.dy > DISMISS_THRESHOLD) {
-                    Animated.timing(translateY, {
-                        toValue: SCREEN_HEIGHT,
-                        duration: 200,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        translateY.setValue(0);
-                        onClose();
-                    });
-                } else {
-                    Animated.spring(translateY, {
-                        toValue: 0,
-                        useNativeDriver: true,
-                        bounciness: 8,
-                    }).start();
-                }
-            },
-        })
-    ).current;
 
     useEffect(() => {
         if (visible && job) {
-            translateY.setValue(0);
             setTitle(job.title);
             setHourlyRate(job.hourlyRate.toString());
-            setFirstDayOfWeek(job.firstDayOfWeek);
+            setLocation('');
             setError(null);
         }
     }, [visible, job]);
 
+    const titlePlaceholder = useMemo(() => `e.g. ${job?.title ?? 'Seasonal Role'}`, [job]);
+
     const handleSubmit = async () => {
         if (!job) return;
 
-        Keyboard.dismiss();
         if (!title.trim()) {
-            setError('Job name is required');
+            setError('Job title is required');
             return;
         }
 
-        if (!hourlyRate || parseFloat(hourlyRate) <= 0) {
+        if (!hourlyRate || Number.isNaN(parseFloat(hourlyRate)) || parseFloat(hourlyRate) <= 0) {
             setError('Please enter a valid hourly rate');
             return;
         }
@@ -110,8 +63,9 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({
             await updateJob(job.id, {
                 title: title.trim(),
                 hourlyRate: parseFloat(hourlyRate),
-                firstDayOfWeek,
+                firstDayOfWeek: job.firstDayOfWeek,
             });
+
             Toast.show({
                 type: 'success',
                 text1: 'Job Updated',
@@ -120,236 +74,129 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({
             });
             onUpdated();
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to update job';
-            setError(errorMessage);
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: errorMessage,
-                visibilityTime: 3000,
-            });
+            const message = err instanceof Error ? err.message : 'Failed to update job';
+            setError(message);
         }
     };
 
     return (
-        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-            <View style={styles.overlay}>
-                <Animated.View style={[styles.content, { transform: [{ translateY }] }]}>
-                    <View {...panResponder.panHandlers} style={styles.handleArea}>
-                        <View style={styles.handleBar} />
-                    </View>
+        <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+            <KeyboardAvoidingView
+                style={styles.safeArea}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+                <ScrollView
+                    style={styles.container}
+                    contentContainerStyle={{
+                        paddingHorizontal: compact ? 18 : 24,
+                        paddingTop: compact ? 14 : 18,
+                        paddingBottom: 36,
+                    }}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <TouchableOpacity style={styles.backRow} activeOpacity={0.8} onPress={onClose}>
+                        <MaterialIcons name="arrow-back" size={20} color="#3f4942" />
+                        <Text style={styles.backText}>Edit Job</Text>
+                    </TouchableOpacity>
 
-                    <View style={styles.header}>
-                        <View>
-                            <Text style={styles.eyebrow}>Refine Role</Text>
-                            <Text style={styles.title}>Edit Job</Text>
+                    <Text style={[styles.heading, { fontSize: compact ? 40 : 46 }]}>Refine Role.</Text>
+                    <Text style={styles.subheading}>
+                        Update the tracked role without changing any backend workflow or ledger structure.
+                    </Text>
+
+                    {error ? (
+                        <View style={styles.errorBanner}>
+                            <Text style={styles.errorText}>{error}</Text>
                         </View>
-                        <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
-                            <Feather name="x" size={20} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
+                    ) : null}
 
-                    <KeyboardAwareScrollView
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
-                        contentContainerStyle={styles.scrollContent}
-                        enableOnAndroid
-                        extraScrollHeight={40}
-                        extraHeight={60}
-                    >
-                        {error ? (
-                            <View style={styles.errorContainer}>
-                                <Text style={styles.errorText}>{error}</Text>
-                            </View>
-                        ) : null}
-
-                        <View style={styles.heroPanel}>
-                            <Text style={styles.heroLabel}>Current Role</Text>
-                            <Text style={styles.heroTitle}>{job?.title || 'Job'}</Text>
+                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}>
+                        <View style={styles.fieldLabelRow}>
+                            <MaterialIcons name="work" size={16} color={colors.primary} />
+                            <Text style={styles.fieldLabel}>JOB TITLE</Text>
                         </View>
-
-                        <Input
-                            label="Job / Client Name"
-                            placeholder="e.g. Design Studio"
+                        <TextInput
+                            style={styles.fieldInput}
+                            placeholder={titlePlaceholder}
+                            placeholderTextColor="#bec9bf"
                             value={title}
                             onChangeText={setTitle}
-                            autoCapitalize="words"
                         />
+                    </View>
 
-                        <Input
-                            label="Hourly Rate ($)"
-                            placeholder="0"
-                            value={hourlyRate}
-                            onChangeText={setHourlyRate}
-                            keyboardType="decimal-pad"
-                        />
-
-                        <View style={styles.daySection}>
-                            <Text style={styles.dayLabel}>First Day of Week</Text>
-                            <Text style={styles.dayHint}>Used for overtime and weekly summaries.</Text>
-                            <View style={styles.daysGrid}>
-                                {DAYS_OF_WEEK.map((day) => (
-                                    <TouchableOpacity
-                                        key={day.id}
-                                        style={[
-                                            styles.dayButton,
-                                            firstDayOfWeek === day.id && styles.dayButtonActive,
-                                        ]}
-                                        onPress={() => setFirstDayOfWeek(day.id)}
-                                        activeOpacity={0.82}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.dayButtonText,
-                                                firstDayOfWeek === day.id && styles.dayButtonTextActive,
-                                            ]}
-                                        >
-                                            {day.label}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}>
+                        <View style={styles.fieldLabelRow}>
+                            <MaterialIcons name="payments" size={16} color={colors.primary} />
+                            <Text style={styles.fieldLabel}>HOURLY RATE</Text>
                         </View>
+                        <View style={styles.moneyField}>
+                            <Text style={styles.moneyPrefix}>$</Text>
+                            <TextInput
+                                style={styles.moneyInput}
+                                placeholder="25.00"
+                                placeholderTextColor="#bec9bf"
+                                value={hourlyRate}
+                                onChangeText={setHourlyRate}
+                                keyboardType="decimal-pad"
+                            />
+                            <Text style={styles.moneySuffix}>/ hr</Text>
+                        </View>
+                    </View>
 
-                        <Button
-                            title="Save Changes"
-                            onPress={handleSubmit}
-                            loading={isUpdating}
-                            size="lg"
-                            fullWidth
-                        />
-                    </KeyboardAwareScrollView>
-                </Animated.View>
-            </View>
+                    <View style={[styles.fieldCard, styles.locationCard, { borderRadius: 32 * scale }]}>
+                        <Text style={styles.locationTitle}>Company Location</Text>
+                        <Text style={styles.locationSubtitle}>Local detail for UI continuity. Backend contract is unchanged.</Text>
+                        <View style={styles.locationInputWrap}>
+                            <MaterialIcons name="location-on" size={18} color={colors.primary} />
+                            <TextInput
+                                style={styles.locationInput}
+                                placeholder="Enter City, State"
+                                placeholderTextColor="#bec9bf"
+                                value={location}
+                                onChangeText={setLocation}
+                            />
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.submitButton, isUpdating && styles.submitButtonDisabled]}
+                        activeOpacity={0.9}
+                        onPress={handleSubmit}
+                        disabled={isUpdating}
+                    >
+                        <Text style={styles.submitButtonText}>{isUpdating ? 'Saving...' : 'Save Changes'}</Text>
+                        <MaterialIcons name="edit" size={18} color="#412100" />
+                    </TouchableOpacity>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </Modal>
     );
 };
 
 const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(24, 29, 25, 0.18)',
-        justifyContent: 'flex-end',
-    },
-    content: {
-        backgroundColor: colors.surfaceBright,
-        borderTopLeftRadius: borderRadius.xl,
-        borderTopRightRadius: borderRadius.xl,
-        maxHeight: '82%',
-    },
-    handleArea: {
-        paddingVertical: spacing.md,
-        alignItems: 'center',
-    },
-    handleBar: {
-        width: 48,
-        height: 5,
-        backgroundColor: colors.outlineVariant,
-        borderRadius: 3,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        paddingHorizontal: spacing.lg,
-        marginBottom: spacing.md,
-    },
-    eyebrow: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.4,
-        marginBottom: 4,
-    },
-    title: {
-        fontSize: fontSizes['3xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.primary,
-    },
-    closeButton: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: colors.surfaceContainerLow,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    scrollContent: {
-        paddingHorizontal: spacing.lg,
-        paddingBottom: spacing['4xl'],
-    },
-    errorContainer: {
-        backgroundColor: colors.dangerBg,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        marginBottom: spacing.lg,
-    },
-    errorText: {
-        color: colors.danger,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.semibold,
-    },
-    heroPanel: {
-        backgroundColor: colors.surfaceContainerLow,
-        borderRadius: borderRadius.lg,
-        padding: spacing['2xl'],
-        marginBottom: spacing.lg,
-    },
-    heroLabel: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.3,
-        marginBottom: spacing.sm,
-    },
-    heroTitle: {
-        color: colors.primary,
-        fontSize: fontSizes['2xl'],
-        fontWeight: fontWeights.extrabold,
-    },
-    daySection: {
-        marginBottom: spacing.lg,
-    },
-    dayLabel: {
-        color: colors.primary,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.2,
-        marginBottom: spacing.xs,
-        marginLeft: spacing.sm,
-    },
-    dayHint: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.xs,
-        marginBottom: spacing.md,
-        marginLeft: spacing.sm,
-    },
-    daysGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
-    },
-    dayButton: {
-        paddingVertical: spacing.sm,
-        paddingHorizontal: spacing.md,
-        borderRadius: borderRadius.full,
-        backgroundColor: colors.surfaceContainerHighest,
-        borderWidth: 2,
-        borderColor: 'transparent',
-    },
-    dayButtonActive: {
-        backgroundColor: 'rgba(0, 109, 68, 0.10)',
-        borderColor: 'rgba(0, 109, 68, 0.18)',
-    },
-    dayButtonText: {
-        color: colors.outline,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.bold,
-    },
-    dayButtonTextActive: {
-        color: colors.primary,
-    },
+    safeArea: { flex: 1, backgroundColor: '#fbf9f1' },
+    container: { flex: 1, backgroundColor: '#fbf9f1' },
+    backRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 },
+    backText: { color: '#3f4942', fontSize: 18, fontWeight: '700' },
+    heading: { color: '#006D44', fontWeight: '800', letterSpacing: -1.2, marginBottom: 10 },
+    subheading: { color: '#3f4942', fontSize: 17, lineHeight: 27, marginBottom: 18 },
+    errorBanner: { backgroundColor: '#fff1ef', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24, marginBottom: 16 },
+    errorText: { color: '#ba1a1a', fontSize: 14, fontWeight: '700' },
+    fieldCard: { backgroundColor: '#f5f4eb', padding: 20, marginBottom: 16 },
+    fieldLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14, paddingHorizontal: 6 },
+    fieldLabel: { color: '#006D44', fontSize: 13, fontWeight: '700', letterSpacing: 1.4 },
+    fieldInput: { backgroundColor: '#ffffff', borderRadius: 999, paddingHorizontal: 20, paddingVertical: 16, color: '#181d19', fontSize: 18, fontWeight: '700' },
+    moneyField: { backgroundColor: '#ffffff', borderRadius: 999, paddingLeft: 22, paddingRight: 20, minHeight: 64, flexDirection: 'row', alignItems: 'center' },
+    moneyPrefix: { color: '#6f7a71', fontSize: 22, fontWeight: '700', marginRight: 8 },
+    moneyInput: { flex: 1, color: '#181d19', fontSize: 34, fontWeight: '700' },
+    moneySuffix: { color: '#6f7a71', fontSize: 14, fontWeight: '600' },
+    locationCard: { paddingTop: 22, paddingBottom: 22 },
+    locationTitle: { color: '#006D44', fontSize: 22, fontWeight: '700', marginBottom: 4 },
+    locationSubtitle: { color: '#6f7a71', fontSize: 13, marginBottom: 16 },
+    locationInputWrap: { backgroundColor: '#ffffff', borderRadius: 999, paddingHorizontal: 20, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    locationInput: { flex: 1, color: '#181d19', fontSize: 17, fontWeight: '600' },
+    submitButton: { marginTop: 8, backgroundColor: '#ff8a00', minHeight: 66, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+    submitButtonDisabled: { opacity: 0.7 },
+    submitButtonText: { color: '#412100', fontSize: 22, fontWeight: '800', letterSpacing: 0.2 },
 });

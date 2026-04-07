@@ -1,24 +1,34 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
     RefreshControl,
+    TouchableOpacity,
     StatusBar,
+    useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useJobsStore } from '../stores';
-import { Card } from '../components/ui';
-import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import { colors } from '../theme';
 
 export const OverviewScreen: React.FC = () => {
+    const { width } = useWindowDimensions();
     const { summary, fetchDashboard } = useJobsStore();
     const [refreshing, setRefreshing] = useState(false);
+    const scale = Math.min(Math.max(width / 393, 0.84), 1);
+    const compact = width < 380;
+    const horizontalPadding = compact ? 18 : 24;
+    const jobs = summary?.jobs ?? [];
 
-    useEffect(() => {
-        fetchDashboard();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            fetchDashboard();
+        }, [fetchDashboard])
+    );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -26,102 +36,146 @@ export const OverviewScreen: React.FC = () => {
         setRefreshing(false);
     }, [fetchDashboard]);
 
-    const formatCurrency = (amount: number) => {
-        return `$${amount.toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
+    const formatCurrency = (amount: number) =>
+        `$${amount.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         })}`;
-    };
 
-    const totalEarnings = summary?.totalEarnings || 0;
-    const totalExpenses = summary?.totalExpenses || 0;
-    const totalHours = summary?.totalHours || 0;
-    const netIncome = totalEarnings - totalExpenses;
-    const activeJobs = summary?.activeJobsCount || 0;
+    const cards = useMemo(
+        () =>
+            jobs.slice(0, 2).map((job, index) => ({
+                ...job,
+                tone: index === 0 ? 'primary' : 'secondary',
+                icon: index === 0 ? 'cleaning-services' : 'local-bar',
+                status: index === 0 ? 'ACTIVE' : 'EVENING',
+                location: index === 0 ? 'Yellowstone Park Hotel' : 'The Grizzly Grill',
+                rateSuffix: index === 0 ? '/hr' : '/hr + Tips',
+            })),
+        [jobs]
+    );
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
+            <StatusBar barStyle="dark-content" backgroundColor="#fbf9f1" />
             <ScrollView
                 style={styles.container}
-                contentContainerStyle={styles.contentContainer}
+                contentContainerStyle={{
+                    paddingHorizontal: horizontalPadding,
+                    paddingTop: 18,
+                    paddingBottom: 170,
+                }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.eyebrow}>All-time Summary</Text>
-                <Text style={styles.title}>Overview</Text>
-                <Text style={styles.subtitle}>
-                    Read the ledger at a glance: net, hours, spending, and each role’s contribution.
-                </Text>
+                <Text style={[styles.title, { fontSize: compact ? 34 : 38 }]}>Jobs</Text>
 
-                <View style={styles.heroCard}>
-                    <Text style={styles.heroLabel}>Net Income</Text>
-                    <Text style={[styles.heroValue, netIncome < 0 && styles.heroValueNegative]}>
-                        {netIncome < 0 ? '-' : ''}
-                        {formatCurrency(Math.abs(netIncome))}
-                    </Text>
-                    <View style={styles.heroBarTrack}>
-                        <View
+                <View style={[styles.jobsStack, { gap: 18 * scale }]}>
+                    {cards.map((job) => (
+                        <TouchableOpacity
+                            key={job.id}
+                            activeOpacity={0.9}
                             style={[
-                                styles.heroBarFill,
+                                styles.jobCard,
+                                job.tone === 'primary' ? styles.jobCardPrimary : styles.jobCardSecondary,
                                 {
-                                    width: `${totalEarnings > 0
-                                        ? Math.min((totalExpenses / totalEarnings) * 100, 100)
-                                        : 0}%`,
+                                    minHeight: 256 * scale,
+                                    padding: 22 * scale,
+                                    borderRadius: 24 * scale,
                                 },
                             ]}
-                        />
-                    </View>
-                    <Text style={styles.heroBarLabel}>
-                        Spent {totalEarnings > 0 ? `${((totalExpenses / totalEarnings) * 100).toFixed(0)}%` : '0%'}
-                    </Text>
-                </View>
+                        >
+                            <View
+                                style={[
+                                    styles.cardGlow,
+                                    job.tone === 'primary' ? styles.cardGlowPrimary : styles.cardGlowSecondary,
+                                ]}
+                            />
 
-                <View style={styles.statsGrid}>
-                    <Card variant="earnings" style={styles.statCard}>
-                        <Text style={styles.statLabel}>Earnings</Text>
-                        <Text style={styles.statValue}>{formatCurrency(totalEarnings)}</Text>
-                        <Text style={styles.statSubtext}>Total earned</Text>
-                    </Card>
-
-                    <View style={styles.lossCard}>
-                        <Text style={styles.statLabelLight}>Expenses</Text>
-                        <Text style={styles.statValueLight}>{formatCurrency(totalExpenses)}</Text>
-                        <Text style={styles.statSubtextLight}>Total spent</Text>
-                    </View>
-                </View>
-
-                <View style={styles.statsGrid}>
-                    <Card variant="hours" style={styles.statCard}>
-                        <Text style={styles.statLabel}>Hours</Text>
-                        <Text style={styles.statValue}>
-                            {totalHours.toFixed(1)}
-                            <Text style={styles.unit}>h</Text>
-                        </Text>
-                        <Text style={styles.statSubtext}>Worked time</Text>
-                    </Card>
-
-                    <View style={styles.jobsCard}>
-                        <Text style={styles.jobsLabel}>Jobs</Text>
-                        <Text style={styles.jobsValue}>{activeJobs}</Text>
-                        <Text style={styles.jobsSubtext}>Active roles</Text>
-                    </View>
-                </View>
-
-                {summary?.jobs?.length ? (
-                    <View style={styles.jobsSection}>
-                        <Text style={styles.sectionTitle}>Earnings by Job</Text>
-                        {summary.jobs.map((job) => (
-                            <View key={job.id} style={styles.jobRow}>
-                                <View style={styles.jobInfo}>
-                                    <Text style={styles.jobName}>{job.title}</Text>
-                                    <Text style={styles.jobHours}>{job.totalHours.toFixed(1)}h worked</Text>
+                            <View style={styles.jobTop}>
+                                <MaterialIcons
+                                    name={job.icon}
+                                    size={Math.round(32 * scale)}
+                                    color={job.tone === 'primary' ? colors.primary : colors.secondary}
+                                />
+                                <View
+                                    style={[
+                                        styles.statusPill,
+                                        job.tone === 'primary' ? styles.statusPillPrimary : styles.statusPillSecondary,
+                                    ]}
+                                >
+                                    <Text
+                                        style={[
+                                            styles.statusText,
+                                            job.tone === 'primary' ? styles.statusTextPrimary : styles.statusTextSecondary,
+                                        ]}
+                                    >
+                                        {job.status}
+                                    </Text>
                                 </View>
-                                <Text style={styles.jobEarnings}>{formatCurrency(job.totalEarnings)}</Text>
                             </View>
-                        ))}
-                    </View>
-                ) : null}
+
+                            <View>
+                                <Text style={[styles.jobName, { fontSize: compact ? 24 : 27 }]}>{job.title}</Text>
+                                <View style={styles.locationRow}>
+                                    <MaterialIcons name="location-on" size={15} color="#6f7a71" />
+                                    <Text style={[styles.locationText, { fontSize: compact ? 13 : 14 }]}>{job.location}</Text>
+                                </View>
+
+                                <View
+                                    style={[
+                                        styles.ratePill,
+                                        job.tone === 'primary' ? styles.ratePillPrimary : styles.ratePillSecondary,
+                                    ]}
+                                >
+                                    <Text style={styles.rateLabel}>RATE</Text>
+                                    <Text
+                                        style={[
+                                            styles.rateValue,
+                                            job.tone === 'primary' ? styles.rateValuePrimary : styles.rateValueSecondary,
+                                        ]}
+                                    >
+                                        ${job.hourlyRate.toFixed(2)}
+                                        <Text style={[styles.rateSuffix, { fontSize: compact ? 12 : 14 }]}>{job.rateSuffix}</Text>
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View
+                                style={[
+                                    styles.earnedSection,
+                                    job.tone === 'primary' ? styles.earnedSectionPrimary : styles.earnedSectionSecondary,
+                                ]}
+                            >
+                                <Text style={styles.earnedLabel}>TOTAL EARNED</Text>
+                                <Text
+                                    style={[
+                                        styles.earnedValue,
+                                        job.tone === 'primary' ? styles.earnedValuePrimary : styles.earnedValueSecondary,
+                                    ]}
+                                >
+                                    {formatCurrency(job.totalEarnings)}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+
+                    <TouchableOpacity activeOpacity={0.88} style={[styles.addJobCard, { minHeight: 256 * scale, borderRadius: 24 * scale }]}>
+                        <View style={styles.addIconWrap}>
+                            <MaterialIcons name="add" size={30} color="#8a948d" />
+                        </View>
+                        <Text style={styles.addJobTitle}>Add New Job</Text>
+                        <Text style={styles.addJobCopy}>
+                            Maximize your income by tracking a second or third role.
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/*
+                <View style={[styles.goalCard, { borderRadius: 24 * scale, padding: 24 * scale }]}>
+                    <Text style={styles.goalLabel}>TRAVEL GOAL</Text>
+                </View>
+                */}
             </ScrollView>
         </SafeAreaView>
     );
@@ -130,203 +184,237 @@ export const OverviewScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: colors.surfaceBright,
+        backgroundColor: '#fbf9f1',
     },
     container: {
         flex: 1,
     },
-    contentContainer: {
-        padding: spacing.lg,
-        paddingBottom: 120,
-    },
-    eyebrow: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.3,
-        marginBottom: spacing.sm,
-    },
     title: {
-        color: colors.onSurface,
-        fontSize: fontSizes['4xl'],
-        fontWeight: fontWeights.extrabold,
-        marginBottom: spacing.xs,
+        color: '#006D44',
+        fontWeight: '800',
+        letterSpacing: -1.2,
+        marginBottom: 8,
     },
-    subtitle: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.base,
-        lineHeight: 22,
-        marginBottom: spacing.xl,
-        maxWidth: 320,
+    jobsStack: {
+        marginBottom: 24,
     },
-    heroCard: {
-        backgroundColor: colors.surfaceContainerLowest,
-        borderRadius: borderRadius.xl,
-        padding: spacing['3xl'],
-        marginBottom: spacing.lg,
-        shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.05,
-        shadowRadius: 40,
-        elevation: 6,
-    },
-    heroLabel: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.3,
-        marginBottom: spacing.sm,
-    },
-    heroValue: {
-        color: colors.primary,
-        fontSize: 44,
-        fontWeight: fontWeights.extrabold,
-        marginBottom: spacing.lg,
-    },
-    heroValueNegative: {
-        color: colors.secondaryContainer,
-    },
-    heroBarTrack: {
-        height: 10,
-        backgroundColor: 'rgba(0, 109, 68, 0.14)',
-        borderRadius: 999,
+    jobCard: {
         overflow: 'hidden',
-    },
-    heroBarFill: {
-        height: '100%',
-        backgroundColor: colors.secondaryContainer,
-        borderRadius: 999,
-    },
-    heroBarLabel: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.semibold,
-        marginTop: spacing.sm,
-        textAlign: 'right',
-    },
-    statsGrid: {
-        flexDirection: 'row',
-        gap: spacing.md,
-        marginBottom: spacing.md,
-    },
-    statCard: {
-        flex: 1,
-        minHeight: 150,
-    },
-    statLabel: {
-        color: 'rgba(255,255,255,0.82)',
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.1,
-        marginBottom: spacing.lg,
-    },
-    statValue: {
-        color: colors.white,
-        fontSize: fontSizes['3xl'],
-        fontWeight: fontWeights.extrabold,
-    },
-    statSubtext: {
-        color: 'rgba(255,255,255,0.75)',
-        fontSize: fontSizes.sm,
-        marginTop: spacing.sm,
-    },
-    unit: {
-        fontSize: fontSizes.xl,
-        opacity: 0.85,
-    },
-    lossCard: {
-        flex: 1,
-        minHeight: 150,
-        backgroundColor: colors.secondaryContainer,
-        borderRadius: borderRadius.lg,
-        padding: spacing['2xl'],
-    },
-    statLabelLight: {
-        color: 'rgba(255,255,255,0.82)',
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.1,
-        marginBottom: spacing.lg,
-    },
-    statValueLight: {
-        color: colors.white,
-        fontSize: fontSizes['3xl'],
-        fontWeight: fontWeights.extrabold,
-    },
-    statSubtextLight: {
-        color: 'rgba(255,255,255,0.75)',
-        fontSize: fontSizes.sm,
-        marginTop: spacing.sm,
-    },
-    jobsCard: {
-        flex: 1,
-        minHeight: 150,
-        backgroundColor: colors.surfaceContainerLow,
-        borderRadius: borderRadius.lg,
-        padding: spacing['2xl'],
-    },
-    jobsLabel: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.1,
-        marginBottom: spacing.lg,
-    },
-    jobsValue: {
-        color: colors.onSurface,
-        fontSize: fontSizes['3xl'],
-        fontWeight: fontWeights.extrabold,
-    },
-    jobsSubtext: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.sm,
-        marginTop: spacing.sm,
-    },
-    jobsSection: {
-        marginTop: spacing.lg,
-    },
-    sectionTitle: {
-        color: colors.onSurface,
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.extrabold,
-        marginBottom: spacing.md,
-    },
-    jobRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: colors.surfaceContainerLowest,
-        borderRadius: borderRadius.lg,
-        padding: spacing.xl,
-        marginBottom: spacing.sm,
-        shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 20 },
+    },
+    jobCardPrimary: {
+        backgroundColor: '#ffffff',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.04,
         shadowRadius: 40,
         elevation: 4,
     },
-    jobInfo: {
-        flex: 1,
-        marginRight: spacing.md,
+    jobCardSecondary: {
+        backgroundColor: '#f5f4eb',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.02,
+        shadowRadius: 30,
+        elevation: 2,
+    },
+    cardGlow: {
+        position: 'absolute',
+        top: -16,
+        right: -16,
+        width: 128,
+        height: 128,
+        borderRadius: 999,
+    },
+    cardGlowPrimary: {
+        backgroundColor: 'rgba(0,109,68,0.05)',
+    },
+    cardGlowSecondary: {
+        backgroundColor: 'rgba(255,138,0,0.10)',
+    },
+    jobTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 20,
+    },
+    statusPill: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 999,
+    },
+    statusPillPrimary: {
+        backgroundColor: 'rgba(0,109,68,0.10)',
+    },
+    statusPillSecondary: {
+        backgroundColor: '#fff1e8',
+    },
+    statusText: {
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 0.8,
+    },
+    statusTextPrimary: {
+        color: '#006D44',
+    },
+    statusTextSecondary: {
+        color: '#ab3600',
     },
     jobName: {
-        color: colors.onSurface,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-        marginBottom: 2,
+        color: '#181d19',
+        fontSize: 27,
+        fontWeight: '700',
+        marginBottom: 6,
+        letterSpacing: -0.6,
     },
-    jobHours: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.sm,
+    locationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginBottom: 18,
     },
-    jobEarnings: {
-        color: colors.primary,
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.extrabold,
+    locationText: {
+        color: '#3f4942',
+        fontSize: 15,
+    },
+    ratePill: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 999,
+    },
+    ratePillPrimary: {
+        backgroundColor: '#f5f4eb',
+    },
+    ratePillSecondary: {
+        backgroundColor: '#ffffff',
+    },
+    rateLabel: {
+        color: '#6f7a71',
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 1.5,
+        marginBottom: 4,
+    },
+    rateValue: {
+        fontSize: 21,
+        fontWeight: '700',
+    },
+    rateValuePrimary: {
+        color: '#006D44',
+    },
+    rateValueSecondary: {
+        color: '#613100',
+    },
+    rateSuffix: {
+        color: '#6f7a71',
+        fontSize: 14,
+        fontWeight: '400',
+    },
+    earnedSection: {
+        paddingTop: 18,
+        marginTop: 18,
+    },
+    earnedSectionPrimary: {
+        borderTopWidth: 1,
+        borderTopColor: '#f5f4eb',
+    },
+    earnedSectionSecondary: {
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(228,227,218,0.20)',
+    },
+    earnedLabel: {
+        color: '#6f7a71',
+        fontSize: 12,
+        fontWeight: '700',
+        letterSpacing: 1.6,
+        marginBottom: 4,
+    },
+    earnedValue: {
+        fontSize: 34,
+        fontWeight: '800',
+        letterSpacing: -1,
+    },
+    earnedValuePrimary: {
+        color: '#006D44',
+    },
+    earnedValueSecondary: {
+        color: '#613100',
+    },
+    addJobCard: {
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderStyle: 'dashed',
+        borderColor: '#bec9bf',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 28,
+    },
+    addIconWrap: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#eae8e0',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    addJobTitle: {
+        color: '#181d19',
+        fontSize: 26,
+        fontWeight: '700',
+        marginBottom: 8,
+    },
+    addJobCopy: {
+        color: '#3f4942',
+        fontSize: 15,
+        lineHeight: 24,
+        textAlign: 'center',
+        maxWidth: 260,
+    },
+    goalCard: {
+        backgroundColor: '#00429B',
+        marginBottom: 12,
+    },
+    goalLabel: {
+        color: '#d9e2ff',
+        fontSize: 12,
+        fontWeight: '700',
+        letterSpacing: 1.5,
+        marginBottom: 8,
+    },
+    goalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        marginBottom: 14,
+    },
+    goalPercent: {
+        color: '#ffffff',
+        fontSize: 34,
+        fontWeight: '800',
+        letterSpacing: -0.8,
+    },
+    goalRoute: {
+        color: '#cbd8ff',
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    goalTrack: {
+        height: 10,
+        borderRadius: 999,
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        overflow: 'hidden',
+        marginBottom: 12,
+    },
+    goalFill: {
+        width: '85%',
+        height: '100%',
+        backgroundColor: '#ffffff',
+    },
+    goalCopy: {
+        color: '#d9e2ff',
+        fontSize: 13,
+        lineHeight: 20,
     },
 });

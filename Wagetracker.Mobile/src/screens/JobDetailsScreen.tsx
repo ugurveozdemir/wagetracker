@@ -23,7 +23,7 @@ import { useEntriesStore, useJobsStore } from '../stores';
 import { Card } from '../components/ui';
 import { AddEntryModal } from '../components/AddEntryModal';
 import { EditJobModal } from '../components/EditJobModal';
-import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import { colors, spacing, fontSizes, fontWeights, borderRadius, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
 
 type JobDetailsNavigationProp = NativeStackNavigationProp<MainStackParamList, 'JobDetails'>;
@@ -33,6 +33,7 @@ export const JobDetailsScreen: React.FC = () => {
     const navigation = useNavigation<JobDetailsNavigationProp>();
     const route = useRoute<JobDetailsRouteProp>();
     const { jobId } = route.params;
+    const { isCompact, horizontalPadding, panelRadius, rs } = useResponsiveLayout();
 
     const { jobDetails, weeks, isLoading, fetchJobDetails, deleteEntry, clearJobDetails } = useEntriesStore();
     const { fetchDashboard, deleteJob } = useJobsStore();
@@ -154,14 +155,18 @@ export const JobDetailsScreen: React.FC = () => {
             <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
 
             <View style={styles.header}>
-                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+                <TouchableOpacity
+                    style={[styles.headerButton, { width: rs(42), height: rs(42), borderRadius: rs(21) }]}
+                    onPress={() => navigation.goBack()}
+                    activeOpacity={0.8}
+                >
                     <Feather name="arrow-left" size={20} color={colors.primary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>
+                <Text style={[styles.headerTitle, { fontSize: isCompact ? 19 : fontSizes.xl }]} numberOfLines={1}>
                     {job?.title || 'Job'}
                 </Text>
                 <TouchableOpacity
-                    style={styles.headerButton}
+                    style={[styles.headerButton, { width: rs(42), height: rs(42), borderRadius: rs(21) }]}
                     onPress={() => setShowOptionsMenu(true)}
                     activeOpacity={0.8}
                 >
@@ -191,27 +196,32 @@ export const JobDetailsScreen: React.FC = () => {
 
             <ScrollView
                 style={styles.container}
-                contentContainerStyle={styles.contentContainer}
+                contentContainerStyle={[
+                    styles.contentContainer,
+                    { paddingHorizontal: horizontalPadding, paddingBottom: rs(120) },
+                ]}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.heroCard}>
+                <View style={[styles.heroCard, { borderRadius: panelRadius, padding: rs(32) }]}>
                     <Text style={styles.heroEyebrow}>Job Ledger</Text>
-                    <Text style={styles.heroTitle}>{job?.title}</Text>
+                    <Text style={[styles.heroTitle, { fontSize: isCompact ? 30 : fontSizes['4xl'] }]}>{job?.title}</Text>
                     <Text style={styles.heroSubcopy}>
                         ${job?.hourlyRate ?? 0}/hr · tracked with weekly overtime grouping
                     </Text>
                 </View>
 
                 <View style={styles.summaryRow}>
-                    <Card variant="earnings" style={styles.summaryCard}>
+                    <Card variant="earnings" style={[styles.summaryCard, { borderRadius: rs(24), padding: rs(24) }]}>
                         <Text style={styles.summaryLabel}>Earned</Text>
-                        <Text style={styles.summaryValue}>{formatCurrency(job?.totalEarnings || 0)}</Text>
+                        <Text style={[styles.summaryValue, { fontSize: isCompact ? 26 : fontSizes['3xl'] }]}>
+                            {formatCurrency(job?.totalEarnings || 0)}
+                        </Text>
                     </Card>
 
-                    <Card variant="hours" style={styles.summaryCard}>
+                    <Card variant="hours" style={[styles.summaryCard, { borderRadius: rs(24), padding: rs(24) }]}>
                         <Text style={styles.summaryLabel}>Hours</Text>
-                        <Text style={styles.summaryValue}>
+                        <Text style={[styles.summaryValue, { fontSize: isCompact ? 26 : fontSizes['3xl'] }]}>
                             {job?.totalHours?.toFixed(1) || '0.0'}
                             <Text style={styles.summaryUnit}>h</Text>
                         </Text>

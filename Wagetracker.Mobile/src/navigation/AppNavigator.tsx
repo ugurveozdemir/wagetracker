@@ -6,11 +6,12 @@ import {
     TouchableOpacity,
     Text,
     Platform,
+    useWindowDimensions,
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Feather from 'react-native-vector-icons/Feather';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {
     RootStackParamList,
     AuthStackParamList,
@@ -18,7 +19,7 @@ import {
     TabParamList,
 } from '../types';
 import { useAuthStore } from '../stores';
-import { colors, spacing, fontWeights } from '../theme';
+import { colors } from '../theme';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -65,80 +66,100 @@ const HomeNavigator: React.FC = () => {
     );
 };
 
-const DummyScreen: React.FC = () => <View />;
+const DummyScreen: React.FC = () => <View style={{ flex: 1, backgroundColor: '#fbf9f1' }} />;
+
+const visibleTabs = [
+    { routeName: 'HomeTab', icon: 'dashboard', label: 'Dashboard' },
+    { routeName: 'OverviewTab', icon: 'work', label: 'Jobs' },
+    { routeName: 'ExpensesTab', icon: 'payments', label: 'Expenses' },
+    { routeName: 'ProfileTab', icon: 'person', label: 'Profile' },
+] as const;
 
 const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
-    const tabs = [
-        { name: 'HomeTab', icon: 'home', label: 'Dashboard' },
-        { name: 'ExpensesTab', icon: 'credit-card', label: 'Expenses' },
-        { name: 'AddTab', icon: 'plus', label: 'Add', isCenter: true },
-        { name: 'OverviewTab', icon: 'bar-chart-2', label: 'Overview' },
-        { name: 'ProfileTab', icon: 'user', label: 'Profile' },
-    ];
+    const { width } = useWindowDimensions();
+    const activeRouteName = state.routes[state.index]?.name;
+    const showFab = activeRouteName === 'HomeTab' || activeRouteName === 'ExpensesTab' || activeRouteName === 'OverviewTab';
+    const compact = width < 380;
+    const tabScale = Math.min(Math.max(width / 393, 0.84), 1);
 
     return (
-        <View style={tabStyles.container}>
-            <View style={tabStyles.bar}>
-                {tabs.map((tab, index) => {
-                    const isFocused = state.index === index;
+        <View pointerEvents="box-none" style={tabStyles.wrapper}>
+            {showFab ? (
+                <TouchableOpacity
+                    style={[
+                        tabStyles.fab,
+                        {
+                            right: compact ? 18 : 24,
+                            bottom: compact ? 102 : 112,
+                            width: 64 * tabScale,
+                            height: 64 * tabScale,
+                            borderRadius: 32 * tabScale,
+                        },
+                    ]}
+                    onPress={() => onAddPress(state)}
+                    activeOpacity={0.9}
+                >
+                    <MaterialIcons name="add" size={Math.round(34 * tabScale)} color={colors.white} />
+                </TouchableOpacity>
+            ) : null}
+
+            <View
+                style={[
+                    tabStyles.footer,
+                    {
+                        paddingHorizontal: compact ? 8 : 16,
+                        paddingTop: compact ? 12 : 16,
+                        paddingBottom: Platform.OS === 'ios' ? (compact ? 26 : 32) : compact ? 18 : 24,
+                        borderTopLeftRadius: compact ? 36 : 48,
+                        borderTopRightRadius: compact ? 36 : 48,
+                    },
+                ]}
+            >
+                {visibleTabs.map((tab) => {
+                    const routeIndex = state.routes.findIndex((route: any) => route.name === tab.routeName);
+                    const isFocused = activeRouteName === tab.routeName;
 
                     const onPress = () => {
-                        if (tab.isCenter) {
-                            onAddPress(state);
-                            return;
-                        }
-
+                        const route = state.routes[routeIndex];
                         const event = navigation.emit({
                             type: 'tabPress',
-                            target: state.routes[index]?.key,
+                            target: route?.key,
                             canPreventDefault: true,
                         });
 
                         if (!isFocused && !event.defaultPrevented) {
-                            navigation.navigate(tab.name);
+                            navigation.navigate(tab.routeName);
                         }
                     };
 
-                    if (tab.isCenter) {
-                        return (
-                            <TouchableOpacity
-                                key={tab.name}
-                                style={tabStyles.centerButton}
-                                onPress={onPress}
-                                activeOpacity={0.85}
-                            >
-                                <View style={tabStyles.centerButtonInner}>
-                                    <Feather name="plus" size={24} color={colors.white} />
-                                </View>
-                            </TouchableOpacity>
-                        );
-                    }
-
                     return (
                         <TouchableOpacity
-                            key={tab.name}
-                            style={tabStyles.tab}
+                            key={tab.routeName}
+                            style={[
+                                tabStyles.tabItem,
+                                {
+                                    paddingHorizontal: compact ? 10 : 20,
+                                    paddingVertical: compact ? 6 : 8,
+                                },
+                                isFocused && tabStyles.tabItemActive,
+                            ]}
                             onPress={onPress}
-                            activeOpacity={0.78}
+                            activeOpacity={0.85}
                         >
-                            <View
-                                style={[
-                                    tabStyles.iconWrap,
-                                    isFocused && tabStyles.iconWrapActive,
-                                ]}
-                            >
-                                <Feather
-                                    name={tab.icon}
-                                    size={18}
-                                    color={isFocused ? colors.primary : colors.slate400}
-                                />
-                            </View>
+                            <MaterialIcons
+                                name={tab.icon}
+                                size={compact ? 20 : 22}
+                                color={isFocused ? '#006D44' : '#94a3b8'}
+                            />
                             <Text
+                                numberOfLines={1}
                                 style={[
                                     tabStyles.tabLabel,
-                                    isFocused
-                                        ? tabStyles.tabLabelActive
-                                        : tabStyles.tabLabelInactive,
+                                    {
+                                        fontSize: compact ? 9 : 11,
+                                        letterSpacing: compact ? 0.5 : 0.8,
+                                    },
+                                    isFocused && tabStyles.tabLabelActive,
                                 ]}
                             >
                                 {tab.label}
@@ -163,7 +184,10 @@ const MainNavigator: React.FC = () => {
 
         if (tabName === 'ExpensesTab') {
             setShowExpenseModal(true);
-        } else if (tabName === 'HomeTab') {
+            return;
+        }
+
+        if (tabName === 'HomeTab') {
             const nestedState = activeTabRoute.state;
             if (nestedState) {
                 const innerRoute = nestedState.routes[nestedState.index];
@@ -173,10 +197,12 @@ const MainNavigator: React.FC = () => {
                     return;
                 }
             }
+
             setShowJobModal(true);
-        } else {
-            setShowExpenseModal(true);
+            return;
         }
+
+        setShowExpenseModal(true);
     };
 
     return (
@@ -185,6 +211,7 @@ const MainNavigator: React.FC = () => {
                 tabBar={(props) => <CustomTabBar {...props} onAddPress={handleAddPress} />}
                 screenOptions={{
                     headerShown: false,
+                    tabBarStyle: { display: 'none' },
                 }}
             >
                 <Tab.Screen name="HomeTab" component={HomeNavigator} />
@@ -204,7 +231,7 @@ const MainNavigator: React.FC = () => {
                 onClose={() => setShowJobModal(false)}
                 onCreated={() => setShowJobModal(false)}
             />
-            {activeJobId && (
+            {activeJobId ? (
                 <AddEntryModal
                     visible={showEntryModal}
                     jobId={activeJobId}
@@ -217,7 +244,7 @@ const MainNavigator: React.FC = () => {
                         setActiveJobId(null);
                     }}
                 />
-            )}
+            ) : null}
         </>
     );
 };
@@ -227,7 +254,7 @@ export const AppNavigator: React.FC = () => {
 
     useEffect(() => {
         checkAuth();
-    }, []);
+    }, [checkAuth]);
 
     if (isLoading) {
         return (
@@ -251,73 +278,67 @@ export const AppNavigator: React.FC = () => {
 };
 
 const tabStyles = StyleSheet.create({
-    container: {
-        backgroundColor: 'transparent',
-        paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-        paddingHorizontal: spacing.md,
+    wrapper: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
-    bar: {
+    fab: {
+        position: 'absolute',
+        right: 24,
+        bottom: 112,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#ff8a00',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.2,
+        shadowRadius: 24,
+        elevation: 10,
+    },
+    footer: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-around',
-        paddingTop: spacing.md,
-        paddingHorizontal: spacing.sm,
-        paddingBottom: spacing.sm,
-        backgroundColor: 'rgba(255,255,255,0.82)',
-        borderRadius: 48,
-        shadowColor: colors.onSurface,
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: Platform.OS === 'ios' ? 32 : 24,
+        backgroundColor: 'rgba(255,255,255,0.80)',
+        borderTopLeftRadius: 48,
+        borderTopRightRadius: 48,
+        shadowColor: '#000000',
         shadowOffset: { width: 0, height: -8 },
-        shadowOpacity: 0.08,
+        shadowOpacity: 0.06,
         shadowRadius: 40,
-        elevation: 12,
+        elevation: 16,
     },
-    tab: {
+    tabItem: {
         flex: 1,
+        minWidth: 0,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 6,
+        paddingHorizontal: 20,
+        paddingVertical: 8,
+        borderRadius: 9999,
     },
-    iconWrap: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 4,
-    },
-    iconWrapActive: {
-        backgroundColor: 'rgba(0, 109, 68, 0.08)',
+    tabItemActive: {
+        backgroundColor: 'rgba(0,109,68,0.05)',
     },
     tabLabel: {
-        fontSize: 10,
-        fontWeight: fontWeights.semibold,
+        marginTop: 4,
+        fontSize: 11,
+        fontWeight: '600',
+        letterSpacing: 0.8,
         textTransform: 'uppercase',
-        letterSpacing: 0.6,
+        color: '#94a3b8',
     },
     tabLabelActive: {
-        color: colors.primary,
-    },
-    tabLabelInactive: {
-        color: colors.slate400,
-    },
-    centerButton: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: -18,
-    },
-    centerButtonInner: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: colors.secondaryContainer,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.16,
-        shadowRadius: 24,
-        elevation: 12,
+        color: '#006D44',
     },
 });
 

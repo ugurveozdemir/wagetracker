@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { AuthStackParamList } from '../types';
 import { useAuthStore } from '../stores';
 import { Button, Input } from '../components/ui';
-import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import { colors, spacing, fontSizes, fontWeights, borderRadius, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
 
 type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -23,6 +23,7 @@ type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'
 export const LoginScreen: React.FC = () => {
     const navigation = useNavigation<LoginNavigationProp>();
     const { login, isLoading, error, clearError } = useAuthStore();
+    const { isCompact, isSmallHeight, horizontalPadding, panelRadius, rs } = useResponsiveLayout();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -96,23 +97,30 @@ export const LoginScreen: React.FC = () => {
                 style={styles.container}
             >
                 <ScrollView
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={[
+                        styles.scrollContent,
+                        {
+                            paddingHorizontal: horizontalPadding,
+                            justifyContent: isSmallHeight ? 'flex-start' : 'center',
+                            paddingTop: isSmallHeight ? rs(24) : 0,
+                        },
+                    ]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View style={styles.heroPanel}>
+                    <View style={[styles.heroPanel, { borderRadius: panelRadius, padding: rs(32) }]}>
                         <Text style={styles.eyebrow}>WageTracker</Text>
-                        <Text style={styles.title}>Your ledger,
+                        <Text style={[styles.title, { fontSize: isCompact ? 30 : 36, lineHeight: isCompact ? 34 : 40 }]}>Your ledger,
                             {'\n'}
                             framed softly.
                         </Text>
-                        <Text style={styles.subtitle}>
+                        <Text style={[styles.subtitle, { fontSize: isCompact ? 15 : fontSizes.base, lineHeight: isCompact ? 21 : 22 }]}>
                             Sign in to keep tracking earnings and expenses with the same backend workflow.
                         </Text>
                     </View>
 
                     {error ? (
-                        <View style={styles.errorContainer}>
+                        <View style={[styles.errorContainer, { borderRadius: rs(24) }]}>
                             <Text style={styles.errorText}>{error}</Text>
                             <TouchableOpacity onPress={clearError}>
                                 <Text style={styles.errorDismiss}>×</Text>
@@ -120,7 +128,7 @@ export const LoginScreen: React.FC = () => {
                         </View>
                     ) : null}
 
-                    <View style={styles.formCard}>
+                    <View style={[styles.formCard, { borderRadius: rs(24), padding: rs(24) }]}>
                         <Input
                             label="Email"
                             placeholder="your@email.com"

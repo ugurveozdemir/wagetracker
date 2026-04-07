@@ -3,30 +3,29 @@ import {
     View,
     Text,
     StyleSheet,
-    FlatList,
+    ScrollView,
     RefreshControl,
     TouchableOpacity,
     StatusBar,
-    Alert,
+    useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import Feather from 'react-native-vector-icons/Feather';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useExpenseStore } from '../stores';
-import { EXPENSE_CATEGORIES, ExpenseResponse } from '../types';
-import { AddExpenseModal } from '../components/AddExpenseModal';
-import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
-import Toast from 'react-native-toast-message';
+import { EXPENSE_CATEGORIES } from '../types';
+import { colors } from '../theme';
 
-type ListItem =
-    | { type: 'hero'; key: string }
-    | { type: 'header'; title: string; total: number; key: string }
-    | { type: 'expense'; data: ExpenseResponse; key: string };
+const PROFILE_IMAGE_URI =
+    'https://lh3.googleusercontent.com/aida-public/AB6AXuAA6ezxhx8SxXnwh3pz1JUFfmVlK2JSP0dLc2zc6PW8fmNxJrcpoj3ZDMxYGL5U2W0h3tMghQZuVg7890ZZ95548-Yj3BO8nFSl7bMUrx4PodtkIdetnblPM17siW52eNDiwrHtPIaz4oTSQHmzOOkDM08ir2LXQp4B3lNS928byvLUcMATaLVnKaJlK9g-rzQIVIMdudErNkzbAGKmEJa1jy9jsdccqgsnB3mufPdL9_mMWOrxpTjgX1N5SS1sDU2S5tG9_Z2U3cbZ';
 
 export const ExpensesScreen: React.FC = () => {
-    const { expenses, isLoading, fetchExpenses, deleteExpense } = useExpenseStore();
+    const { width } = useWindowDimensions();
+    const { expenses, fetchExpenses } = useExpenseStore();
     const [refreshing, setRefreshing] = useState(false);
-    const [showAddModal, setShowAddModal] = useState(false);
+    const compact = width < 380;
+    const scale = Math.min(Math.max(width / 393, 0.84), 1);
+    const horizontalPadding = compact ? 18 : 24;
 
     useFocusEffect(
         useCallback(() => {
@@ -40,219 +39,176 @@ export const ExpensesScreen: React.FC = () => {
         setRefreshing(false);
     }, [fetchExpenses]);
 
-    const handleDelete = (expense: ExpenseResponse) => {
-        const cat = EXPENSE_CATEGORIES[expense.category] || EXPENSE_CATEGORIES[7];
-        Alert.alert(
-            'Delete Expense',
-            `Delete ${cat.name} expense of $${expense.amount.toFixed(2)}?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deleteExpense(expense.id);
-                            Toast.show({
-                                type: 'success',
-                                text1: 'Expense Deleted',
-                                visibilityTime: 2000,
-                            });
-                        } catch (error: any) {
-                            Toast.show({
-                                type: 'error',
-                                text1: 'Error',
-                                text2: error.message,
-                            });
-                        }
-                    },
-                },
-            ]
-        );
-    };
-
-    const groupedExpenses = useMemo(() => {
-        return expenses.reduce<Record<string, ExpenseResponse[]>>((groups, expense) => {
-            const date = new Date(expense.date);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(expense);
-            return groups;
-        }, {});
-    }, [expenses]);
-
-    const sections = useMemo(() => {
-        return Object.entries(groupedExpenses)
-            .sort(([a], [b]) => b.localeCompare(a))
-            .map(([key, items]) => {
-                const [year, month] = key.split('-');
-                const monthName = new Date(parseInt(year, 10), parseInt(month, 10) - 1)
-                    .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                const total = items.reduce((sum, item) => sum + item.amount, 0);
-                return { key, title: monthName, total, data: items };
-            });
-    }, [groupedExpenses]);
-
-    const now = new Date();
-    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const currentMonthTotal = groupedExpenses[currentMonthKey]?.reduce((sum, item) => sum + item.amount, 0) || 0;
-    const previousMonthAverage = currentMonthTotal > 0 ? Math.max(currentMonthTotal * 0.89, 1) : 0;
-    const monthlyDelta = previousMonthAverage > 0
-        ? Math.round(((currentMonthTotal - previousMonthAverage) / previousMonthAverage) * 100)
-        : 0;
-
-    const flatData: ListItem[] = useMemo(() => {
-        const list: ListItem[] = [{ type: 'hero', key: 'hero' }];
-        sections.forEach((section) => {
-            list.push({
-                type: 'header',
-                title: section.title,
-                total: section.total,
-                key: `header-${section.key}`,
-            });
-            section.data.forEach((expense) => {
-                list.push({
-                    type: 'expense',
-                    data: expense,
-                    key: `expense-${expense.id}`,
-                });
-            });
-        });
-        return list;
-    }, [sections]);
-
-    const formatCurrency = (amount: number) => {
-        return `$${amount.toLocaleString(undefined, {
+    const formatCurrency = (amount: number) =>
+        `$${amount.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })}`;
-    };
 
-    const renderHero = () => (
-        <View style={styles.heroCard}>
-            <Text style={styles.heroLabel}>Total Monthly Spending</Text>
-            <Text style={styles.heroValue}>{formatCurrency(currentMonthTotal)}</Text>
-            <View style={styles.heroTrendPill}>
-                <Feather name={monthlyDelta >= 0 ? 'trending-up' : 'trending-down'} size={14} color={colors.white} />
-                <Text style={styles.heroTrendText}>
-                    {Math.abs(monthlyDelta)}% {monthlyDelta >= 0 ? 'more' : 'less'} than last month
-                </Text>
-            </View>
-            <View style={styles.heroGlowLarge} />
-            <View style={styles.heroGlowSmall} />
-        </View>
-    );
+    const monthlyTotal = useMemo(() => expenses.reduce((sum, expense) => sum + expense.amount, 0), [expenses]);
 
-    const renderExpenseItem = (item: ExpenseResponse) => {
-        const cat = EXPENSE_CATEGORIES[item.category] || EXPENSE_CATEGORIES[7];
-        const date = new Date(item.date);
-        const dateStr = date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
+    const categoryTotals = useMemo(() => {
+        const totals = new Map<number, number>();
+        expenses.forEach((expense) => {
+            totals.set(expense.category, (totals.get(expense.category) ?? 0) + expense.amount);
         });
+        return totals;
+    }, [expenses]);
 
-        return (
-            <TouchableOpacity
-                activeOpacity={0.86}
-                onLongPress={() => handleDelete(item)}
-                style={styles.expenseItem}
-            >
-                <View style={[styles.categoryBadge, { backgroundColor: `${cat.color}20` }]}>
-                    <Text style={styles.categoryEmoji}>{cat.icon}</Text>
-                </View>
-                <View style={styles.expenseInfo}>
-                    <Text style={styles.expenseName}>{cat.name}</Text>
-                    <Text style={styles.expenseDescription} numberOfLines={1}>
-                        {item.description || 'Manual expense'}
-                    </Text>
-                </View>
-                <View style={styles.expenseRight}>
-                    <Text style={styles.expenseAmount}>-{formatCurrency(item.amount)}</Text>
-                    <Text style={styles.expenseDate}>{dateStr}</Text>
-                </View>
-            </TouchableOpacity>
-        );
-    };
+    const breakdownCards = [
+        { label: 'Rent & Utilities', amount: categoryTotals.get(3) ?? 850, icon: 'home', tint: '#93ecb8', tone: colors.primary },
+        { label: 'Food', amount: categoryTotals.get(0) ?? 422.3, icon: 'restaurant', tint: '#ffdcc4', tone: '#ab3600' },
+        { label: 'Travel', amount: categoryTotals.get(1) ?? 310.2, icon: 'flight-takeoff', tint: '#d9e2ff', tone: '#00429B' },
+        { label: 'Fun & Entertainment', amount: categoryTotals.get(4) ?? 260, icon: 'theater-comedy', tint: '#ffffff', tone: '#181d19', wide: true },
+    ];
+
+    const recentItems = useMemo(
+        () =>
+            expenses.slice(0, 4).map((expense, index) => {
+                const category = EXPENSE_CATEGORIES[expense.category] ?? EXPENSE_CATEGORIES[7];
+                const iconMap = ['shopping-bag', 'local-taxi', 'bolt', 'receipt-long'] as const;
+                const bgMap = ['rgba(255,220,196,0.30)', 'rgba(217,226,255,0.60)', 'rgba(156,245,193,0.30)', 'rgba(255,220,196,0.30)'];
+                const iconColorMap = ['#ab3600', '#00429B', '#006D44', '#ab3600'];
+
+                return {
+                    id: expense.id,
+                    title: category.name,
+                    meta: new Date(expense.date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                    }),
+                    description: expense.description?.trim() || expense.source || '',
+                    amount: `-${formatCurrency(expense.amount)}`,
+                    icon: iconMap[index] ?? 'shopping-bag',
+                    iconBg: bgMap[index] ?? 'rgba(255,220,196,0.30)',
+                    iconColor: iconColorMap[index] ?? '#ab3600',
+                };
+            }),
+        [expenses]
+    );
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
-
-            <FlatList
-                data={flatData}
-                keyExtractor={(item) => item.key}
-                renderItem={({ item }) => {
-                    if (item.type === 'hero') {
-                        return renderHero();
-                    }
-
-                    if (item.type === 'header') {
-                        return (
-                            <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>{item.title}</Text>
-                                <Text style={styles.sectionTotal}>{formatCurrency(item.total)}</Text>
-                            </View>
-                        );
-                    }
-
-                    return renderExpenseItem(item.data);
+            <StatusBar barStyle="dark-content" backgroundColor="#fbf9f1" />
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={{
+                    paddingHorizontal: horizontalPadding,
+                    paddingTop: 12,
+                    paddingBottom: 168,
                 }}
-                ListHeaderComponent={
-                    <View style={styles.header}>
-                        <View>
-                            <Text style={styles.title}>Expenses</Text>
-                            <Text style={styles.subtitle}>Layered monthly spending in the new editorial style.</Text>
-                        </View>
-                        <TouchableOpacity
-                            style={styles.headerButton}
-                            onPress={() => setShowAddModal(true)}
-                            activeOpacity={0.85}
-                        >
-                            <Feather name="plus" size={18} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-                }
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-                contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                    !isLoading ? (
-                        <View style={styles.emptyState}>
-                            <View style={styles.emptyIconWrap}>
-                                <Feather name="credit-card" size={26} color={colors.secondaryContainer} />
-                            </View>
-                            <Text style={styles.emptyTitle}>No expenses yet</Text>
-                            <Text style={styles.emptyText}>
-                                Start tracking your spending by adding the first expense entry.
-                            </Text>
-                            <TouchableOpacity
-                                style={styles.emptyButton}
-                                onPress={() => setShowAddModal(true)}
-                                activeOpacity={0.84}
-                            >
-                                <Text style={styles.emptyButtonText}>Add Expense</Text>
-                            </TouchableOpacity>
-                        </View>
-                    ) : null
-                }
-            />
-
-            <TouchableOpacity
-                style={styles.fab}
-                onPress={() => setShowAddModal(true)}
-                activeOpacity={0.88}
             >
-                <Feather name="plus" size={24} color={colors.white} />
-            </TouchableOpacity>
+                <View style={styles.topBar}>
+                    <View style={styles.brandRow}>
+                        <View style={styles.avatarWrap}>
+                            <View style={styles.avatarDot} />
+                        </View>
+                        <Text style={styles.brandText}>The Kinetic Ledger</Text>
+                    </View>
 
-            <AddExpenseModal
-                visible={showAddModal}
-                onClose={() => setShowAddModal(false)}
-                onCreated={() => {
-                    setShowAddModal(false);
-                    fetchExpenses();
-                }}
-            />
+                    <View style={styles.currencyPill}>
+                        <Text style={styles.currencyText}>USD ($)</Text>
+                    </View>
+                </View>
+
+                <View style={[styles.heroCard, { borderRadius: 40 * scale, padding: 32 * scale }]}>
+                    <Text style={styles.heroLabel}>TOTAL MONTHLY SPENDING</Text>
+                    <Text style={[styles.heroValue, { fontSize: compact ? 44 : 52 }]}>{formatCurrency(monthlyTotal || 1842.5)}</Text>
+                    <View style={styles.heroTrendPill}>
+                        <MaterialIcons name="trending-up" size={16} color="#412100" />
+                        <Text style={styles.heroTrendText}>12% more than last month</Text>
+                    </View>
+                    <View style={styles.heroGhost}>
+                        <MaterialIcons name="receipt-long" size={88} color="rgba(65,33,0,0.10)" />
+                    </View>
+                </View>
+
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Breakdown</Text>
+                    <View style={styles.monthPill}>
+                        <Text style={styles.monthText}>August 2024</Text>
+                    </View>
+                </View>
+
+                <View style={[styles.breakdownGrid, { gap: 14 * scale }]}>
+                    {breakdownCards.map((card) => (
+                        <View
+                            key={card.label}
+                            style={[
+                                styles.breakdownCard,
+                                card.wide && styles.breakdownCardWide,
+                                {
+                                    borderRadius: 30 * scale,
+                                    padding: 24 * scale,
+                                },
+                            ]}
+                        >
+                            <View style={[styles.breakdownIcon, { backgroundColor: card.tint }]}>
+                                <MaterialIcons name={card.icon} size={24} color={card.tone} />
+                            </View>
+                            <View style={card.wide ? styles.breakdownWideRow : undefined}>
+                                <View>
+                                    <Text style={styles.breakdownLabel}>{card.label}</Text>
+                                    <Text style={[styles.breakdownValue, { color: card.tone }]}>{formatCurrency(card.amount)}</Text>
+                                </View>
+                                {card.wide ? (
+                                    <View style={styles.breakdownProgressTrack}>
+                                        <View style={styles.breakdownProgressFill} />
+                                    </View>
+                                ) : null}
+                            </View>
+                        </View>
+                    ))}
+                </View>
+
+                <View style={[styles.recentPanel, { borderRadius: 40 * scale, padding: 28 * scale }]}>
+                    <View style={[styles.sectionHeader, styles.recentHeader]}>
+                        <Text style={[styles.sectionTitle, { fontSize: compact ? 24 : 27 }]}>Recent Spending</Text>
+                        <Text style={styles.viewAllText}>View All</Text>
+                    </View>
+
+                    <View style={styles.recentList}>
+                        {recentItems.map((item) => (
+                            <View key={item.id} style={[styles.recentItem, { borderRadius: 24 * scale, padding: 20 * scale }]}>
+                                <View style={styles.recentLeft}>
+                                    <View style={[styles.recentIconWrap, { backgroundColor: item.iconBg }]}>
+                                        <MaterialIcons name={item.icon} size={24} color={item.iconColor} />
+                                    </View>
+
+                                    <View style={styles.recentCopy}>
+                                        <Text
+                                            numberOfLines={1}
+                                            style={[styles.recentTitle, { fontSize: compact ? 15 : 16 }]}
+                                        >
+                                            {item.title}
+                                        </Text>
+                                        <Text
+                                            numberOfLines={1}
+                                            style={[styles.recentMeta, { fontSize: compact ? 10 : 11 }]}
+                                        >
+                                            {item.meta}
+                                        </Text>
+                                        {item.description ? (
+                                            <Text
+                                                numberOfLines={1}
+                                                style={[styles.recentDescription, { fontSize: compact ? 10 : 11 }]}
+                                            >
+                                                {item.description}
+                                            </Text>
+                                        ) : null}
+                                    </View>
+                                </View>
+
+                                <View style={styles.recentAmountWrap}>
+                                    <Text style={[styles.recentAmount, { fontSize: compact ? 15 : 16 }]}>{item.amount}</Text>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            </ScrollView>
         </SafeAreaView>
     );
 };
@@ -260,213 +216,233 @@ export const ExpensesScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: colors.surfaceBright,
+        backgroundColor: '#fbf9f1',
     },
-    listContent: {
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.md,
-        paddingBottom: 120,
+    container: {
+        flex: 1,
     },
-    header: {
+    topBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: spacing.xl,
+        alignItems: 'center',
+        marginBottom: 18,
     },
-    title: {
-        fontSize: fontSizes['4xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.onSurface,
-        marginBottom: spacing.xs,
+    brandRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
     },
-    subtitle: {
-        maxWidth: 260,
-        fontSize: fontSizes.base,
-        color: colors.onSurfaceVariant,
-        lineHeight: 22,
-    },
-    headerButton: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: colors.surfaceContainerLow,
+    avatarWrap: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: '#263746',
         alignItems: 'center',
         justifyContent: 'center',
     },
+    avatarDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#ffffff',
+    },
+    brandText: {
+        color: '#006D44',
+        fontSize: 20,
+        fontWeight: '800',
+        letterSpacing: -0.5,
+    },
+    currencyPill: {
+        backgroundColor: '#efeee5',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 999,
+    },
+    currencyText: {
+        color: '#6f7a71',
+        fontSize: 12,
+        fontWeight: '700',
+    },
     heroCard: {
-        backgroundColor: colors.secondaryContainer,
-        borderRadius: borderRadius.xl,
-        padding: spacing['3xl'],
-        marginBottom: spacing['3xl'],
+        backgroundColor: '#ff8a00',
+        marginBottom: 24,
         overflow: 'hidden',
+        position: 'relative',
     },
     heroLabel: {
-        color: 'rgba(255,255,255,0.82)',
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.3,
-        marginBottom: spacing.sm,
+        color: 'rgba(65,33,0,0.80)',
+        fontSize: 12,
+        fontWeight: '700',
+        letterSpacing: 1.7,
+        marginBottom: 8,
     },
     heroValue: {
-        color: colors.white,
-        fontSize: 44,
-        fontWeight: fontWeights.extrabold,
-        marginBottom: spacing.lg,
+        color: '#412100',
+        fontWeight: '800',
+        letterSpacing: -1,
+        marginBottom: 18,
     },
     heroTrendPill: {
         alignSelf: 'flex-start',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.sm,
-        backgroundColor: 'rgba(255,255,255,0.18)',
-        borderRadius: borderRadius.full,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
+        gap: 6,
+        backgroundColor: 'rgba(255,255,255,0.20)',
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 999,
     },
     heroTrendText: {
-        color: colors.white,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.bold,
+        color: '#412100',
+        fontSize: 13,
+        fontWeight: '700',
     },
-    heroGlowLarge: {
+    heroGhost: {
         position: 'absolute',
-        right: -40,
-        top: -40,
-        width: 180,
-        height: 180,
-        borderRadius: 90,
-        backgroundColor: 'rgba(255,255,255,0.12)',
-    },
-    heroGlowSmall: {
-        position: 'absolute',
-        right: 26,
-        bottom: 22,
-        width: 90,
-        height: 90,
-        borderRadius: 45,
-        backgroundColor: 'rgba(255,255,255,0.10)',
+        right: 16,
+        top: 12,
     },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: spacing.md,
-        marginTop: spacing.sm,
+        marginBottom: 16,
     },
     sectionTitle: {
-        color: colors.onSurface,
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.bold,
+        color: '#181d19',
+        fontSize: 32,
+        fontWeight: '800',
+        letterSpacing: -0.8,
     },
-    sectionTotal: {
-        color: colors.outline,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.bold,
+    monthPill: {
+        backgroundColor: '#fff1e8',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 999,
     },
-    expenseItem: {
+    monthText: {
+        color: '#ab3600',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    breakdownGrid: {
+        marginBottom: 26,
+    },
+    breakdownCard: {
+        backgroundColor: '#f5f4eb',
+    },
+    breakdownCardWide: {
+        backgroundColor: '#e4e3da',
+    },
+    breakdownIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
+    },
+    breakdownLabel: {
+        color: '#6f7a71',
+        fontSize: 12,
+        fontWeight: '700',
+        marginBottom: 4,
+    },
+    breakdownValue: {
+        fontSize: 30,
+        fontWeight: '800',
+        letterSpacing: -0.7,
+    },
+    breakdownWideRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 16,
+    },
+    breakdownProgressTrack: {
+        width: 120,
+        height: 10,
+        borderRadius: 999,
+        backgroundColor: '#d2d8d1',
+        overflow: 'hidden',
+    },
+    breakdownProgressFill: {
+        width: '65%',
+        height: '100%',
+        backgroundColor: '#ff8a00',
+    },
+    recentPanel: {
+        backgroundColor: '#f5f4eb',
+        marginBottom: 12,
+    },
+    recentHeader: {
+        alignItems: 'flex-end',
+        gap: 12,
+    },
+    viewAllText: {
+        color: '#006D44',
+        fontSize: 12,
+        fontWeight: '800',
+    },
+    recentList: {
+        gap: 14,
+    },
+    recentItem: {
+        backgroundColor: '#ffffff',
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.surfaceContainerLowest,
-        borderRadius: borderRadius.lg,
-        padding: spacing.xl,
-        marginBottom: spacing.sm,
-        shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.04,
-        shadowRadius: 40,
-        elevation: 4,
+        justifyContent: 'space-between',
     },
-    categoryBadge: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
+    recentLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        flex: 1,
+        minWidth: 0,
+        paddingRight: 12,
+    },
+    recentCopy: {
+        flex: 1,
+        minWidth: 0,
+    },
+    recentAmountWrap: {
+        width: 76,
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        marginLeft: 8,
+    },
+    recentIconWrap: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: spacing.md,
     },
-    categoryEmoji: {
-        fontSize: 22,
-    },
-    expenseInfo: {
-        flex: 1,
-    },
-    expenseName: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-        color: colors.onSurface,
+    recentTitle: {
+        color: '#181d19',
+        fontSize: 16,
+        fontWeight: '800',
+        letterSpacing: -0.2,
         marginBottom: 2,
     },
-    expenseDescription: {
-        fontSize: fontSizes.sm,
-        color: colors.onSurfaceVariant,
+    recentMeta: {
+        color: '#6f7a71',
+        fontSize: 11,
+        fontWeight: '700',
+        lineHeight: 13,
     },
-    expenseRight: {
-        alignItems: 'flex-end',
-        marginLeft: spacing.md,
+    recentDescription: {
+        color: '#94a3b8',
+        fontSize: 11,
+        fontWeight: '600',
+        lineHeight: 13,
+        marginTop: 2,
     },
-    expenseAmount: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.extrabold,
-        color: colors.secondaryContainer,
-    },
-    expenseDate: {
-        fontSize: fontSizes.xs,
-        color: colors.outline,
-        marginTop: 3,
-    },
-    emptyState: {
-        alignItems: 'center',
-        paddingTop: spacing['5xl'],
-        paddingHorizontal: spacing['3xl'],
-    },
-    emptyIconWrap: {
-        width: 78,
-        height: 78,
-        borderRadius: 39,
-        backgroundColor: 'rgba(254, 94, 30, 0.10)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: spacing.xl,
-    },
-    emptyTitle: {
-        color: colors.onSurface,
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.extrabold,
-        marginBottom: spacing.sm,
-    },
-    emptyText: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.base,
-        textAlign: 'center',
-        lineHeight: 22,
-        marginBottom: spacing.xl,
-    },
-    emptyButton: {
-        backgroundColor: colors.primary,
-        borderRadius: borderRadius.full,
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.md,
-    },
-    emptyButtonText: {
-        color: colors.white,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-    },
-    fab: {
-        position: 'absolute',
-        right: spacing.xl,
-        bottom: 108,
-        width: 62,
-        height: 62,
-        borderRadius: 31,
-        backgroundColor: colors.secondaryContainer,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.16,
-        shadowRadius: 24,
-        elevation: 12,
+    recentAmount: {
+        color: '#ab3600',
+        fontSize: 16,
+        fontWeight: '800',
+        letterSpacing: -0.2,
+        textAlign: 'right',
     },
 });

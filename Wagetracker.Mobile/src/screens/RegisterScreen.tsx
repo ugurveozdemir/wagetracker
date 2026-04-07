@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { AuthStackParamList } from '../types';
 import { useAuthStore } from '../stores';
 import { Button, Input } from '../components/ui';
-import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import { colors, spacing, fontSizes, fontWeights, borderRadius, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
 
 type RegisterNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
@@ -23,6 +23,7 @@ type RegisterNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Reg
 export const RegisterScreen: React.FC = () => {
     const navigation = useNavigation<RegisterNavigationProp>();
     const { register, isLoading, error, clearError } = useAuthStore();
+    const { isCompact, isSmallHeight, horizontalPadding, panelRadius, rs } = useResponsiveLayout();
 
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
@@ -127,23 +128,30 @@ export const RegisterScreen: React.FC = () => {
                 style={styles.container}
             >
                 <ScrollView
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={[
+                        styles.scrollContent,
+                        {
+                            paddingHorizontal: horizontalPadding,
+                            justifyContent: isSmallHeight ? 'flex-start' : 'center',
+                            paddingTop: isSmallHeight ? rs(24) : 0,
+                        },
+                    ]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View style={styles.heroPanel}>
+                    <View style={[styles.heroPanel, { borderRadius: panelRadius, padding: rs(32) }]}>
                         <Text style={styles.eyebrow}>Create Account</Text>
-                        <Text style={styles.title}>Open a fresh page
+                        <Text style={[styles.title, { fontSize: isCompact ? 29 : 34, lineHeight: isCompact ? 33 : 38 }]}>Open a fresh page
                             {'\n'}
                             for your work.
                         </Text>
-                        <Text style={styles.subtitle}>
+                        <Text style={[styles.subtitle, { fontSize: isCompact ? 15 : fontSizes.base, lineHeight: isCompact ? 21 : 22 }]}>
                             Same stack, same API contracts, upgraded visual language.
                         </Text>
                     </View>
 
                     {error ? (
-                        <View style={styles.errorContainer}>
+                        <View style={[styles.errorContainer, { borderRadius: rs(24) }]}>
                             <Text style={styles.errorText}>{error}</Text>
                             <TouchableOpacity onPress={clearError}>
                                 <Text style={styles.errorDismiss}>×</Text>
@@ -151,7 +159,7 @@ export const RegisterScreen: React.FC = () => {
                         </View>
                     ) : null}
 
-                    <View style={styles.formCard}>
+                    <View style={[styles.formCard, { borderRadius: rs(24), padding: rs(24) }]}>
                         <Input
                             label="Full Name"
                             placeholder="John Doe"

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -6,21 +6,16 @@ import {
     TouchableOpacity,
     Platform,
     Modal,
-    Animated,
-    PanResponder,
-    Dimensions,
-    Keyboard,
+    KeyboardAvoidingView,
+    ScrollView,
+    TextInput,
+    useWindowDimensions,
 } from 'react-native';
-import Feather from 'react-native-vector-icons/Feather';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useEntriesStore } from '../stores';
-import { Button, Input } from './ui';
-import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
+import { colors } from '../theme';
 import Toast from 'react-native-toast-message';
-
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-const DISMISS_THRESHOLD = 150;
 
 interface AddEntryModalProps {
     visible: boolean;
@@ -35,139 +30,59 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     onClose,
     onCreated,
 }) => {
+    const { width } = useWindowDimensions();
     const { createEntry, isCreating } = useEntriesStore();
-    const translateY = useRef(new Animated.Value(0)).current;
+    const compact = width < 380;
+    const scale = Math.min(Math.max(width / 393, 0.84), 1);
 
-    const [entryMode, setEntryMode] = useState<'total' | 'time'>('total');
-    const [date, setDate] = useState(new Date());
-    const [hours, setHours] = useState('');
-    const [startTime, setStartTime] = useState(new Date());
-    const [endTime, setEndTime] = useState(new Date());
-    const [tip, setTip] = useState('');
+    const [date, setDate] = useState(new Date('2023-10-24'));
+    const [hours, setHours] = useState('8');
+    const [tip, setTip] = useState('10');
+    const [note, setNote] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [showStartPicker, setShowStartPicker] = useState(false);
-    const [showEndPicker, setShowEndPicker] = useState(false);
-
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
-            onPanResponderMove: (_, gestureState) => {
-                if (gestureState.dy > 0) {
-                    translateY.setValue(gestureState.dy);
-                }
-            },
-            onPanResponderRelease: (_, gestureState) => {
-                if (gestureState.dy > DISMISS_THRESHOLD) {
-                    Animated.timing(translateY, {
-                        toValue: SCREEN_HEIGHT,
-                        duration: 200,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        translateY.setValue(0);
-                        onClose();
-                    });
-                } else {
-                    Animated.spring(translateY, {
-                        toValue: 0,
-                        useNativeDriver: true,
-                        bounciness: 8,
-                    }).start();
-                }
-            },
-        })
-    ).current;
 
     useEffect(() => {
         if (visible) {
-            translateY.setValue(0);
             setDate(new Date());
-            setHours('');
-            const now = new Date();
-            const startDefault = new Date(now);
-            startDefault.setHours(9, 0, 0, 0);
-            const endDefault = new Date(now);
-            endDefault.setHours(17, 0, 0, 0);
-            setStartTime(startDefault);
-            setEndTime(endDefault);
-            setTip('');
+            setHours('8');
+            setTip('10');
+            setNote('');
             setError(null);
-            setEntryMode('total');
             setShowDatePicker(false);
-            setShowStartPicker(false);
-            setShowEndPicker(false);
         }
     }, [visible]);
 
-    const calculateDuration = () => {
-        const diff = (endTime.getTime() - startTime.getTime()) / 1000 / 60 / 60;
-        return diff < 0 ? diff + 24 : diff;
-    };
-
-    const formatTime = (time: Date) => {
-        return time.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-        });
-    };
-
-    const formatTimeForApi = (time: Date) => {
-        const hoursValue = time.getHours().toString().padStart(2, '0');
-        const minutes = time.getMinutes().toString().padStart(2, '0');
-        return `${hoursValue}:${minutes}:00`;
-    };
+    const totalHours = parseFloat(hours || '0') || 0;
+    const totalTips = parseFloat(tip || '0') || 0;
 
     const handleSubmit = async () => {
-        Keyboard.dismiss();
-        let totalHours: number | null = null;
-        let startTimeStr: string | null = null;
-        let endTimeStr: string | null = null;
-
-        if (entryMode === 'total') {
-            if (!hours || parseFloat(hours) <= 0) {
-                setError('Please enter valid hours');
-                return;
-            }
-            totalHours = parseFloat(hours);
-        } else {
-            startTimeStr = formatTimeForApi(startTime);
-            endTimeStr = formatTimeForApi(endTime);
-            totalHours = calculateDuration();
-            if (totalHours <= 0) {
-                setError('End time must be after start time');
-                return;
-            }
+        if (!hours || Number.isNaN(totalHours) || totalHours <= 0) {
+            setError('Please enter valid hours');
+            return;
         }
 
         try {
             await createEntry({
                 jobId,
                 date: date.toISOString().split('T')[0],
-                startTime: startTimeStr,
-                endTime: endTimeStr,
+                startTime: null,
+                endTime: null,
                 totalHours,
-                tip: tip ? parseFloat(tip) : 0,
-                note: null,
+                tip: totalTips,
+                note: note.trim() || null,
             });
 
             Toast.show({
                 type: 'success',
                 text1: 'Entry Added',
-                text2: `${totalHours?.toFixed(1)} hours recorded successfully`,
+                text2: `${totalHours.toFixed(1)} hours recorded successfully`,
                 visibilityTime: 2000,
             });
             onCreated();
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to create entry';
-            setError(errorMessage);
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: errorMessage,
-                visibilityTime: 3000,
-            });
+            const message = err instanceof Error ? err.message : 'Failed to create entry';
+            setError(message);
         }
     };
 
@@ -180,451 +95,383 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         }
     };
 
-    const onStartTimeChange = (_event: DateTimePickerEvent, selectedTime?: Date) => {
-        if (Platform.OS === 'android') {
-            setShowStartPicker(false);
-        }
-        if (selectedTime) {
-            setStartTime(selectedTime);
-        }
-    };
-
-    const onEndTimeChange = (_event: DateTimePickerEvent, selectedTime?: Date) => {
-        if (Platform.OS === 'android') {
-            setShowEndPicker(false);
-        }
-        if (selectedTime) {
-            setEndTime(selectedTime);
-        }
-    };
-
     return (
-        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-            <View style={styles.overlay}>
-                <Animated.View style={[styles.content, { transform: [{ translateY }] }]}>
-                    <View {...panResponder.panHandlers} style={styles.handleArea}>
-                        <View style={styles.handleBar} />
+        <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+            <KeyboardAvoidingView
+                style={styles.safeArea}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+                <ScrollView
+                    style={styles.container}
+                    contentContainerStyle={{
+                        paddingHorizontal: compact ? 18 : 24,
+                        paddingTop: 12,
+                        paddingBottom: 36,
+                    }}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={styles.topBar}>
+                        <View style={styles.brandRow}>
+                            <View style={styles.avatarWrap}>
+                                <MaterialIcons name="person" size={14} color="#ffffff" />
+                            </View>
+                            <Text style={styles.brandText}>The Kinetic Ledger</Text>
+                        </View>
+                        <Text style={styles.currencyText}>USD ($)</Text>
                     </View>
 
-                    <View style={styles.header}>
+                    <View style={styles.roleRow}>
+                        <MaterialIcons name="work" size={14} color="#94a3b8" />
+                        <Text style={styles.roleText}>HOUSEKEEPER ROLE</Text>
+                    </View>
+
+                    <View style={[styles.heroCard, { borderRadius: 48 * scale, padding: 28 * scale }]}>
                         <View>
-                            <Text style={styles.eyebrow}>Shift Capture</Text>
-                            <Text style={styles.title}>Add Entry</Text>
+                            <Text style={styles.heroLabel}>Total Earned Today</Text>
+                            <Text style={[styles.heroValue, { fontSize: compact ? 48 : 54 }]}>$130.00</Text>
                         </View>
-                        <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
-                            <Feather name="x" size={20} color={colors.primary} />
+
+                        <View style={styles.heroPillsRow}>
+                            <View style={styles.heroPill}>
+                                <Text style={styles.heroPillLabel}>RATE</Text>
+                                <Text style={styles.heroPillValue}>$15/hr</Text>
+                            </View>
+                            <View style={styles.heroPill}>
+                                <Text style={styles.heroPillLabel}>BONUS</Text>
+                                <Text style={styles.heroPillBonus}>+$10 Tips</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.heroGhost}>
+                            <MaterialIcons name="cleaning-services" size={72} color="rgba(0,109,68,0.10)" />
+                        </View>
+                    </View>
+
+                    {error ? (
+                        <View style={styles.errorBanner}>
+                            <Text style={styles.errorText}>{error}</Text>
+                        </View>
+                    ) : null}
+
+                    <View style={styles.fieldBlock}>
+                        <Text style={styles.fieldLabel}>Work Date</Text>
+                        <TouchableOpacity style={styles.fieldInputWrap} activeOpacity={0.88} onPress={() => setShowDatePicker(true)}>
+                            <Text style={styles.fieldInputText}>
+                                {date.toLocaleDateString('en-US')}
+                            </Text>
+                            <MaterialIcons name="calendar-today" size={18} color="#94a3b8" />
                         </TouchableOpacity>
                     </View>
 
-                    <KeyboardAwareScrollView
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
-                        contentContainerStyle={styles.scrollContent}
-                        enableOnAndroid
-                        extraScrollHeight={40}
-                        extraHeight={60}
-                    >
-                        <View style={styles.heroPanel}>
-                            <Text style={styles.heroLabel}>Locked Rate</Text>
-                            <Text style={styles.heroTitle}>Record today’s shift with the same backend calculation rules.</Text>
-                        </View>
-
-                        {error ? (
-                            <View style={styles.errorContainer}>
-                                <Text style={styles.errorText}>{error}</Text>
+                    {showDatePicker && Platform.OS === 'ios' ? (
+                        <View style={styles.pickerWrap}>
+                            <View style={styles.pickerHeader}>
+                                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                    <Text style={styles.pickerDone}>Done</Text>
+                                </TouchableOpacity>
                             </View>
-                        ) : null}
-
-                        <View style={styles.inputSection}>
-                            <Text style={styles.label}>Date</Text>
-                            <TouchableOpacity
-                                style={styles.dateButton}
-                                onPress={() => {
-                                    Keyboard.dismiss();
-                                    setShowStartPicker(false);
-                                    setShowEndPicker(false);
-                                    setShowDatePicker(true);
-                                }}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={styles.dateButtonText}>
-                                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </Text>
-                                <Feather name="calendar" size={18} color={colors.primary} />
-                            </TouchableOpacity>
+                            <DateTimePicker value={date} mode="date" display="inline" onChange={onDateChange} />
                         </View>
+                    ) : null}
 
-                        {showDatePicker && Platform.OS === 'ios' && (
-                            <View style={styles.pickerContainerDark}>
-                                <View style={styles.pickerHeaderDark}>
-                                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                                        <Text style={styles.pickerDoneLight}>Done</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                <DateTimePicker
-                                    value={date}
-                                    mode="date"
-                                    display="inline"
-                                    onChange={onDateChange}
-                                    themeVariant="dark"
-                                />
-                            </View>
-                        )}
+                    {showDatePicker && Platform.OS === 'android' ? (
+                        <DateTimePicker value={date} mode="date" display="calendar" onChange={onDateChange} />
+                    ) : null}
 
-                        {showDatePicker && Platform.OS === 'android' && (
-                            <DateTimePicker
-                                value={date}
-                                mode="date"
-                                display="calendar"
-                                onChange={onDateChange}
-                            />
-                        )}
-
-                        <View style={styles.modeToggle}>
-                            <TouchableOpacity
-                                style={[styles.modeButton, entryMode === 'total' && styles.modeButtonActive]}
-                                onPress={() => setEntryMode('total')}
-                                activeOpacity={0.85}
-                            >
-                                <Text
-                                    style={[
-                                        styles.modeButtonText,
-                                        entryMode === 'total' && styles.modeButtonTextActive,
-                                    ]}
-                                >
-                                    Total Hours
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modeButton, entryMode === 'time' && styles.modeButtonActive]}
-                                onPress={() => setEntryMode('time')}
-                                activeOpacity={0.85}
-                            >
-                                <Text
-                                    style={[
-                                        styles.modeButtonText,
-                                        entryMode === 'time' && styles.modeButtonTextActive,
-                                    ]}
-                                >
-                                    Start / End
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {entryMode === 'total' ? (
-                            <Input
-                                label="Duration (Hours)"
-                                placeholder="8.5"
+                    <View style={styles.fieldBlock}>
+                        <Text style={styles.fieldLabel}>Hours Worked</Text>
+                        <View style={styles.fieldInputWrap}>
+                            <TextInput
+                                style={styles.numberInput}
                                 value={hours}
                                 onChangeText={setHours}
                                 keyboardType="decimal-pad"
+                                placeholder="0"
+                                placeholderTextColor="#94a3b8"
                             />
-                        ) : (
-                            <>
-                                <View style={styles.timeRow}>
-                                    <View style={styles.timeInput}>
-                                        <Text style={styles.label}>Start</Text>
-                                        <TouchableOpacity
-                                            style={styles.timeButton}
-                                            onPress={() => {
-                                                Keyboard.dismiss();
-                                                setShowDatePicker(false);
-                                                setShowEndPicker(false);
-                                                setShowStartPicker(true);
-                                            }}
-                                        >
-                                            <Text style={styles.timeButtonText}>{formatTime(startTime)}</Text>
-                                        </TouchableOpacity>
-                                    </View>
+                            <Text style={styles.trailingHint}>hrs</Text>
+                        </View>
+                    </View>
 
-                                    <View style={styles.timeInput}>
-                                        <Text style={styles.label}>End</Text>
-                                        <TouchableOpacity
-                                            style={styles.timeButton}
-                                            onPress={() => {
-                                                Keyboard.dismiss();
-                                                setShowDatePicker(false);
-                                                setShowStartPicker(false);
-                                                setShowEndPicker(true);
-                                            }}
-                                        >
-                                            <Text style={styles.timeButtonText}>{formatTime(endTime)}</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
+                    <View style={styles.fieldBlock}>
+                        <Text style={styles.fieldLabel}>Tips Received</Text>
+                        <View style={styles.fieldInputWrap}>
+                            <Text style={styles.leadingHint}>$</Text>
+                            <TextInput
+                                style={[styles.numberInput, styles.moneyEntryInput]}
+                                value={tip}
+                                onChangeText={setTip}
+                                keyboardType="decimal-pad"
+                                placeholder="0"
+                                placeholderTextColor="#94a3b8"
+                            />
+                        </View>
+                    </View>
 
-                                {showStartPicker && Platform.OS === 'ios' && (
-                                    <View style={styles.pickerContainerDark}>
-                                        <View style={styles.pickerHeaderDark}>
-                                            <TouchableOpacity onPress={() => setShowStartPicker(false)}>
-                                                <Text style={styles.pickerDoneLight}>Done</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                        <DateTimePicker
-                                            value={startTime}
-                                            mode="time"
-                                            display="spinner"
-                                            onChange={onStartTimeChange}
-                                            style={styles.picker}
-                                            themeVariant="dark"
-                                        />
-                                    </View>
-                                )}
-
-                                {showStartPicker && Platform.OS === 'android' && (
-                                    <DateTimePicker
-                                        value={startTime}
-                                        mode="time"
-                                        display="default"
-                                        onChange={onStartTimeChange}
-                                    />
-                                )}
-
-                                {showEndPicker && Platform.OS === 'ios' && (
-                                    <View style={styles.pickerContainerDark}>
-                                        <View style={styles.pickerHeaderDark}>
-                                            <TouchableOpacity onPress={() => setShowEndPicker(false)}>
-                                                <Text style={styles.pickerDoneLight}>Done</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                        <DateTimePicker
-                                            value={endTime}
-                                            mode="time"
-                                            display="spinner"
-                                            onChange={onEndTimeChange}
-                                            style={styles.picker}
-                                            themeVariant="dark"
-                                        />
-                                    </View>
-                                )}
-
-                                {showEndPicker && Platform.OS === 'android' && (
-                                    <DateTimePicker
-                                        value={endTime}
-                                        mode="time"
-                                        display="default"
-                                        onChange={onEndTimeChange}
-                                    />
-                                )}
-
-                                <View style={styles.calculatedRow}>
-                                    <Text style={styles.calculatedLabel}>Calculated</Text>
-                                    <Text style={styles.calculatedValue}>{calculateDuration().toFixed(2)} hrs</Text>
-                                </View>
-                            </>
-                        )}
-
-                        <Input
-                            label="Tips / Bonus"
-                            placeholder="0.00"
-                            value={tip}
-                            onChangeText={setTip}
-                            keyboardType="decimal-pad"
+                    <View style={styles.fieldBlock}>
+                        <Text style={styles.fieldLabel}>Shift Notes (Optional)</Text>
+                        <TextInput
+                            style={[styles.notesInput, { minHeight: 120 * scale, borderRadius: 24 * scale }]}
+                            multiline
+                            placeholder="Extra heavy checkout day..."
+                            placeholderTextColor="#94a3b8"
+                            value={note}
+                            onChangeText={setNote}
+                            textAlignVertical="top"
                         />
+                    </View>
 
-                        <Button
-                            title="Add to Job"
-                            onPress={handleSubmit}
-                            loading={isCreating}
-                            size="lg"
-                            fullWidth
-                        />
-                    </KeyboardAwareScrollView>
-                </Animated.View>
-            </View>
+                    <TouchableOpacity
+                        style={[styles.confirmButton, isCreating && styles.confirmButtonDisabled]}
+                        activeOpacity={0.9}
+                        onPress={handleSubmit}
+                        disabled={isCreating}
+                    >
+                        <MaterialIcons name="add-circle" size={20} color="#412100" />
+                        <Text style={styles.confirmText}>{isCreating ? 'Saving...' : 'Confirm Entry'}</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.successHint}>
+                        <View style={styles.successIcon}>
+                            <MaterialIcons name="check" size={14} color="#ffffff" />
+                        </View>
+                        <Text style={styles.successText}>
+                            Your hourly rate is locked at <Text style={styles.successTextStrong}>$15.00/hr</Text> for this position.
+                        </Text>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </Modal>
     );
 };
 
 const styles = StyleSheet.create({
-    overlay: {
+    safeArea: {
         flex: 1,
-        backgroundColor: 'rgba(24, 29, 25, 0.18)',
-        justifyContent: 'flex-end',
+        backgroundColor: '#fbf9f1',
     },
-    content: {
-        backgroundColor: colors.surfaceBright,
-        borderTopLeftRadius: borderRadius.xl,
-        borderTopRightRadius: borderRadius.xl,
-        maxHeight: '88%',
+    container: {
+        flex: 1,
+        backgroundColor: '#fbf9f1',
     },
-    handleArea: {
-        paddingVertical: spacing.md,
-        alignItems: 'center',
-    },
-    handleBar: {
-        width: 48,
-        height: 5,
-        backgroundColor: colors.outlineVariant,
-        borderRadius: 3,
-    },
-    header: {
+    topBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        paddingHorizontal: spacing.lg,
-        marginBottom: spacing.md,
+        alignItems: 'center',
+        marginBottom: 18,
     },
-    eyebrow: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.3,
-        marginBottom: 4,
+    brandRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
     },
-    title: {
-        color: colors.onSurface,
-        fontSize: fontSizes['3xl'],
-        fontWeight: fontWeights.extrabold,
-    },
-    closeButton: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: colors.surfaceContainerLow,
+    avatarWrap: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: '#263746',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    scrollContent: {
-        paddingHorizontal: spacing.lg,
-        paddingBottom: spacing['4xl'],
+    brandText: {
+        color: '#006D44',
+        fontSize: 20,
+        fontWeight: '800',
+        letterSpacing: -0.4,
     },
-    heroPanel: {
-        backgroundColor: colors.surfaceContainerLow,
-        borderRadius: borderRadius.lg,
-        padding: spacing['2xl'],
-        marginBottom: spacing.lg,
+    currencyText: {
+        color: '#64748b',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    roleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 18,
+    },
+    roleText: {
+        color: '#94a3b8',
+        fontSize: 13,
+        fontWeight: '700',
+        letterSpacing: 0.8,
+    },
+    heroCard: {
+        backgroundColor: '#f1f5ef',
+        overflow: 'hidden',
+        marginBottom: 20,
+        position: 'relative',
     },
     heroLabel: {
-        color: colors.outline,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.3,
-        marginBottom: spacing.sm,
+        color: '#6f7a71',
+        fontSize: 16,
+        fontWeight: '700',
+        marginBottom: 6,
     },
-    heroTitle: {
-        color: colors.primary,
-        fontSize: fontSizes['2xl'],
-        fontWeight: fontWeights.extrabold,
-        lineHeight: 28,
+    heroValue: {
+        color: '#006D44',
+        fontWeight: '800',
+        letterSpacing: -1.3,
+        marginBottom: 18,
     },
-    errorContainer: {
-        backgroundColor: colors.dangerBg,
-        borderRadius: borderRadius.lg,
-        padding: spacing.md,
-        marginBottom: spacing.lg,
+    heroPillsRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    heroPill: {
+        backgroundColor: '#ffffff',
+        borderRadius: 999,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+    },
+    heroPillLabel: {
+        color: '#94a3b8',
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        marginBottom: 4,
+    },
+    heroPillValue: {
+        color: '#006D44',
+        fontSize: 19,
+        fontWeight: '700',
+    },
+    heroPillBonus: {
+        color: '#ff8a00',
+        fontSize: 19,
+        fontWeight: '700',
+    },
+    heroGhost: {
+        position: 'absolute',
+        right: 18,
+        top: 24,
+    },
+    errorBanner: {
+        backgroundColor: '#fff1ef',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderRadius: 24,
+        marginBottom: 14,
     },
     errorText: {
-        color: colors.danger,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.semibold,
+        color: '#ba1a1a',
+        fontSize: 14,
+        fontWeight: '700',
     },
-    inputSection: {
-        marginBottom: spacing.lg,
+    fieldBlock: {
+        marginBottom: 18,
     },
-    label: {
-        color: colors.primary,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.2,
-        marginBottom: spacing.xs,
-        marginLeft: spacing.sm,
+    fieldLabel: {
+        color: '#181d19',
+        fontSize: 16,
+        fontWeight: '700',
+        marginBottom: 10,
     },
-    dateButton: {
+    fieldInputWrap: {
+        backgroundColor: '#eae8e0',
+        minHeight: 58,
+        borderRadius: 999,
+        paddingHorizontal: 20,
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: colors.surfaceContainerHighest,
-        padding: spacing.lg,
-        borderRadius: borderRadius.full,
     },
-    dateButtonText: {
-        color: colors.onSurface,
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.bold,
-    },
-    pickerContainerDark: {
-        backgroundColor: colors.slate800,
-        borderRadius: borderRadius.lg,
-        marginBottom: spacing.lg,
-        overflow: 'hidden',
-    },
-    pickerHeaderDark: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        padding: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.slate600,
-    },
-    pickerDoneLight: {
-        color: colors.primarySoft,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-    },
-    picker: {
-        height: 150,
-    },
-    modeToggle: {
-        flexDirection: 'row',
-        backgroundColor: colors.surfaceContainerHigh,
-        borderRadius: borderRadius.full,
-        padding: spacing.xs,
-        marginBottom: spacing.lg,
-    },
-    modeButton: {
+    fieldInputText: {
         flex: 1,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.full,
-        alignItems: 'center',
+        color: '#4f5a53',
+        fontSize: 24,
+        fontWeight: '500',
     },
-    modeButtonActive: {
-        backgroundColor: colors.surfaceContainerLowest,
-    },
-    modeButtonText: {
-        color: colors.outline,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.extrabold,
-    },
-    modeButtonTextActive: {
-        color: colors.primary,
-    },
-    timeRow: {
-        flexDirection: 'row',
-        gap: spacing.md,
-        marginBottom: spacing.md,
-    },
-    timeInput: {
+    numberInput: {
         flex: 1,
+        color: '#181d19',
+        fontSize: 34,
+        fontWeight: '700',
+        paddingVertical: 10,
     },
-    timeButton: {
-        backgroundColor: colors.surfaceContainerHighest,
-        padding: spacing.lg,
-        borderRadius: borderRadius.full,
-        alignItems: 'center',
+    moneyEntryInput: {
+        marginLeft: 10,
     },
-    timeButtonText: {
-        color: colors.onSurface,
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.bold,
+    trailingHint: {
+        color: '#94a3b8',
+        fontSize: 18,
+        fontWeight: '700',
     },
-    calculatedRow: {
+    leadingHint: {
+        color: '#6f7a71',
+        fontSize: 28,
+        fontWeight: '700',
+    },
+    notesInput: {
+        backgroundColor: '#eae8e0',
+        paddingHorizontal: 20,
+        paddingVertical: 18,
+        color: '#181d19',
+        fontSize: 18,
+        lineHeight: 26,
+    },
+    confirmButton: {
+        backgroundColor: '#ff8a00',
+        minHeight: 64,
+        borderRadius: 999,
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'center',
+        gap: 10,
+        marginTop: 6,
+        marginBottom: 18,
+    },
+    confirmButtonDisabled: {
+        opacity: 0.7,
+    },
+    confirmText: {
+        color: '#412100',
+        fontSize: 21,
+        fontWeight: '800',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    successHint: {
+        backgroundColor: 'rgba(0,109,68,0.10)',
+        borderRadius: 999,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.sm,
-        marginBottom: spacing.lg,
+        gap: 10,
     },
-    calculatedLabel: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.medium,
+    successIcon: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#006D44',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    calculatedValue: {
-        color: colors.primary,
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.extrabold,
+    successText: {
+        flex: 1,
+        color: '#2b7a57',
+        fontSize: 14,
+        lineHeight: 20,
+        fontWeight: '600',
+    },
+    successTextStrong: {
+        fontWeight: '800',
+    },
+    pickerWrap: {
+        backgroundColor: '#ffffff',
+        borderRadius: 24,
+        overflow: 'hidden',
+        marginBottom: 18,
+    },
+    pickerHeader: {
+        alignItems: 'flex-end',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    pickerDone: {
+        color: '#006D44',
+        fontSize: 16,
+        fontWeight: '700',
     },
 });
