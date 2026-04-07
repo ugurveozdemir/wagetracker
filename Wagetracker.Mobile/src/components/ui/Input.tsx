@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     label: {
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.bold,
-        color: colors.slate500,
+        color: colors.primary,
         textTransform: 'uppercase',
         letterSpacing: 1,
         marginBottom: spacing.sm,
@@ -60,13 +60,13 @@ const styles = StyleSheet.create({
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.slate50,
-        borderRadius: borderRadius['3xl'],
+        backgroundColor: colors.surfaceContainerHighest,
+        borderRadius: borderRadius.full,
         borderWidth: 2,
         borderColor: colors.transparent,
     },
     inputError: {
-        borderColor: colors.orange,
+        borderColor: 'rgba(186, 26, 26, 0.2)',
     },
     iconContainer: {
         paddingLeft: spacing.lg,
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: fontSizes.xl,
         fontWeight: fontWeights.bold,
-        color: colors.slate800,
+        color: colors.onSurface,
         paddingVertical: spacing.lg,
         paddingHorizontal: spacing.lg,
     },
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     },
     errorText: {
         fontSize: fontSizes.sm,
-        color: colors.orange,
+        color: colors.danger,
         marginTop: spacing.xs,
         marginLeft: spacing.sm,
     },

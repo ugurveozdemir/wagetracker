@@ -43,7 +43,7 @@ export const Card: React.FC<CardProps> = ({
     if (variant === 'loss') {
         return (
             <LinearGradient
-                colors={['#ef4444', '#dc2626']}
+                colors={[colors.secondary, colors.secondaryContainer]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[styles.base, styles.gradient, style]}
@@ -62,22 +62,22 @@ export const Card: React.FC<CardProps> = ({
 
 const styles = StyleSheet.create({
     base: {
-        borderRadius: borderRadius['3xl'],
-        padding: spacing.lg,
+        borderRadius: borderRadius.lg,
+        padding: spacing['2xl'],
     },
     default: {
-        backgroundColor: colors.white,
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
+        backgroundColor: colors.surfaceContainerLowest,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.06,
+        shadowRadius: 40,
+        elevation: 6,
     },
     gradient: {
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.25,
-        shadowRadius: 16,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.08,
+        shadowRadius: 40,
         elevation: 8,
     },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -10,6 +10,7 @@ import {
     Dimensions,
     Keyboard,
 } from 'react-native';
+import Feather from 'react-native-vector-icons/Feather';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useJobsStore } from '../stores';
 import { Button, Input } from './ui';
@@ -51,9 +52,7 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: (_, gestureState) => {
-                return gestureState.dy > 10;
-            },
+            onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
             onPanResponderMove: (_, gestureState) => {
                 if (gestureState.dy > 0) {
                     translateY.setValue(gestureState.dy);
@@ -92,10 +91,12 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
 
     const handleSubmit = async () => {
         Keyboard.dismiss();
+
         if (!title.trim()) {
             setError('Job name is required');
             return;
         }
+
         if (!hourlyRate || parseFloat(hourlyRate) <= 0) {
             setError('Please enter a valid hourly rate');
             return;
@@ -107,6 +108,7 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
                 hourlyRate: parseFloat(hourlyRate),
                 firstDayOfWeek,
             });
+
             Toast.show({
                 type: 'success',
                 text1: 'Job Created',
@@ -127,29 +129,20 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
     };
 
     return (
-        <Modal
-            visible={visible}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={onClose}
-        >
+        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
             <View style={styles.overlay}>
-                <Animated.View
-                    style={[
-                        styles.content,
-                        { transform: [{ translateY }] }
-                    ]}
-                >
-                    {/* Swipe Handle */}
+                <Animated.View style={[styles.content, { transform: [{ translateY }] }]}>
                     <View {...panResponder.panHandlers} style={styles.handleArea}>
                         <View style={styles.handleBar} />
                     </View>
 
-                    {/* Header */}
                     <View style={styles.header}>
-                        <Text style={styles.title}>New Job 💼</Text>
-                        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                            <Text style={styles.closeIcon}>×</Text>
+                        <View>
+                            <Text style={styles.eyebrow}>New Adventure</Text>
+                            <Text style={styles.title}>Create Job</Text>
+                        </View>
+                        <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
+                            <Feather name="x" size={20} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
 
@@ -157,71 +150,79 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                         contentContainerStyle={styles.scrollContent}
-                        enableOnAndroid={true}
+                        enableOnAndroid
                         extraScrollHeight={40}
                         extraHeight={60}
                     >
-                        {/* Error Message */}
-                        {error && (
+                        <Text style={styles.subtitle}>
+                            Add the role details first. The pay logic and data flow stay unchanged.
+                        </Text>
+
+                        {error ? (
                             <View style={styles.errorContainer}>
                                 <Text style={styles.errorText}>{error}</Text>
                             </View>
-                        )}
+                        ) : null}
 
-                        {/* Form */}
-                        <View style={styles.form}>
-                            <Input
-                                label="Job / Client Name"
-                                placeholder="e.g. Design Studio"
-                                value={title}
-                                onChangeText={setTitle}
-                                autoCapitalize="words"
-                            />
-
-                            <Input
-                                label="Hourly Rate ($)"
-                                placeholder="0"
-                                value={hourlyRate}
-                                onChangeText={setHourlyRate}
-                                keyboardType="decimal-pad"
-                            />
-
-                            {/* Day of Week Selector */}
-                            <View style={styles.daySection}>
-                                <Text style={styles.dayLabel}>FIRST DAY OF WEEK</Text>
-                                <Text style={styles.dayHint}>Used to calculate weekly overtime/totals.</Text>
-                                <View style={styles.daysGrid}>
-                                    {DAYS_OF_WEEK.map((day) => (
-                                        <TouchableOpacity
-                                            key={day.id}
-                                            style={[
-                                                styles.dayButton,
-                                                firstDayOfWeek === day.id && styles.dayButtonActive,
-                                            ]}
-                                            onPress={() => setFirstDayOfWeek(day.id)}
-                                        >
-                                            <Text
-                                                style={[
-                                                    styles.dayButtonText,
-                                                    firstDayOfWeek === day.id && styles.dayButtonTextActive,
-                                                ]}
-                                            >
-                                                {day.label}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            </View>
-
-                            {/* Submit Button */}
-                            <Button
-                                title="Create Job"
-                                onPress={handleSubmit}
-                                loading={isCreating}
-                                size="lg"
-                                fullWidth
-                            />
+                        <View style={styles.heroPanel}>
+                            <Text style={styles.heroLabel}>Workspace Profile</Text>
+                            <Text style={styles.heroTitle}>
+                                New role,
+                                {'\n'}
+                                clean ledger.
+                            </Text>
                         </View>
+
+                        <Input
+                            label="Job / Client Name"
+                            placeholder="e.g. Grand Canyon Lodge"
+                            value={title}
+                            onChangeText={setTitle}
+                            autoCapitalize="words"
+                        />
+
+                        <Input
+                            label="Hourly Rate ($)"
+                            placeholder="18.50"
+                            value={hourlyRate}
+                            onChangeText={setHourlyRate}
+                            keyboardType="decimal-pad"
+                        />
+
+                        <View style={styles.daySection}>
+                            <Text style={styles.dayLabel}>First Day of Week</Text>
+                            <Text style={styles.dayHint}>Used for overtime and weekly summaries.</Text>
+                            <View style={styles.daysGrid}>
+                                {DAYS_OF_WEEK.map((day) => (
+                                    <TouchableOpacity
+                                        key={day.id}
+                                        style={[
+                                            styles.dayButton,
+                                            firstDayOfWeek === day.id && styles.dayButtonActive,
+                                        ]}
+                                        onPress={() => setFirstDayOfWeek(day.id)}
+                                        activeOpacity={0.82}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.dayButtonText,
+                                                firstDayOfWeek === day.id && styles.dayButtonTextActive,
+                                            ]}
+                                        >
+                                            {day.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+
+                        <Button
+                            title="Create Job"
+                            onPress={handleSubmit}
+                            loading={isCreating}
+                            size="lg"
+                            fullWidth
+                        />
                     </KeyboardAwareScrollView>
                 </Animated.View>
             </View>
@@ -232,14 +233,14 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(15, 23, 42, 0.4)',
+        backgroundColor: 'rgba(24, 29, 25, 0.18)',
         justifyContent: 'flex-end',
     },
     content: {
-        backgroundColor: colors.white,
-        borderTopLeftRadius: borderRadius['3xl'],
-        borderTopRightRadius: borderRadius['3xl'],
-        maxHeight: '75%',
+        backgroundColor: colors.surfaceBright,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
+        maxHeight: '82%',
     },
     handleArea: {
         paddingVertical: spacing.md,
@@ -248,67 +249,93 @@ const styles = StyleSheet.create({
     handleBar: {
         width: 48,
         height: 5,
-        backgroundColor: colors.slate300,
+        backgroundColor: colors.outlineVariant,
         borderRadius: 3,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        paddingHorizontal: spacing.lg,
+        marginBottom: spacing.md,
+    },
+    eyebrow: {
+        color: colors.outline,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.4,
+        marginBottom: 4,
+    },
+    title: {
+        fontSize: fontSizes['3xl'],
+        fontWeight: fontWeights.extrabold,
+        color: colors.primary,
+    },
+    closeButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: colors.surfaceContainerLow,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     scrollContent: {
         paddingHorizontal: spacing.lg,
         paddingBottom: spacing['4xl'],
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        marginBottom: spacing.md,
-    },
-    title: {
-        fontSize: fontSizes['2xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
-    },
-    closeButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.slate100,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    closeIcon: {
-        fontSize: 22,
-        fontWeight: fontWeights.bold,
-        color: colors.slate500,
-        lineHeight: 24,
+    subtitle: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.base,
+        lineHeight: 22,
+        marginBottom: spacing.lg,
     },
     errorContainer: {
-        backgroundColor: colors.orangeBg,
+        backgroundColor: colors.dangerBg,
+        borderRadius: borderRadius.lg,
         padding: spacing.md,
-        borderRadius: borderRadius.xl,
-        marginBottom: spacing.md,
+        marginBottom: spacing.lg,
     },
     errorText: {
-        color: colors.orange,
-        fontWeight: fontWeights.semibold,
+        color: colors.danger,
         fontSize: fontSizes.sm,
+        fontWeight: fontWeights.semibold,
     },
-    form: {
-        gap: spacing.sm,
+    heroPanel: {
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.lg,
+        padding: spacing['2xl'],
+        marginBottom: spacing.lg,
     },
-    daySection: {
-        marginBottom: spacing.md,
-    },
-    dayLabel: {
+    heroLabel: {
+        color: colors.outline,
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.bold,
-        color: colors.slate500,
-        letterSpacing: 1,
+        textTransform: 'uppercase',
+        letterSpacing: 1.3,
+        marginBottom: spacing.sm,
+    },
+    heroTitle: {
+        color: colors.primary,
+        fontSize: fontSizes['3xl'],
+        fontWeight: fontWeights.extrabold,
+        lineHeight: 32,
+    },
+    daySection: {
+        marginBottom: spacing.lg,
+    },
+    dayLabel: {
+        color: colors.primary,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
         marginBottom: spacing.xs,
         marginLeft: spacing.sm,
     },
     dayHint: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.xs,
-        color: colors.slate400,
         marginBottom: spacing.md,
         marginLeft: spacing.sm,
     },
@@ -320,19 +347,19 @@ const styles = StyleSheet.create({
     dayButton: {
         paddingVertical: spacing.sm,
         paddingHorizontal: spacing.md,
-        borderRadius: borderRadius.xl,
-        backgroundColor: colors.slate50,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.surfaceContainerHighest,
         borderWidth: 2,
-        borderColor: colors.transparent,
+        borderColor: 'transparent',
     },
     dayButtonActive: {
-        backgroundColor: colors.primaryLight + '20',
-        borderColor: colors.primaryLight,
+        backgroundColor: 'rgba(0, 109, 68, 0.10)',
+        borderColor: 'rgba(0, 109, 68, 0.18)',
     },
     dayButtonText: {
+        color: colors.outline,
         fontSize: fontSizes.sm,
         fontWeight: fontWeights.bold,
-        color: colors.slate400,
     },
     dayButtonTextActive: {
         color: colors.primary,

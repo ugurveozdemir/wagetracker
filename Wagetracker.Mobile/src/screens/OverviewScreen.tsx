@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -13,7 +13,7 @@ import { Card } from '../components/ui';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
 
 export const OverviewScreen: React.FC = () => {
-    const { summary, isLoading, fetchDashboard } = useJobsStore();
+    const { summary, fetchDashboard } = useJobsStore();
     const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
@@ -41,133 +41,87 @@ export const OverviewScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.slate50} />
+            <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
             <ScrollView
                 style={styles.container}
                 contentContainerStyle={styles.contentContainer}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                }
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Header */}
+                <Text style={styles.eyebrow}>All-time Summary</Text>
                 <Text style={styles.title}>Overview</Text>
-                <Text style={styles.subtitle}>All-time summary</Text>
+                <Text style={styles.subtitle}>
+                    Read the ledger at a glance: net, hours, spending, and each role’s contribution.
+                </Text>
 
-                {/* Net Income - Hero Card */}
                 <View style={styles.heroCard}>
-                    <Text style={styles.heroLabel}>NET INCOME</Text>
+                    <Text style={styles.heroLabel}>Net Income</Text>
                     <Text style={[styles.heroValue, netIncome < 0 && styles.heroValueNegative]}>
-                        {netIncome < 0 ? '-' : ''}{formatCurrency(Math.abs(netIncome))}
+                        {netIncome < 0 ? '-' : ''}
+                        {formatCurrency(Math.abs(netIncome))}
                     </Text>
-                    <View style={styles.heroBar}>
-                        <View style={styles.heroBarTrack}>
-                            {totalEarnings > 0 && (
-                                <View
-                                    style={[
-                                        styles.heroBarFill,
-                                        {
-                                            width: `${Math.min(
-                                                (totalExpenses / totalEarnings) * 100,
-                                                100
-                                            )}%`,
-                                        },
-                                    ]}
-                                />
-                            )}
-                        </View>
-                        <View style={styles.heroBarLabels}>
-                            <Text style={styles.heroBarLabel}>
-                                Spent {totalEarnings > 0
-                                    ? `${((totalExpenses / totalEarnings) * 100).toFixed(0)}%`
-                                    : '0%'}
-                            </Text>
-                        </View>
+                    <View style={styles.heroBarTrack}>
+                        <View
+                            style={[
+                                styles.heroBarFill,
+                                {
+                                    width: `${totalEarnings > 0
+                                        ? Math.min((totalExpenses / totalEarnings) * 100, 100)
+                                        : 0}%`,
+                                },
+                            ]}
+                        />
                     </View>
+                    <Text style={styles.heroBarLabel}>
+                        Spent {totalEarnings > 0 ? `${((totalExpenses / totalEarnings) * 100).toFixed(0)}%` : '0%'}
+                    </Text>
                 </View>
 
-                {/* Stats Grid */}
                 <View style={styles.statsGrid}>
-                    {/* Earnings */}
                     <Card variant="earnings" style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Text style={styles.statEmoji}>💰</Text>
-                            <Text style={styles.statLabel}>EARNINGS</Text>
-                        </View>
-                        <Text style={styles.statValue}>
-                            {formatCurrency(totalEarnings)}
-                        </Text>
+                        <Text style={styles.statLabel}>Earnings</Text>
+                        <Text style={styles.statValue}>{formatCurrency(totalEarnings)}</Text>
                         <Text style={styles.statSubtext}>Total earned</Text>
                     </Card>
 
-                    {/* Expenses */}
-                    <View style={styles.expenseCard}>
-                        <View style={styles.statHeader}>
-                            <Text style={styles.statEmoji}>💸</Text>
-                            <Text style={[styles.statLabel, { color: 'rgba(239,68,68,0.8)' }]}>
-                                EXPENSES
-                            </Text>
-                        </View>
-                        <Text style={[styles.statValue, { color: colors.white }]}>
-                            {formatCurrency(totalExpenses)}
-                        </Text>
-                        <Text style={[styles.statSubtext, { color: 'rgba(255,255,255,0.7)' }]}>
-                            Total spent
-                        </Text>
+                    <View style={styles.lossCard}>
+                        <Text style={styles.statLabelLight}>Expenses</Text>
+                        <Text style={styles.statValueLight}>{formatCurrency(totalExpenses)}</Text>
+                        <Text style={styles.statSubtextLight}>Total spent</Text>
                     </View>
                 </View>
 
-                {/* Additional Stats */}
                 <View style={styles.statsGrid}>
-                    {/* Hours */}
                     <Card variant="hours" style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Text style={styles.statEmoji}>⏳</Text>
-                            <Text style={styles.statLabel}>HOURS</Text>
-                        </View>
+                        <Text style={styles.statLabel}>Hours</Text>
                         <Text style={styles.statValue}>
                             {totalHours.toFixed(1)}
-                            <Text style={styles.statUnit}>h</Text>
+                            <Text style={styles.unit}>h</Text>
                         </Text>
-                        <Text style={styles.statSubtext}>Total worked</Text>
+                        <Text style={styles.statSubtext}>Worked time</Text>
                     </Card>
 
-                    {/* Active Jobs */}
                     <View style={styles.jobsCard}>
-                        <View style={styles.statHeader}>
-                            <Text style={styles.statEmoji}>💼</Text>
-                            <Text style={[styles.statLabel, { color: colors.slate400 }]}>
-                                JOBS
-                            </Text>
-                        </View>
-                        <Text style={[styles.statValue, { color: colors.slate800 }]}>
-                            {activeJobs}
-                        </Text>
-                        <Text style={[styles.statSubtext, { color: colors.slate400 }]}>
-                            Active jobs
-                        </Text>
+                        <Text style={styles.jobsLabel}>Jobs</Text>
+                        <Text style={styles.jobsValue}>{activeJobs}</Text>
+                        <Text style={styles.jobsSubtext}>Active roles</Text>
                     </View>
                 </View>
 
-                {/* Per-job breakdown */}
-                {summary?.jobs && summary.jobs.length > 0 && (
+                {summary?.jobs?.length ? (
                     <View style={styles.jobsSection}>
                         <Text style={styles.sectionTitle}>Earnings by Job</Text>
                         {summary.jobs.map((job) => (
                             <View key={job.id} style={styles.jobRow}>
                                 <View style={styles.jobInfo}>
                                     <Text style={styles.jobName}>{job.title}</Text>
-                                    <Text style={styles.jobHours}>
-                                        {job.totalHours.toFixed(1)}h worked
-                                    </Text>
+                                    <Text style={styles.jobHours}>{job.totalHours.toFixed(1)}h worked</Text>
                                 </View>
-                                <Text style={styles.jobEarnings}>
-                                    {formatCurrency(job.totalEarnings)}
-                                </Text>
+                                <Text style={styles.jobEarnings}>{formatCurrency(job.totalEarnings)}</Text>
                             </View>
                         ))}
                     </View>
-                )}
+                ) : null}
             </ScrollView>
         </SafeAreaView>
     );
@@ -176,81 +130,82 @@ export const OverviewScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: colors.slate50,
+        backgroundColor: colors.surfaceBright,
     },
     container: {
         flex: 1,
     },
     contentContainer: {
         padding: spacing.lg,
-        paddingBottom: 40,
+        paddingBottom: 120,
     },
-    title: {
-        fontSize: fontSizes['3xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
-    },
-    subtitle: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.medium,
-        color: colors.slate400,
-        marginBottom: spacing.xl,
-    },
-
-    // Hero Card
-    heroCard: {
-        backgroundColor: colors.white,
-        borderRadius: borderRadius['3xl'],
-        padding: spacing.xl,
-        marginBottom: spacing.lg,
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-        elevation: 3,
-    },
-    heroLabel: {
+    eyebrow: {
+        color: colors.outline,
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.bold,
-        color: colors.slate400,
-        letterSpacing: 1,
+        textTransform: 'uppercase',
+        letterSpacing: 1.3,
+        marginBottom: spacing.sm,
+    },
+    title: {
+        color: colors.onSurface,
+        fontSize: fontSizes['4xl'],
+        fontWeight: fontWeights.extrabold,
+        marginBottom: spacing.xs,
+    },
+    subtitle: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.base,
+        lineHeight: 22,
+        marginBottom: spacing.xl,
+        maxWidth: 320,
+    },
+    heroCard: {
+        backgroundColor: colors.surfaceContainerLowest,
+        borderRadius: borderRadius.xl,
+        padding: spacing['3xl'],
+        marginBottom: spacing.lg,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.05,
+        shadowRadius: 40,
+        elevation: 6,
+    },
+    heroLabel: {
+        color: colors.outline,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.3,
         marginBottom: spacing.sm,
     },
     heroValue: {
-        fontSize: fontSizes['5xl'],
+        color: colors.primary,
+        fontSize: 44,
         fontWeight: fontWeights.extrabold,
-        color: colors.emerald,
         marginBottom: spacing.lg,
     },
     heroValueNegative: {
-        color: '#ef4444',
-    },
-    heroBar: {
-        marginTop: spacing.sm,
+        color: colors.secondaryContainer,
     },
     heroBarTrack: {
-        height: 8,
-        backgroundColor: colors.emerald + '30',
-        borderRadius: 4,
+        height: 10,
+        backgroundColor: 'rgba(0, 109, 68, 0.14)',
+        borderRadius: 999,
         overflow: 'hidden',
     },
     heroBarFill: {
         height: '100%',
-        backgroundColor: '#ef4444',
-        borderRadius: 4,
-    },
-    heroBarLabels: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        marginTop: spacing.xs,
+        backgroundColor: colors.secondaryContainer,
+        borderRadius: 999,
     },
     heroBarLabel: {
+        color: colors.outline,
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.semibold,
-        color: colors.slate400,
+        marginTop: spacing.sm,
+        textAlign: 'right',
     },
-
-    // Stats
     statsGrid: {
         flexDirection: 'row',
         gap: spacing.md,
@@ -258,93 +213,120 @@ const styles = StyleSheet.create({
     },
     statCard: {
         flex: 1,
-        minHeight: 130,
+        minHeight: 150,
     },
-    expenseCard: {
+    statLabel: {
+        color: 'rgba(255,255,255,0.82)',
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.1,
+        marginBottom: spacing.lg,
+    },
+    statValue: {
+        color: colors.white,
+        fontSize: fontSizes['3xl'],
+        fontWeight: fontWeights.extrabold,
+    },
+    statSubtext: {
+        color: 'rgba(255,255,255,0.75)',
+        fontSize: fontSizes.sm,
+        marginTop: spacing.sm,
+    },
+    unit: {
+        fontSize: fontSizes.xl,
+        opacity: 0.85,
+    },
+    lossCard: {
         flex: 1,
-        minHeight: 130,
-        backgroundColor: '#ef4444',
-        borderRadius: borderRadius['3xl'],
-        padding: spacing.lg,
+        minHeight: 150,
+        backgroundColor: colors.secondaryContainer,
+        borderRadius: borderRadius.lg,
+        padding: spacing['2xl'],
+    },
+    statLabelLight: {
+        color: 'rgba(255,255,255,0.82)',
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.1,
+        marginBottom: spacing.lg,
+    },
+    statValueLight: {
+        color: colors.white,
+        fontSize: fontSizes['3xl'],
+        fontWeight: fontWeights.extrabold,
+    },
+    statSubtextLight: {
+        color: 'rgba(255,255,255,0.75)',
+        fontSize: fontSizes.sm,
+        marginTop: spacing.sm,
     },
     jobsCard: {
         flex: 1,
-        minHeight: 130,
-        backgroundColor: colors.white,
-        borderRadius: borderRadius['3xl'],
-        padding: spacing.lg,
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-        elevation: 3,
+        minHeight: 150,
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.lg,
+        padding: spacing['2xl'],
     },
-    statHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-    },
-    statEmoji: {
-        fontSize: 20,
-    },
-    statLabel: {
-        fontSize: 10,
+    jobsLabel: {
+        color: colors.outline,
+        fontSize: fontSizes.xs,
         fontWeight: fontWeights.bold,
-        color: 'rgba(255,255,255,0.8)',
-        letterSpacing: 1,
+        textTransform: 'uppercase',
+        letterSpacing: 1.1,
+        marginBottom: spacing.lg,
     },
-    statValue: {
-        fontSize: fontSizes['4xl'],
+    jobsValue: {
+        color: colors.onSurface,
+        fontSize: fontSizes['3xl'],
         fontWeight: fontWeights.extrabold,
-        color: colors.white,
     },
-    statUnit: {
-        fontSize: fontSizes.xl,
-        opacity: 0.8,
-    },
-    statSubtext: {
+    jobsSubtext: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.sm,
-        fontWeight: fontWeights.medium,
-        color: 'rgba(255,255,255,0.7)',
-        marginTop: spacing.xs,
+        marginTop: spacing.sm,
     },
-
-    // Jobs section
     jobsSection: {
         marginTop: spacing.lg,
     },
     sectionTitle: {
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.bold,
-        color: colors.slate800,
+        color: colors.onSurface,
+        fontSize: fontSizes.xl,
+        fontWeight: fontWeights.extrabold,
         marginBottom: spacing.md,
     },
     jobRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: colors.white,
-        padding: spacing.lg,
-        borderRadius: borderRadius.xl,
+        backgroundColor: colors.surfaceContainerLowest,
+        borderRadius: borderRadius.lg,
+        padding: spacing.xl,
         marginBottom: spacing.sm,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.04,
+        shadowRadius: 40,
+        elevation: 4,
     },
     jobInfo: {
         flex: 1,
+        marginRight: spacing.md,
     },
     jobName: {
+        color: colors.onSurface,
         fontSize: fontSizes.base,
-        fontWeight: fontWeights.semibold,
-        color: colors.slate800,
+        fontWeight: fontWeights.bold,
+        marginBottom: 2,
     },
     jobHours: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.sm,
-        color: colors.slate400,
-        marginTop: 2,
     },
     jobEarnings: {
+        color: colors.primary,
         fontSize: fontSizes.lg,
-        fontWeight: fontWeights.bold,
-        color: colors.emerald,
+        fontWeight: fontWeights.extrabold,
     },
 });

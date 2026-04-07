@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,7 @@ import {
     Dimensions,
     Keyboard,
 } from 'react-native';
+import Feather from 'react-native-vector-icons/Feather';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useEntriesStore } from '../stores';
@@ -44,7 +45,6 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     const [endTime, setEndTime] = useState(new Date());
     const [tip, setTip] = useState('');
     const [error, setError] = useState<string | null>(null);
-
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showStartPicker, setShowStartPicker] = useState(false);
     const [showEndPicker, setShowEndPicker] = useState(false);
@@ -52,9 +52,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: (_, gestureState) => {
-                return gestureState.dy > 10;
-            },
+            onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
             onPanResponderMove: (_, gestureState) => {
                 if (gestureState.dy > 0) {
                     translateY.setValue(gestureState.dy);
@@ -102,23 +100,23 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         }
     }, [visible]);
 
-    const calculateDuration = (): number => {
+    const calculateDuration = () => {
         const diff = (endTime.getTime() - startTime.getTime()) / 1000 / 60 / 60;
         return diff < 0 ? diff + 24 : diff;
     };
 
-    const formatTime = (time: Date): string => {
+    const formatTime = (time: Date) => {
         return time.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            hour12: false
+            hour12: false,
         });
     };
 
-    const formatTimeForApi = (time: Date): string => {
-        const hours = time.getHours().toString().padStart(2, '0');
+    const formatTimeForApi = (time: Date) => {
+        const hoursValue = time.getHours().toString().padStart(2, '0');
         const minutes = time.getMinutes().toString().padStart(2, '0');
-        return `${hours}:${minutes}:00`;
+        return `${hoursValue}:${minutes}:00`;
     };
 
     const handleSubmit = async () => {
@@ -153,6 +151,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                 tip: tip ? parseFloat(tip) : 0,
                 note: null,
             });
+
             Toast.show({
                 type: 'success',
                 text1: 'Entry Added',
@@ -172,7 +171,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         }
     };
 
-    const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    const onDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
         if (Platform.OS === 'android') {
             setShowDatePicker(false);
         }
@@ -181,7 +180,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         }
     };
 
-    const onStartTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+    const onStartTimeChange = (_event: DateTimePickerEvent, selectedTime?: Date) => {
         if (Platform.OS === 'android') {
             setShowStartPicker(false);
         }
@@ -190,7 +189,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         }
     };
 
-    const onEndTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+    const onEndTimeChange = (_event: DateTimePickerEvent, selectedTime?: Date) => {
         if (Platform.OS === 'android') {
             setShowEndPicker(false);
         }
@@ -200,29 +199,20 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     };
 
     return (
-        <Modal
-            visible={visible}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={onClose}
-        >
+        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
             <View style={styles.overlay}>
-                <Animated.View
-                    style={[
-                        styles.content,
-                        { transform: [{ translateY }] }
-                    ]}
-                >
-                    {/* Swipe Handle */}
+                <Animated.View style={[styles.content, { transform: [{ translateY }] }]}>
                     <View {...panResponder.panHandlers} style={styles.handleArea}>
                         <View style={styles.handleBar} />
                     </View>
 
-                    {/* Header */}
                     <View style={styles.header}>
-                        <Text style={styles.title}>Add Entry ⚡️</Text>
-                        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                            <Text style={styles.closeIcon}>×</Text>
+                        <View>
+                            <Text style={styles.eyebrow}>Shift Capture</Text>
+                            <Text style={styles.title}>Add Entry</Text>
+                        </View>
+                        <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
+                            <Feather name="x" size={20} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
 
@@ -230,226 +220,215 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                         contentContainerStyle={styles.scrollContent}
-                        enableOnAndroid={true}
+                        enableOnAndroid
                         extraScrollHeight={40}
                         extraHeight={60}
                     >
-                        {/* Error Message */}
-                        {error && (
+                        <View style={styles.heroPanel}>
+                            <Text style={styles.heroLabel}>Locked Rate</Text>
+                            <Text style={styles.heroTitle}>Record today’s shift with the same backend calculation rules.</Text>
+                        </View>
+
+                        {error ? (
                             <View style={styles.errorContainer}>
                                 <Text style={styles.errorText}>{error}</Text>
                             </View>
-                        )}
+                        ) : null}
 
-                        {/* Form */}
-                        <View style={styles.form}>
-                            {/* Date Picker */}
-                            <View style={styles.inputSection}>
-                                <Text style={styles.label}>DATE</Text>
-                                <TouchableOpacity
-                                    style={styles.dateButton}
-                                    onPress={() => {
-                                        Keyboard.dismiss();
-                                        setShowStartPicker(false);
-                                        setShowEndPicker(false);
-                                        setShowDatePicker(true);
-                                    }}
-                                >
-                                    <Text style={styles.dateButtonText}>
-                                        {date.toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric'
-                                        })}
-                                    </Text>
-                                    <Text style={styles.calendarIcon}>📅</Text>
-                                </TouchableOpacity>
-                            </View>
+                        <View style={styles.inputSection}>
+                            <Text style={styles.label}>Date</Text>
+                            <TouchableOpacity
+                                style={styles.dateButton}
+                                onPress={() => {
+                                    Keyboard.dismiss();
+                                    setShowStartPicker(false);
+                                    setShowEndPicker(false);
+                                    setShowDatePicker(true);
+                                }}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.dateButtonText}>
+                                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </Text>
+                                <Feather name="calendar" size={18} color={colors.primary} />
+                            </TouchableOpacity>
+                        </View>
 
-                            {/* iOS Date Picker */}
-                            {showDatePicker && Platform.OS === 'ios' && (
-                                <View style={styles.pickerContainerDark}>
-                                    <View style={styles.pickerHeaderDark}>
-                                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                                            <Text style={styles.pickerDoneLight}>Done</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                    <DateTimePicker
-                                        value={date}
-                                        mode="date"
-                                        display="inline"
-                                        onChange={onDateChange}
-                                        themeVariant="dark"
-                                    />
+                        {showDatePicker && Platform.OS === 'ios' && (
+                            <View style={styles.pickerContainerDark}>
+                                <View style={styles.pickerHeaderDark}>
+                                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                        <Text style={styles.pickerDoneLight}>Done</Text>
+                                    </TouchableOpacity>
                                 </View>
-                            )}
-                            {showDatePicker && Platform.OS === 'android' && (
                                 <DateTimePicker
                                     value={date}
                                     mode="date"
-                                    display="calendar"
+                                    display="inline"
                                     onChange={onDateChange}
+                                    themeVariant="dark"
                                 />
-                            )}
-
-                            {/* Mode Toggle */}
-                            <View style={styles.modeToggle}>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.modeButton,
-                                        entryMode === 'total' && styles.modeButtonActive,
-                                    ]}
-                                    onPress={() => setEntryMode('total')}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.modeButtonText,
-                                            entryMode === 'total' && styles.modeButtonTextActive,
-                                        ]}
-                                    >
-                                        Total Hours
-                                    </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[
-                                        styles.modeButton,
-                                        entryMode === 'time' && styles.modeButtonActive,
-                                    ]}
-                                    onPress={() => setEntryMode('time')}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.modeButtonText,
-                                            entryMode === 'time' && styles.modeButtonTextActive,
-                                        ]}
-                                    >
-                                        Start / End
-                                    </Text>
-                                </TouchableOpacity>
                             </View>
+                        )}
 
-                            {/* Hours Input or Time Pickers */}
-                            {entryMode === 'total' ? (
-                                <Input
-                                    label="Duration (Hours)"
-                                    placeholder="e.g. 8.5"
-                                    value={hours}
-                                    onChangeText={setHours}
-                                    keyboardType="decimal-pad"
-                                />
-                            ) : (
-                                <>
-                                    <View style={styles.timeRow}>
-                                        <View style={styles.timeInput}>
-                                            <Text style={styles.timeLabel}>START</Text>
-                                            <TouchableOpacity
-                                                style={styles.timeButton}
-                                                onPress={() => {
-                                                    Keyboard.dismiss();
-                                                    setShowDatePicker(false);
-                                                    setShowEndPicker(false);
-                                                    setShowStartPicker(true);
-                                                }}
-                                            >
-                                                <Text style={styles.timeButtonText}>{formatTime(startTime)}</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                        <Text style={styles.timeArrow}>→</Text>
-                                        <View style={styles.timeInput}>
-                                            <Text style={styles.timeLabel}>END</Text>
-                                            <TouchableOpacity
-                                                style={styles.timeButton}
-                                                onPress={() => {
-                                                    Keyboard.dismiss();
-                                                    setShowDatePicker(false);
-                                                    setShowStartPicker(false);
-                                                    setShowEndPicker(true);
-                                                }}
-                                            >
-                                                <Text style={styles.timeButtonText}>{formatTime(endTime)}</Text>
-                                            </TouchableOpacity>
-                                        </View>
+                        {showDatePicker && Platform.OS === 'android' && (
+                            <DateTimePicker
+                                value={date}
+                                mode="date"
+                                display="calendar"
+                                onChange={onDateChange}
+                            />
+                        )}
+
+                        <View style={styles.modeToggle}>
+                            <TouchableOpacity
+                                style={[styles.modeButton, entryMode === 'total' && styles.modeButtonActive]}
+                                onPress={() => setEntryMode('total')}
+                                activeOpacity={0.85}
+                            >
+                                <Text
+                                    style={[
+                                        styles.modeButtonText,
+                                        entryMode === 'total' && styles.modeButtonTextActive,
+                                    ]}
+                                >
+                                    Total Hours
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modeButton, entryMode === 'time' && styles.modeButtonActive]}
+                                onPress={() => setEntryMode('time')}
+                                activeOpacity={0.85}
+                            >
+                                <Text
+                                    style={[
+                                        styles.modeButtonText,
+                                        entryMode === 'time' && styles.modeButtonTextActive,
+                                    ]}
+                                >
+                                    Start / End
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {entryMode === 'total' ? (
+                            <Input
+                                label="Duration (Hours)"
+                                placeholder="8.5"
+                                value={hours}
+                                onChangeText={setHours}
+                                keyboardType="decimal-pad"
+                            />
+                        ) : (
+                            <>
+                                <View style={styles.timeRow}>
+                                    <View style={styles.timeInput}>
+                                        <Text style={styles.label}>Start</Text>
+                                        <TouchableOpacity
+                                            style={styles.timeButton}
+                                            onPress={() => {
+                                                Keyboard.dismiss();
+                                                setShowDatePicker(false);
+                                                setShowEndPicker(false);
+                                                setShowStartPicker(true);
+                                            }}
+                                        >
+                                            <Text style={styles.timeButtonText}>{formatTime(startTime)}</Text>
+                                        </TouchableOpacity>
                                     </View>
 
-                                    {/* Start Time Picker */}
-                                    {showStartPicker && Platform.OS === 'ios' && (
-                                        <View style={styles.pickerContainerDark}>
-                                            <View style={styles.pickerHeaderDark}>
-                                                <TouchableOpacity onPress={() => setShowStartPicker(false)}>
-                                                    <Text style={styles.pickerDoneLight}>Done</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                            <DateTimePicker
-                                                value={startTime}
-                                                mode="time"
-                                                display="spinner"
-                                                onChange={onStartTimeChange}
-                                                style={styles.picker}
-                                                themeVariant="dark"
-                                            />
+                                    <View style={styles.timeInput}>
+                                        <Text style={styles.label}>End</Text>
+                                        <TouchableOpacity
+                                            style={styles.timeButton}
+                                            onPress={() => {
+                                                Keyboard.dismiss();
+                                                setShowDatePicker(false);
+                                                setShowStartPicker(false);
+                                                setShowEndPicker(true);
+                                            }}
+                                        >
+                                            <Text style={styles.timeButtonText}>{formatTime(endTime)}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                {showStartPicker && Platform.OS === 'ios' && (
+                                    <View style={styles.pickerContainerDark}>
+                                        <View style={styles.pickerHeaderDark}>
+                                            <TouchableOpacity onPress={() => setShowStartPicker(false)}>
+                                                <Text style={styles.pickerDoneLight}>Done</Text>
+                                            </TouchableOpacity>
                                         </View>
-                                    )}
-                                    {showStartPicker && Platform.OS === 'android' && (
                                         <DateTimePicker
                                             value={startTime}
                                             mode="time"
-                                            display="default"
+                                            display="spinner"
                                             onChange={onStartTimeChange}
+                                            style={styles.picker}
+                                            themeVariant="dark"
                                         />
-                                    )}
+                                    </View>
+                                )}
 
-                                    {/* End Time Picker */}
-                                    {showEndPicker && Platform.OS === 'ios' && (
-                                        <View style={styles.pickerContainerDark}>
-                                            <View style={styles.pickerHeaderDark}>
-                                                <TouchableOpacity onPress={() => setShowEndPicker(false)}>
-                                                    <Text style={styles.pickerDoneLight}>Done</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                            <DateTimePicker
-                                                value={endTime}
-                                                mode="time"
-                                                display="spinner"
-                                                onChange={onEndTimeChange}
-                                                style={styles.picker}
-                                                themeVariant="dark"
-                                            />
+                                {showStartPicker && Platform.OS === 'android' && (
+                                    <DateTimePicker
+                                        value={startTime}
+                                        mode="time"
+                                        display="default"
+                                        onChange={onStartTimeChange}
+                                    />
+                                )}
+
+                                {showEndPicker && Platform.OS === 'ios' && (
+                                    <View style={styles.pickerContainerDark}>
+                                        <View style={styles.pickerHeaderDark}>
+                                            <TouchableOpacity onPress={() => setShowEndPicker(false)}>
+                                                <Text style={styles.pickerDoneLight}>Done</Text>
+                                            </TouchableOpacity>
                                         </View>
-                                    )}
-                                    {showEndPicker && Platform.OS === 'android' && (
                                         <DateTimePicker
                                             value={endTime}
                                             mode="time"
-                                            display="default"
+                                            display="spinner"
                                             onChange={onEndTimeChange}
+                                            style={styles.picker}
+                                            themeVariant="dark"
                                         />
-                                    )}
-
-                                    {/* Calculated Duration */}
-                                    <View style={styles.calculatedRow}>
-                                        <Text style={styles.calculatedLabel}>Calculated:</Text>
-                                        <Text style={styles.calculatedValue}>{calculateDuration().toFixed(2)} hrs</Text>
                                     </View>
-                                </>
-                            )}
+                                )}
 
-                            {/* Tip Input */}
-                            <Input
-                                label="Tips / Bonus (Optional)"
-                                placeholder="0.00"
-                                value={tip}
-                                onChangeText={setTip}
-                                keyboardType="decimal-pad"
-                            />
+                                {showEndPicker && Platform.OS === 'android' && (
+                                    <DateTimePicker
+                                        value={endTime}
+                                        mode="time"
+                                        display="default"
+                                        onChange={onEndTimeChange}
+                                    />
+                                )}
 
-                            {/* Submit Button */}
-                            <Button
-                                title="Add to Job"
-                                onPress={handleSubmit}
-                                loading={isCreating}
-                                size="lg"
-                                fullWidth
-                            />
-                        </View>
+                                <View style={styles.calculatedRow}>
+                                    <Text style={styles.calculatedLabel}>Calculated</Text>
+                                    <Text style={styles.calculatedValue}>{calculateDuration().toFixed(2)} hrs</Text>
+                                </View>
+                            </>
+                        )}
+
+                        <Input
+                            label="Tips / Bonus"
+                            placeholder="0.00"
+                            value={tip}
+                            onChangeText={setTip}
+                            keyboardType="decimal-pad"
+                        />
+
+                        <Button
+                            title="Add to Job"
+                            onPress={handleSubmit}
+                            loading={isCreating}
+                            size="lg"
+                            fullWidth
+                        />
                     </KeyboardAwareScrollView>
                 </Animated.View>
             </View>
@@ -460,14 +439,14 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(15, 23, 42, 0.4)',
+        backgroundColor: 'rgba(24, 29, 25, 0.18)',
         justifyContent: 'flex-end',
     },
     content: {
-        backgroundColor: colors.white,
-        borderTopLeftRadius: borderRadius['3xl'],
-        borderTopRightRadius: borderRadius['3xl'],
-        maxHeight: '85%',
+        backgroundColor: colors.surfaceBright,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
+        maxHeight: '88%',
     },
     handleArea: {
         paddingVertical: spacing.md,
@@ -476,61 +455,81 @@ const styles = StyleSheet.create({
     handleBar: {
         width: 48,
         height: 5,
-        backgroundColor: colors.slate300,
+        backgroundColor: colors.outlineVariant,
         borderRadius: 3,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        paddingHorizontal: spacing.lg,
+        marginBottom: spacing.md,
+    },
+    eyebrow: {
+        color: colors.outline,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.3,
+        marginBottom: 4,
+    },
+    title: {
+        color: colors.onSurface,
+        fontSize: fontSizes['3xl'],
+        fontWeight: fontWeights.extrabold,
+    },
+    closeButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: colors.surfaceContainerLow,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     scrollContent: {
         paddingHorizontal: spacing.lg,
         paddingBottom: spacing['4xl'],
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        marginBottom: spacing.md,
+    heroPanel: {
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.lg,
+        padding: spacing['2xl'],
+        marginBottom: spacing.lg,
     },
-    title: {
-        fontSize: fontSizes['2xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
-    },
-    closeButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.slate100,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    closeIcon: {
-        fontSize: 22,
-        fontWeight: fontWeights.bold,
-        color: colors.slate500,
-        lineHeight: 24,
-    },
-    errorContainer: {
-        backgroundColor: colors.orangeBg,
-        padding: spacing.md,
-        borderRadius: borderRadius.xl,
-        marginBottom: spacing.md,
-    },
-    errorText: {
-        color: colors.orange,
-        fontWeight: fontWeights.semibold,
-        fontSize: fontSizes.sm,
-    },
-    form: {
-        gap: spacing.sm,
-    },
-    inputSection: {
-        marginBottom: spacing.sm,
-    },
-    label: {
+    heroLabel: {
+        color: colors.outline,
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.bold,
-        color: colors.slate500,
-        letterSpacing: 1,
+        textTransform: 'uppercase',
+        letterSpacing: 1.3,
+        marginBottom: spacing.sm,
+    },
+    heroTitle: {
+        color: colors.primary,
+        fontSize: fontSizes['2xl'],
+        fontWeight: fontWeights.extrabold,
+        lineHeight: 28,
+    },
+    errorContainer: {
+        backgroundColor: colors.dangerBg,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        marginBottom: spacing.lg,
+    },
+    errorText: {
+        color: colors.danger,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.semibold,
+    },
+    inputSection: {
+        marginBottom: spacing.lg,
+    },
+    label: {
+        color: colors.primary,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
         marginBottom: spacing.xs,
         marginLeft: spacing.sm,
     },
@@ -538,46 +537,20 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: colors.slate50,
-        padding: spacing.md,
-        borderRadius: borderRadius['2xl'],
+        backgroundColor: colors.surfaceContainerHighest,
+        padding: spacing.lg,
+        borderRadius: borderRadius.full,
     },
     dateButtonText: {
+        color: colors.onSurface,
         fontSize: fontSizes.lg,
         fontWeight: fontWeights.bold,
-        color: colors.slate800,
-    },
-    calendarIcon: {
-        fontSize: fontSizes.lg,
-    },
-    datePickerContainer: {
-        backgroundColor: colors.slate50,
-        borderRadius: borderRadius['2xl'],
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        alignSelf: 'flex-start',
-    },
-    compactPicker: {
-        marginLeft: -spacing.sm,
-    },
-    pickerContainer: {
-        backgroundColor: colors.slate50,
-        borderRadius: borderRadius.xl,
-        marginBottom: spacing.md,
-        overflow: 'hidden',
     },
     pickerContainerDark: {
         backgroundColor: colors.slate800,
-        borderRadius: borderRadius.xl,
-        marginBottom: spacing.md,
+        borderRadius: borderRadius.lg,
+        marginBottom: spacing.lg,
         overflow: 'hidden',
-    },
-    pickerHeader: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        padding: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.slate200,
     },
     pickerHeaderDark: {
         flexDirection: 'row',
@@ -586,96 +559,72 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: colors.slate600,
     },
-    pickerDone: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-        color: colors.primary,
-    },
     pickerDoneLight: {
+        color: colors.primarySoft,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
-        color: colors.primaryLight,
     },
     picker: {
         height: 150,
     },
     modeToggle: {
         flexDirection: 'row',
-        backgroundColor: colors.slate100,
-        borderRadius: borderRadius['2xl'],
+        backgroundColor: colors.surfaceContainerHigh,
+        borderRadius: borderRadius.full,
         padding: spacing.xs,
-        marginBottom: spacing.md,
+        marginBottom: spacing.lg,
     },
     modeButton: {
         flex: 1,
         paddingVertical: spacing.sm,
-        borderRadius: borderRadius.xl,
+        borderRadius: borderRadius.full,
         alignItems: 'center',
     },
     modeButtonActive: {
-        backgroundColor: colors.white,
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 2,
+        backgroundColor: colors.surfaceContainerLowest,
     },
     modeButtonText: {
+        color: colors.outline,
         fontSize: fontSizes.sm,
         fontWeight: fontWeights.extrabold,
-        color: colors.slate400,
     },
     modeButtonTextActive: {
         color: colors.primary,
     },
     timeRow: {
         flexDirection: 'row',
-        alignItems: 'center',
         gap: spacing.md,
-        marginBottom: spacing.sm,
+        marginBottom: spacing.md,
     },
     timeInput: {
         flex: 1,
     },
-    timeLabel: {
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        color: colors.slate400,
-        letterSpacing: 1,
-        marginBottom: spacing.xs,
-        marginLeft: spacing.xs,
-    },
     timeButton: {
-        backgroundColor: colors.slate50,
-        padding: spacing.md,
-        borderRadius: borderRadius['2xl'],
+        backgroundColor: colors.surfaceContainerHighest,
+        padding: spacing.lg,
+        borderRadius: borderRadius.full,
         alignItems: 'center',
     },
     timeButtonText: {
+        color: colors.onSurface,
         fontSize: fontSizes.lg,
         fontWeight: fontWeights.bold,
-        color: colors.slate800,
-    },
-    timeArrow: {
-        fontSize: fontSizes.xl,
-        color: colors.slate300,
-        marginTop: spacing.lg,
     },
     calculatedRow: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: spacing.sm,
-        marginBottom: spacing.md,
+        marginBottom: spacing.lg,
     },
     calculatedLabel: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.sm,
-        color: colors.slate400,
         fontWeight: fontWeights.medium,
     },
     calculatedValue: {
-        fontSize: fontSizes.lg,
         color: colors.primary,
+        fontSize: fontSizes.lg,
         fontWeight: fontWeights.extrabold,
     },
 });

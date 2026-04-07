@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import Feather from 'react-native-vector-icons/Feather';
 import { MainStackParamList, WeeklyGroupResponse, EntryResponse } from '../types';
 import { useEntriesStore, useJobsStore } from '../stores';
 import { Card } from '../components/ui';
@@ -24,8 +25,6 @@ import { AddEntryModal } from '../components/AddEntryModal';
 import { EditJobModal } from '../components/EditJobModal';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
 import Toast from 'react-native-toast-message';
-import Feather from 'react-native-vector-icons/Feather';
-
 
 type JobDetailsNavigationProp = NativeStackNavigationProp<MainStackParamList, 'JobDetails'>;
 type JobDetailsRouteProp = RouteProp<MainStackParamList, 'JobDetails'>;
@@ -46,18 +45,12 @@ export const JobDetailsScreen: React.FC = () => {
     useFocusEffect(
         useCallback(() => {
             fetchJobDetails(jobId);
-            return () => {
-                // Focus effect doesn't strictly need cleanup here, but we can do it if needed
-                // Actually, clearing it on blur is better to prevent flash of old data
-            };
         }, [jobId, fetchJobDetails])
     );
 
-    // Let's keep a standard useEffect for clearing job details ONLY when unmounting
     useEffect(() => {
         return () => clearJobDetails();
     }, [clearJobDetails]);
-
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -90,7 +83,7 @@ export const JobDetailsScreen: React.FC = () => {
                             });
                             fetchJobDetails(jobId);
                             fetchDashboard();
-                        } catch (err) {
+                        } catch {
                             Toast.show({
                                 type: 'error',
                                 text1: 'Error',
@@ -120,12 +113,12 @@ export const JobDetailsScreen: React.FC = () => {
                             Toast.show({
                                 type: 'delete',
                                 text1: 'Job Deleted',
-                                text2: `${job?.title} has been removed`,
+                                text2: `${jobDetails?.job.title} has been removed`,
                                 visibilityTime: 2000,
                             });
                             fetchDashboard();
                             navigation.goBack();
-                        } catch (err) {
+                        } catch {
                             Toast.show({
                                 type: 'error',
                                 text1: 'Error',
@@ -142,16 +135,8 @@ export const JobDetailsScreen: React.FC = () => {
     const formatCurrency = (amount: number) => {
         return `$${amount.toLocaleString(undefined, {
             minimumFractionDigits: 0,
-            maximumFractionDigits: 0
+            maximumFractionDigits: 0,
         })}`;
-    };
-
-    const formatDate = (dateStr: string, format: 'weekday' | 'full') => {
-        const date = new Date(dateStr);
-        if (format === 'weekday') {
-            return date.toLocaleDateString('en-US', { weekday: 'short' });
-        }
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
     if (isLoading && !refreshing && !jobDetails) {
@@ -166,48 +151,39 @@ export const JobDetailsScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.slate50} />
+            <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
 
-            {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Text style={styles.backIcon}>←</Text>
+                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+                    <Feather name="arrow-left" size={20} color={colors.primary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle} numberOfLines={1}>{job?.title}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>
+                    {job?.title || 'Job'}
+                </Text>
                 <TouchableOpacity
-                    style={styles.optionsButton}
+                    style={styles.headerButton}
                     onPress={() => setShowOptionsMenu(true)}
+                    activeOpacity={0.8}
                 >
-                    <Text style={styles.optionsIcon}>⋮</Text>
+                    <Feather name="more-horizontal" size={20} color={colors.primary} />
                 </TouchableOpacity>
             </View>
 
-            {/* Options Menu Modal */}
             <Modal
                 visible={showOptionsMenu}
-                transparent={true}
+                transparent
                 animationType="fade"
                 onRequestClose={() => setShowOptionsMenu(false)}
             >
-                <Pressable
-                    style={styles.menuOverlay}
-                    onPress={() => setShowOptionsMenu(false)}
-                >
+                <Pressable style={styles.menuOverlay} onPress={() => setShowOptionsMenu(false)}>
                     <Pressable style={styles.menuContainer}>
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={handleEditJob}
-                        >
-                            <Text style={styles.menuItemIcon}>✏️</Text>
+                        <TouchableOpacity style={styles.menuItem} onPress={handleEditJob}>
+                            <Feather name="edit-2" size={18} color={colors.primary} />
                             <Text style={styles.menuItemText}>Edit Job</Text>
                         </TouchableOpacity>
-                        <View style={styles.menuDivider} />
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={handleDeleteJob}
-                        >
-                            <Text style={styles.menuItemIcon}>🗑️</Text>
-                            <Text style={styles.menuItemTextDanger}>Delete Job</Text>
+                        <TouchableOpacity style={styles.menuItem} onPress={handleDeleteJob}>
+                            <Feather name="trash-2" size={18} color={colors.secondaryContainer} />
+                            <Text style={[styles.menuItemText, styles.menuItemDanger]}>Delete Job</Text>
                         </TouchableOpacity>
                     </Pressable>
                 </Pressable>
@@ -216,32 +192,25 @@ export const JobDetailsScreen: React.FC = () => {
             <ScrollView
                 style={styles.container}
                 contentContainerStyle={styles.contentContainer}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                }
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Summary Cards */}
+                <View style={styles.heroCard}>
+                    <Text style={styles.heroEyebrow}>Job Ledger</Text>
+                    <Text style={styles.heroTitle}>{job?.title}</Text>
+                    <Text style={styles.heroSubcopy}>
+                        ${job?.hourlyRate ?? 0}/hr · tracked with weekly overtime grouping
+                    </Text>
+                </View>
+
                 <View style={styles.summaryRow}>
                     <Card variant="earnings" style={styles.summaryCard}>
-                        <View style={styles.summaryHeader}>
-                            <View style={styles.summaryIcon}>
-                                <Text style={styles.summaryIconText}>$</Text>
-                            </View>
-                            <Text style={styles.summaryLabel}>EARNED</Text>
-                        </View>
-                        <Text style={styles.summaryValue}>
-                            {formatCurrency(job?.totalEarnings || 0)}
-                        </Text>
+                        <Text style={styles.summaryLabel}>Earned</Text>
+                        <Text style={styles.summaryValue}>{formatCurrency(job?.totalEarnings || 0)}</Text>
                     </Card>
 
                     <Card variant="hours" style={styles.summaryCard}>
-                        <View style={styles.summaryHeader}>
-                            <View style={styles.summaryIcon}>
-                                <Text style={styles.summaryIconText}>⏱</Text>
-                            </View>
-                            <Text style={styles.summaryLabel}>HOURS</Text>
-                        </View>
+                        <Text style={styles.summaryLabel}>Hours</Text>
                         <Text style={styles.summaryValue}>
                             {job?.totalHours?.toFixed(1) || '0.0'}
                             <Text style={styles.summaryUnit}>h</Text>
@@ -249,10 +218,10 @@ export const JobDetailsScreen: React.FC = () => {
                     </Card>
                 </View>
 
-                {/* Weekly Groups */}
                 {weeks.length === 0 ? (
                     <View style={styles.emptyState}>
-                        <Text style={styles.emptyText}>No entries yet. Tap + to add hours.</Text>
+                        <Text style={styles.emptyTitle}>No entries yet</Text>
+                        <Text style={styles.emptyText}>Use the floating add action to log the first shift.</Text>
                     </View>
                 ) : (
                     weeks.map((week, index) => (
@@ -265,9 +234,6 @@ export const JobDetailsScreen: React.FC = () => {
                 )}
             </ScrollView>
 
-
-
-            {/* Add Entry Modal */}
             <AddEntryModal
                 visible={isModalOpen}
                 jobId={jobId}
@@ -279,7 +245,6 @@ export const JobDetailsScreen: React.FC = () => {
                 }}
             />
 
-            {/* Edit Job Modal */}
             <EditJobModal
                 visible={isEditModalOpen}
                 job={jobDetails?.job || null}
@@ -294,7 +259,6 @@ export const JobDetailsScreen: React.FC = () => {
     );
 };
 
-// Week Group Component
 interface WeekGroupProps {
     week: WeeklyGroupResponse;
     onDeleteEntry: (id: number) => void;
@@ -306,17 +270,14 @@ const WeekGroupComponent: React.FC<WeekGroupProps> = ({ week, onDeleteEntry }) =
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
-    const formatCurrency = (amount: number) => {
-        return `$${amount.toFixed(0)}`;
-    };
+    const formatCurrency = (amount: number) => `$${amount.toFixed(0)}`;
 
     return (
         <View style={styles.weekGroup}>
-            {/* Week Header */}
             <View style={styles.weekHeader}>
                 <View>
-                    <Text style={styles.weekTitle}>WEEK OF {formatDate(week.weekStart).toUpperCase()}</Text>
-                    <Text style={styles.weekSubtitle}>To {formatDate(week.weekEnd)}</Text>
+                    <Text style={styles.weekTitle}>Week of {formatDate(week.weekStart)}</Text>
+                    <Text style={styles.weekSubtitle}>to {formatDate(week.weekEnd)}</Text>
                 </View>
                 <View style={styles.weekTotals}>
                     <Text style={styles.weekEarnings}>{formatCurrency(week.totalEarnings)}</Text>
@@ -324,20 +285,16 @@ const WeekGroupComponent: React.FC<WeekGroupProps> = ({ week, onDeleteEntry }) =
                 </View>
             </View>
 
-            {/* Overtime Banner */}
-            {week.overtimeHours > 0 && (
+            {week.overtimeHours > 0 ? (
                 <View style={styles.overtimeBanner}>
-                    <View style={styles.overtimeLeft}>
-                        <Text style={styles.overtimeIcon}>🔥</Text>
-                        <Text style={styles.overtimeLabel}>OVERTIME BONUS</Text>
+                    <View>
+                        <Text style={styles.overtimeLabel}>Overtime bonus</Text>
+                        <Text style={styles.overtimeMeta}>{week.overtimeHours.toFixed(1)}h extra</Text>
                     </View>
-                    <Text style={styles.overtimeValue}>
-                        +{week.overtimeHours.toFixed(1)}h <Text style={styles.overtimeBonus}>({formatCurrency(week.overtimeBonus)})</Text>
-                    </Text>
+                    <Text style={styles.overtimeValue}>{formatCurrency(week.overtimeBonus)}</Text>
                 </View>
-            )}
+            ) : null}
 
-            {/* Entries */}
             <View style={styles.entriesContainer}>
                 {week.entries.map((entry, idx) => (
                     <EntryItem
@@ -352,7 +309,6 @@ const WeekGroupComponent: React.FC<WeekGroupProps> = ({ week, onDeleteEntry }) =
     );
 };
 
-// Entry Item Component
 interface EntryItemProps {
     entry: EntryResponse;
     isLast: boolean;
@@ -362,9 +318,8 @@ interface EntryItemProps {
 const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
     const formatTime = (time: string | null) => {
         if (!time) return null;
-        // Handle TimeSpan format (HH:mm:ss) vs time string
         const parts = time.split(':');
-        const hours = parseInt(parts[0]);
+        const hours = parseInt(parts[0], 10);
         const minutes = parts[1];
         const period = hours >= 12 ? 'PM' : 'AM';
         const hour12 = hours % 12 || 12;
@@ -379,10 +334,9 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
     };
 
     const renderRightActions = (
-        progress: Animated.AnimatedInterpolation<number>,
+        _progress: Animated.AnimatedInterpolation<number>,
         dragX: Animated.AnimatedInterpolation<number>
     ) => {
-        // Animate the background using scaleX (width is not supported by native animated)
         const bgScaleX = dragX.interpolate({
             inputRange: [-100, 0],
             outputRange: [1, 0],
@@ -403,17 +357,12 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
                         {
                             transform: [{ scaleX: bgScaleX }],
                             opacity: bgOpacity,
-                            transformOrigin: 'right center',
-                        }
+                        },
                     ]}
                 />
-                <TouchableOpacity
-                    style={styles.swipeDeleteAction}
-                    onPress={onDelete}
-                    activeOpacity={0.8}
-                >
+                <TouchableOpacity style={styles.swipeDeleteAction} onPress={onDelete} activeOpacity={0.8}>
                     <Animated.View style={{ opacity: bgOpacity, transform: [{ scale: bgScaleX }] }}>
-                        <Feather name="trash-2" size={24} color={colors.white} />
+                        <Feather name="trash-2" size={22} color={colors.white} />
                     </Animated.View>
                 </TouchableOpacity>
             </View>
@@ -421,12 +370,7 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
     };
 
     return (
-        <Swipeable
-            renderRightActions={renderRightActions}
-            overshootRight={false}
-            friction={2}
-            rightThreshold={40}
-        >
+        <Swipeable renderRightActions={renderRightActions} overshootRight={false} friction={2} rightThreshold={40}>
             <View style={[styles.entryItem, !isLast && styles.entryItemBorder]}>
                 <View style={styles.entryLeft}>
                     <View style={styles.dateBox}>
@@ -434,23 +378,11 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
                         <Text style={styles.dateDay}>{entry.dayOfMonth}</Text>
                     </View>
                     <View style={styles.entryDetails}>
-                        <View style={styles.entryHoursRow}>
-                            <Text style={styles.entryHours}>{entry.totalHours} hrs</Text>
-                            {entry.hasOvertime && (
-                                <View style={styles.overtimeBadge}>
-                                    <Text style={styles.overtimeBadgeText}>1.5x</Text>
-                                </View>
-                            )}
-                        </View>
-                        <View style={styles.entryMeta}>
-                            <Text style={styles.entryTime}>{getTimeDisplay()}</Text>
-                            {entry.tip > 0 && (
-                                <Text style={styles.entryTip}>• ${entry.tip} tip</Text>
-                            )}
-                            {entry.overtimeHours > 0 && (
-                                <Text style={styles.entryOT}>• {entry.overtimeHours.toFixed(1)}h OT</Text>
-                            )}
-                        </View>
+                        <Text style={styles.entryHours}>{entry.totalHours} hrs</Text>
+                        <Text style={styles.entryMeta}>{getTimeDisplay()}</Text>
+                        {entry.tip > 0 ? (
+                            <Text style={styles.entryTip}>+ ${entry.tip} tip</Text>
+                        ) : null}
                     </View>
                 </View>
                 <Text style={styles.entryEarnings}>${entry.totalEarnings.toFixed(0)}</Text>
@@ -462,113 +394,103 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: colors.slate50,
+        backgroundColor: colors.surfaceBright,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: colors.slate50,
+        backgroundColor: colors.surfaceBright,
     },
     container: {
         flex: 1,
     },
     contentContainer: {
         padding: spacing.lg,
-        paddingBottom: 100,
+        paddingBottom: 120,
     },
-
-    // Header
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
-        backgroundColor: colors.slate50,
     },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+    headerButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: colors.surfaceContainerLow,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    backIcon: {
-        fontSize: 24,
-        color: colors.slate700,
     },
     headerTitle: {
         flex: 1,
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.bold,
-        color: colors.slate800,
         textAlign: 'center',
         marginHorizontal: spacing.md,
-    },
-    headerSpacer: {
-        width: 40,
-    },
-    optionsButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    optionsIcon: {
-        fontSize: 24,
+        color: colors.onSurface,
+        fontSize: fontSizes.lg,
         fontWeight: fontWeights.bold,
-        color: colors.slate700,
     },
-
-    // Options Menu
     menuOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(15, 23, 42, 0.3)',
+        backgroundColor: 'rgba(24, 29, 25, 0.18)',
         justifyContent: 'flex-start',
         alignItems: 'flex-end',
-        paddingTop: 80,
+        paddingTop: 86,
         paddingRight: spacing.lg,
     },
     menuContainer: {
-        backgroundColor: colors.white,
-        borderRadius: borderRadius.xl,
-        minWidth: 160,
-        overflow: 'hidden',
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 24,
-        elevation: 8,
+        backgroundColor: 'rgba(255,255,255,0.84)',
+        borderRadius: borderRadius.lg,
+        paddingVertical: spacing.sm,
+        minWidth: 180,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.08,
+        shadowRadius: 40,
+        elevation: 10,
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
         gap: spacing.md,
-    },
-    menuItemIcon: {
-        fontSize: fontSizes.lg,
-    },
-    menuItemTextDanger: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.semibold,
-        color: colors.danger,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
     },
     menuItemText: {
+        color: colors.onSurface,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.semibold,
-        color: colors.slate700,
     },
-    menuDivider: {
-        height: 1,
-        backgroundColor: colors.slate100,
-        marginHorizontal: spacing.md,
+    menuItemDanger: {
+        color: colors.secondaryContainer,
     },
-
-    // Summary Cards
+    heroCard: {
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.xl,
+        padding: spacing['3xl'],
+        marginBottom: spacing.lg,
+    },
+    heroEyebrow: {
+        color: colors.outline,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.3,
+        marginBottom: spacing.sm,
+    },
+    heroTitle: {
+        color: colors.primary,
+        fontSize: fontSizes['3xl'],
+        fontWeight: fontWeights.extrabold,
+        marginBottom: spacing.xs,
+    },
+    heroSubcopy: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.base,
+        lineHeight: 22,
+    },
     summaryRow: {
         flexDirection: 'row',
         gap: spacing.md,
@@ -576,40 +498,24 @@ const styles = StyleSheet.create({
     },
     summaryCard: {
         flex: 1,
-        padding: spacing.lg,
-    },
-    summaryHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-        marginBottom: spacing.sm,
-    },
-    summaryIcon: {
-        padding: spacing.xs,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        borderRadius: borderRadius.full,
-    },
-    summaryIconText: {
-        fontSize: fontSizes.sm,
-        color: 'rgba(255,255,255,0.9)',
     },
     summaryLabel: {
+        color: 'rgba(255,255,255,0.82)',
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.bold,
-        color: 'rgba(255,255,255,0.8)',
-        letterSpacing: 1,
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
+        marginBottom: spacing.md,
     },
     summaryValue: {
+        color: colors.white,
         fontSize: fontSizes['3xl'],
         fontWeight: fontWeights.extrabold,
-        color: colors.white,
     },
     summaryUnit: {
         fontSize: fontSizes.xl,
-        opacity: 0.8,
+        opacity: 0.85,
     },
-
-    // Week Group
     weekGroup: {
         marginBottom: spacing.xl,
     },
@@ -621,86 +527,75 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.sm,
     },
     weekTitle: {
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
         color: colors.primary,
-        letterSpacing: 0.5,
-        marginBottom: spacing.xs,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 0.6,
+        marginBottom: 4,
     },
     weekSubtitle: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.xs,
-        color: colors.slate400,
-        fontWeight: fontWeights.medium,
     },
     weekTotals: {
         alignItems: 'flex-end',
     },
     weekEarnings: {
+        color: colors.onSurface,
         fontSize: fontSizes.lg,
         fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
     },
     weekHours: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.sm,
         fontWeight: fontWeights.semibold,
-        color: colors.slate400,
     },
-
-    // Overtime Banner
     overtimeBanner: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: colors.orangeBg,
-        padding: spacing.md,
-        borderRadius: borderRadius.xl,
+        borderRadius: borderRadius.lg,
+        padding: spacing.lg,
         marginBottom: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.orangeLight,
-    },
-    overtimeLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-    },
-    overtimeIcon: {
-        fontSize: fontSizes.sm,
     },
     overtimeLabel: {
+        color: colors.secondaryContainer,
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.bold,
-        color: colors.orange,
-        letterSpacing: 0.5,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 2,
+    },
+    overtimeMeta: {
+        color: colors.secondary,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.semibold,
     },
     overtimeValue: {
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.bold,
-        color: colors.orange,
+        color: colors.secondaryContainer,
+        fontSize: fontSizes.lg,
+        fontWeight: fontWeights.extrabold,
     },
-    overtimeBonus: {
-        opacity: 0.6,
-    },
-
-    // Entries Container
     entriesContainer: {
-        backgroundColor: colors.white,
-        borderRadius: borderRadius['3xl'],
+        backgroundColor: colors.surfaceContainerLowest,
+        borderRadius: borderRadius.lg,
         overflow: 'hidden',
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.03,
-        shadowRadius: 4,
-        elevation: 1,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.04,
+        shadowRadius: 40,
+        elevation: 4,
     },
     entryItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: spacing.lg,
+        padding: spacing.xl,
     },
     entryItemBorder: {
-        borderBottomWidth: 1,
-        borderBottomColor: colors.slate50,
+        marginBottom: 0,
     },
     entryLeft: {
         flexDirection: 'row',
@@ -708,95 +603,52 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     dateBox: {
-        width: 44,
-        height: 44,
-        borderRadius: borderRadius['2xl'],
-        backgroundColor: colors.slate100,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: colors.surfaceContainerLow,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: spacing.md,
     },
     dateWeekday: {
+        color: colors.outline,
         fontSize: 8,
         fontWeight: fontWeights.bold,
-        color: colors.slate500,
-        letterSpacing: 0.5,
+        letterSpacing: 0.6,
     },
     dateDay: {
+        color: colors.onSurface,
         fontSize: fontSizes.sm,
         fontWeight: fontWeights.bold,
-        color: colors.slate800,
     },
     entryDetails: {
         flex: 1,
     },
-    entryHoursRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-    },
     entryHours: {
+        color: colors.onSurface,
         fontSize: fontSizes.lg,
         fontWeight: fontWeights.bold,
-        color: colors.slate700,
-    },
-    overtimeBadge: {
-        backgroundColor: colors.orangeLight,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 2,
-        borderRadius: borderRadius.full,
-        borderWidth: 1,
-        borderColor: colors.orange,
-    },
-    overtimeBadgeText: {
-        fontSize: 8,
-        fontWeight: fontWeights.extrabold,
-        color: colors.orange,
+        marginBottom: 2,
     },
     entryMeta: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.xs,
-        marginTop: spacing.xs,
-    },
-    entryTime: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.xs,
-        color: colors.slate400,
-        fontWeight: fontWeights.medium,
     },
     entryTip: {
+        color: colors.primary,
         fontSize: fontSizes.xs,
-        color: colors.emerald,
         fontWeight: fontWeights.bold,
-    },
-    entryOT: {
-        fontSize: fontSizes.xs,
-        color: colors.orange,
-        fontWeight: fontWeights.medium,
-    },
-    entryRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
+        marginTop: 4,
     },
     entryEarnings: {
+        color: colors.primary,
         fontSize: fontSizes.lg,
         fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
-    },
-    deleteButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    deleteIcon: {
-        fontSize: fontSizes.base,
-        opacity: 0.5,
+        marginLeft: spacing.md,
     },
     swipeDeleteContainer: {
-        width: 100,
+        width: 96,
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
@@ -807,48 +659,32 @@ const styles = StyleSheet.create({
         right: 0,
         top: 0,
         bottom: 0,
-        width: 100,
+        width: 96,
         backgroundColor: colors.danger,
     },
     swipeDeleteAction: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 80,
+        width: 76,
         height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
         zIndex: 1,
     },
-
-    // Empty State
     emptyState: {
         alignItems: 'center',
-        padding: spacing['3xl'],
+        padding: spacing['4xl'],
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.lg,
+    },
+    emptyTitle: {
+        color: colors.onSurface,
+        fontSize: fontSizes.xl,
+        fontWeight: fontWeights.extrabold,
+        marginBottom: spacing.sm,
     },
     emptyText: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.base,
-        color: colors.slate400,
-    },
-
-    // FAB
-    fab: {
-        position: 'absolute',
-        bottom: 24,
-        right: 24,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: colors.slate900,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 8,
-    },
-    fabIcon: {
-        fontSize: 32,
-        fontWeight: fontWeights.bold,
-        color: colors.white,
-        lineHeight: 34,
+        textAlign: 'center',
+        lineHeight: 22,
     },
 });

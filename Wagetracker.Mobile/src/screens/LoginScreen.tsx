@@ -30,21 +30,18 @@ export const LoginScreen: React.FC = () => {
     const [passwordError, setPasswordError] = useState('');
     const [touched, setTouched] = useState({ email: false, password: false });
 
-    // Email validation regex
-    const validateEmail = (value: string): string => {
+    const validateEmail = (value: string) => {
         if (!value.trim()) return 'Email is required';
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value)) return 'Invalid email format';
         return '';
     };
 
-    // Password validation
-    const validatePassword = (value: string): string => {
+    const validatePassword = (value: string) => {
         if (!value) return 'Password is required';
         return '';
     };
 
-    // Handle email change
     const handleEmailChange = (value: string) => {
         setEmail(value);
         if (touched.email) {
@@ -52,7 +49,6 @@ export const LoginScreen: React.FC = () => {
         }
     };
 
-    // Handle password change
     const handlePasswordChange = (value: string) => {
         setPassword(value);
         if (touched.password) {
@@ -60,22 +56,7 @@ export const LoginScreen: React.FC = () => {
         }
     };
 
-    // Handle blur events
-    const handleEmailBlur = () => {
-        setTouched(prev => ({ ...prev, email: true }));
-        setEmailError(validateEmail(email));
-    };
-
-    const handlePasswordBlur = () => {
-        setTouched(prev => ({ ...prev, password: true }));
-        setPasswordError(validatePassword(password));
-    };
-
-    // Check if form is valid
-    const isFormValid = email.trim() && password && !validateEmail(email) && !validatePassword(password);
-
     const handleLogin = async () => {
-        // Validate all fields
         const emailErr = validateEmail(email);
         const passwordErr = validatePassword(password);
 
@@ -91,7 +72,7 @@ export const LoginScreen: React.FC = () => {
             await login(email.trim(), password);
             Toast.show({
                 type: 'success',
-                text1: 'Welcome back!',
+                text1: 'Welcome back',
                 text2: 'Login successful',
                 visibilityTime: 2000,
             });
@@ -105,9 +86,11 @@ export const LoginScreen: React.FC = () => {
         }
     };
 
+    const isFormValid = email.trim() && password && !validateEmail(email) && !validatePassword(password);
+
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.slate50} />
+            <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
@@ -117,31 +100,36 @@ export const LoginScreen: React.FC = () => {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <Text style={styles.logo}>💼</Text>
-                        <Text style={styles.title}>WageTracker</Text>
-                        <Text style={styles.subtitle}>Track your earnings with ease</Text>
+                    <View style={styles.heroPanel}>
+                        <Text style={styles.eyebrow}>WageTracker</Text>
+                        <Text style={styles.title}>Your ledger,
+                            {'\n'}
+                            framed softly.
+                        </Text>
+                        <Text style={styles.subtitle}>
+                            Sign in to keep tracking earnings and expenses with the same backend workflow.
+                        </Text>
                     </View>
 
-                    {/* Error Message */}
-                    {error && (
+                    {error ? (
                         <View style={styles.errorContainer}>
                             <Text style={styles.errorText}>{error}</Text>
                             <TouchableOpacity onPress={clearError}>
                                 <Text style={styles.errorDismiss}>×</Text>
                             </TouchableOpacity>
                         </View>
-                    )}
+                    ) : null}
 
-                    {/* Form */}
-                    <View style={styles.form}>
+                    <View style={styles.formCard}>
                         <Input
                             label="Email"
                             placeholder="your@email.com"
                             value={email}
                             onChangeText={handleEmailChange}
-                            onBlur={handleEmailBlur}
+                            onBlur={() => {
+                                setTouched((prev) => ({ ...prev, email: true }));
+                                setEmailError(validateEmail(email));
+                            }}
                             error={emailError}
                             keyboardType="email-address"
                             autoCapitalize="none"
@@ -153,7 +141,10 @@ export const LoginScreen: React.FC = () => {
                             placeholder="••••••••"
                             value={password}
                             onChangeText={handlePasswordChange}
-                            onBlur={handlePasswordBlur}
+                            onBlur={() => {
+                                setTouched((prev) => ({ ...prev, password: true }));
+                                setPasswordError(validatePassword(password));
+                            }}
                             error={passwordError}
                             secureTextEntry
                             autoComplete="password"
@@ -169,11 +160,10 @@ export const LoginScreen: React.FC = () => {
                         />
                     </View>
 
-                    {/* Footer */}
                     <View style={styles.footer}>
-                        <Text style={styles.footerText}>Don't have an account?</Text>
+                        <Text style={styles.footerText}>Don’t have an account?</Text>
                         <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                            <Text style={styles.footerLink}>Sign Up</Text>
+                            <Text style={styles.footerLink}>Create one</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -185,69 +175,74 @@ export const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: colors.slate50,
+        backgroundColor: colors.surfaceBright,
     },
     container: {
         flex: 1,
     },
     scrollContent: {
         flexGrow: 1,
-        padding: spacing.xl,
         justifyContent: 'center',
+        padding: spacing.xl,
     },
-
-    // Header
-    header: {
-        alignItems: 'center',
-        marginBottom: spacing['4xl'],
+    heroPanel: {
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.xl,
+        padding: spacing['3xl'],
+        marginBottom: spacing.xl,
     },
-    logo: {
-        fontSize: 64,
-        marginBottom: spacing.lg,
-    },
-    title: {
-        fontSize: fontSizes['4xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
+    eyebrow: {
+        color: colors.primary,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.4,
         marginBottom: spacing.sm,
     },
-    subtitle: {
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.medium,
-        color: colors.slate400,
+    title: {
+        color: colors.onSurface,
+        fontSize: 36,
+        fontWeight: fontWeights.extrabold,
+        lineHeight: 40,
+        marginBottom: spacing.md,
     },
-
-    // Error
+    subtitle: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.base,
+        lineHeight: 22,
+    },
     errorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: colors.orangeBg,
+        backgroundColor: colors.dangerBg,
         padding: spacing.md,
-        borderRadius: borderRadius.xl,
+        borderRadius: borderRadius.lg,
         marginBottom: spacing.lg,
-        borderWidth: 1,
-        borderColor: colors.orangeLight,
     },
     errorText: {
         flex: 1,
-        color: colors.orange,
+        color: colors.danger,
         fontWeight: fontWeights.semibold,
         fontSize: fontSizes.sm,
     },
     errorDismiss: {
+        color: colors.danger,
         fontSize: 20,
         fontWeight: fontWeights.bold,
-        color: colors.orange,
         paddingLeft: spacing.md,
     },
-
-    // Form
-    form: {
-        marginBottom: spacing['3xl'],
+    formCard: {
+        backgroundColor: colors.surfaceContainerLowest,
+        borderRadius: borderRadius.lg,
+        padding: spacing['2xl'],
+        marginBottom: spacing.xl,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.05,
+        shadowRadius: 40,
+        elevation: 6,
     },
-
-    // Footer
     footer: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -255,13 +250,13 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
     },
     footerText: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.base,
-        color: colors.slate400,
         fontWeight: fontWeights.medium,
     },
     footerLink: {
-        fontSize: fontSizes.base,
         color: colors.primary,
+        fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
     },
 });

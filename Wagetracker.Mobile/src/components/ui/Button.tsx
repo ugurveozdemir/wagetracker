@@ -7,6 +7,7 @@ import {
     ViewStyle,
     TextStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, borderRadius, spacing, fontSizes, fontWeights } from '../../theme';
 
 interface ButtonProps {
@@ -48,22 +49,48 @@ export const Button: React.FC<ButtonProps> = ({
             disabled={isDisabled}
             activeOpacity={0.8}
         >
-            {loading ? (
-                <ActivityIndicator
-                    color={variant === 'primary' ? colors.white : colors.primary}
-                    size="small"
-                />
-            ) : (
-                <Text
-                    style={[
-                        styles.text,
-                        styles[`${variant}Text`],
-                        styles[`${size}Text`],
-                        textStyle,
-                    ]}
+            {variant === 'primary' ? (
+                <LinearGradient
+                    colors={[colors.primary, colors.primaryLight]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.primaryFill}
                 >
-                    {title}
-                </Text>
+                    {loading ? (
+                        <ActivityIndicator color={colors.onPrimary} size="small" />
+                    ) : (
+                        <Text
+                            style={[
+                                styles.text,
+                                styles[`${variant}Text`],
+                                styles[`${size}Text`],
+                                textStyle,
+                            ]}
+                        >
+                            {title}
+                        </Text>
+                    )}
+                </LinearGradient>
+            ) : (
+                <>
+                    {loading ? (
+                        <ActivityIndicator
+                            color={variant === 'secondary' ? colors.onSecondary : colors.primary}
+                            size="small"
+                        />
+                    ) : (
+                        <Text
+                            style={[
+                                styles.text,
+                                styles[`${variant}Text`],
+                                styles[`${size}Text`],
+                                textStyle,
+                            ]}
+                        >
+                            {title}
+                        </Text>
+                    )}
+                </>
             )}
         </TouchableOpacity>
     );
@@ -71,28 +98,34 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
     base: {
-        borderRadius: borderRadius['3xl'],
+        borderRadius: borderRadius.full,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
+        overflow: 'hidden',
     },
 
     // Variants
     primary: {
         backgroundColor: colors.primary,
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+        elevation: 8,
     },
     secondary: {
-        backgroundColor: colors.slate100,
-        borderWidth: 1,
-        borderColor: colors.slate200,
+        backgroundColor: colors.secondaryContainer,
     },
     ghost: {
-        backgroundColor: colors.transparent,
+        backgroundColor: colors.surfaceContainerLow,
+    },
+    primaryFill: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        paddingHorizontal: spacing.xl,
     },
 
     // Sizes
@@ -122,12 +155,13 @@ const styles = StyleSheet.create({
     // Text styles
     text: {
         fontWeight: fontWeights.bold,
+        letterSpacing: 0.3,
     },
     primaryText: {
-        color: colors.white,
+        color: colors.onPrimary,
     },
     secondaryText: {
-        color: colors.slate700,
+        color: colors.onSecondary,
     },
     ghostText: {
         color: colors.primary,

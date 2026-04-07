@@ -4,7 +4,7 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    ViewStyle
+    ViewStyle,
 } from 'react-native';
 import { JobResponse } from '../types';
 import { colors, borderRadius, spacing, fontSizes, fontWeights } from '../theme';
@@ -19,7 +19,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onPress, style }) => {
     const formatCurrency = (amount: number) => {
         return `$${amount.toLocaleString(undefined, {
             minimumFractionDigits: 0,
-            maximumFractionDigits: 0
+            maximumFractionDigits: 0,
         })}`;
     };
 
@@ -27,12 +27,18 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onPress, style }) => {
         <TouchableOpacity
             style={[styles.container, style]}
             onPress={onPress}
-            activeOpacity={0.7}
+            activeOpacity={0.78}
         >
+            <View style={styles.glow} />
             <View style={styles.content}>
-                <Text style={styles.title} numberOfLines={1}>{job.title}</Text>
+                <View style={styles.badge}>
+                    <Text style={styles.badgeText}>Active Gig</Text>
+                </View>
+                <Text style={styles.title} numberOfLines={1}>
+                    {job.title}
+                </Text>
                 <Text style={styles.subtitle}>
-                    ${job.hourlyRate}/hr • {job.totalHours.toFixed(0)}h total
+                    ${job.hourlyRate}/hr  •  {job.totalHours.toFixed(0)}h total
                 </Text>
             </View>
 
@@ -51,32 +57,55 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: spacing.lg,
-        backgroundColor: colors.white,
-        borderRadius: borderRadius['3xl'],
-        borderWidth: 2,
-        borderColor: colors.slate100,
+        padding: spacing['2xl'],
+        backgroundColor: colors.surfaceContainerLowest,
+        borderRadius: borderRadius.lg,
         marginBottom: spacing.md,
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
-        shadowRadius: 4,
-        elevation: 1,
+        overflow: 'hidden',
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.06,
+        shadowRadius: 40,
+        elevation: 6,
+    },
+    glow: {
+        position: 'absolute',
+        right: -16,
+        top: -20,
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: 'rgba(0, 109, 68, 0.08)',
     },
     content: {
         flex: 1,
         marginRight: spacing.md,
     },
+    badge: {
+        alignSelf: 'flex-start',
+        backgroundColor: 'rgba(0, 109, 68, 0.08)',
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+        marginBottom: spacing.md,
+    },
+    badgeText: {
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        color: colors.primary,
+        textTransform: 'uppercase',
+        letterSpacing: 0.8,
+    },
     title: {
-        fontSize: fontSizes.lg,
+        fontSize: fontSizes.xl,
         fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
+        color: colors.onSurface,
         marginBottom: spacing.xs,
     },
     subtitle: {
         fontSize: fontSizes.sm,
         fontWeight: fontWeights.semibold,
-        color: colors.slate400,
+        color: colors.onSurfaceVariant,
     },
     rightSection: {
         flexDirection: 'row',
@@ -86,19 +115,19 @@ const styles = StyleSheet.create({
     earnings: {
         fontSize: fontSizes['2xl'],
         fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
+        color: colors.primary,
     },
     chevron: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.slate100,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.surfaceContainerLow,
         alignItems: 'center',
         justifyContent: 'center',
     },
     chevronText: {
         fontSize: 24,
-        color: colors.slate400,
+        color: colors.primary,
         fontWeight: fontWeights.bold,
     },
 });

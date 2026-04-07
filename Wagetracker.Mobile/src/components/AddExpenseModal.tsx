@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,7 @@ import {
     Dimensions,
     Keyboard,
 } from 'react-native';
+import Feather from 'react-native-vector-icons/Feather';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useExpenseStore } from '../stores';
@@ -37,7 +38,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     const translateY = useRef(new Animated.Value(0)).current;
 
     const [amount, setAmount] = useState('');
-    const [category, setCategory] = useState(7); // Default: Other
+    const [category, setCategory] = useState(7);
     const [date, setDate] = useState(new Date());
     const [description, setDescription] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -46,9 +47,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: (_, gestureState) => {
-                return gestureState.dy > 10;
-            },
+            onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
             onPanResponderMove: (_, gestureState) => {
                 if (gestureState.dy > 0) {
                     translateY.setValue(gestureState.dy);
@@ -89,9 +88,9 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
     const handleSubmit = async () => {
         Keyboard.dismiss();
-
         const parsedAmount = parseFloat(amount);
-        if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
+
+        if (!amount || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
             setError('Please enter a valid amount');
             return;
         }
@@ -103,6 +102,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                 date: date.toISOString().split('T')[0],
                 description: description.trim() || undefined,
             });
+
             Toast.show({
                 type: 'success',
                 text1: 'Expense Added',
@@ -122,7 +122,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         }
     };
 
-    const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    const onDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
         if (Platform.OS === 'android') {
             setShowDatePicker(false);
         }
@@ -134,29 +134,20 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     const categoryEntries = Object.entries(EXPENSE_CATEGORIES);
 
     return (
-        <Modal
-            visible={visible}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={onClose}
-        >
+        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
             <View style={styles.overlay}>
-                <Animated.View
-                    style={[
-                        styles.content,
-                        { transform: [{ translateY }] }
-                    ]}
-                >
-                    {/* Swipe Handle */}
+                <Animated.View style={[styles.content, { transform: [{ translateY }] }]}>
                     <View {...panResponder.panHandlers} style={styles.handleArea}>
                         <View style={styles.handleBar} />
                     </View>
 
-                    {/* Header */}
                     <View style={styles.header}>
-                        <Text style={styles.title}>Add Expense 💸</Text>
-                        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                            <Text style={styles.closeIcon}>×</Text>
+                        <View>
+                            <Text style={styles.eyebrow}>Spending Log</Text>
+                            <Text style={styles.title}>Add Expense</Text>
+                        </View>
+                        <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
+                            <Feather name="x" size={20} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
 
@@ -164,127 +155,122 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                         contentContainerStyle={styles.scrollContent}
-                        enableOnAndroid={true}
+                        enableOnAndroid
                         extraScrollHeight={40}
                         extraHeight={60}
                     >
-                        {/* Error Message */}
-                        {error && (
+                        <View style={styles.heroPanel}>
+                            <Text style={styles.heroLabel}>Monthly Capture</Text>
+                            <Text style={styles.heroTitle}>Keep every outgoing line item in rhythm.</Text>
+                        </View>
+
+                        {error ? (
                             <View style={styles.errorContainer}>
                                 <Text style={styles.errorText}>{error}</Text>
                             </View>
-                        )}
+                        ) : null}
 
-                        {/* Form */}
-                        <View style={styles.form}>
-                            {/* Amount Input */}
-                            <Input
-                                label="Amount ($)"
-                                placeholder="e.g. 25.50"
-                                value={amount}
-                                onChangeText={setAmount}
-                                keyboardType="decimal-pad"
-                            />
+                        <Input
+                            label="Amount ($)"
+                            placeholder="25.50"
+                            value={amount}
+                            onChangeText={setAmount}
+                            keyboardType="decimal-pad"
+                        />
 
-                            {/* Category Selection */}
-                            <View style={styles.inputSection}>
-                                <Text style={styles.label}>CATEGORY</Text>
-                                <View style={styles.categoryGrid}>
-                                    {categoryEntries.map(([key, cat]) => {
-                                        const catIndex = parseInt(key);
-                                        const isSelected = category === catIndex;
-                                        return (
-                                            <TouchableOpacity
-                                                key={key}
+                        <View style={styles.inputSection}>
+                            <Text style={styles.label}>Category</Text>
+                            <View style={styles.categoryGrid}>
+                                {categoryEntries.map(([key, cat]) => {
+                                    const catIndex = parseInt(key, 10);
+                                    const isSelected = category === catIndex;
+
+                                    return (
+                                        <TouchableOpacity
+                                            key={key}
+                                            style={[
+                                                styles.categoryItem,
+                                                isSelected && styles.categoryItemSelected,
+                                            ]}
+                                            onPress={() => {
+                                                Keyboard.dismiss();
+                                                setCategory(catIndex);
+                                            }}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                                            <Text
                                                 style={[
-                                                    styles.categoryItem,
-                                                    isSelected && styles.categoryItemSelected,
+                                                    styles.categoryName,
+                                                    isSelected && styles.categoryNameSelected,
                                                 ]}
-                                                onPress={() => {
-                                                    Keyboard.dismiss();
-                                                    setCategory(catIndex);
-                                                }}
-                                                activeOpacity={0.7}
+                                                numberOfLines={1}
                                             >
-                                                <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                                                <Text
-                                                    style={[
-                                                        styles.categoryName,
-                                                        isSelected && styles.categoryNameSelected,
-                                                    ]}
-                                                    numberOfLines={1}
-                                                >
-                                                    {cat.name}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        );
-                                    })}
-                                </View>
-                            </View>
-
-                            {/* Date Picker */}
-                            <View style={styles.inputSection}>
-                                <Text style={styles.label}>DATE</Text>
-                                <TouchableOpacity
-                                    style={styles.dateButton}
-                                    onPress={() => {
-                                        Keyboard.dismiss();
-                                        setShowDatePicker(true);
-                                    }}
-                                >
-                                    <Text style={styles.dateButtonText}>
-                                        {date.toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric',
-                                        })}
-                                    </Text>
-                                    <Text style={styles.calendarIcon}>📅</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            {/* iOS Date Picker */}
-                            {showDatePicker && Platform.OS === 'ios' && (
-                                <View style={styles.pickerContainerDark}>
-                                    <View style={styles.pickerHeaderDark}>
-                                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                                            <Text style={styles.pickerDoneLight}>Done</Text>
+                                                {cat.name}
+                                            </Text>
                                         </TouchableOpacity>
-                                    </View>
-                                    <DateTimePicker
-                                        value={date}
-                                        mode="date"
-                                        display="inline"
-                                        onChange={onDateChange}
-                                        themeVariant="dark"
-                                    />
+                                    );
+                                })}
+                            </View>
+                        </View>
+
+                        <View style={styles.inputSection}>
+                            <Text style={styles.label}>Date</Text>
+                            <TouchableOpacity
+                                style={styles.dateButton}
+                                onPress={() => {
+                                    Keyboard.dismiss();
+                                    setShowDatePicker(true);
+                                }}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.dateButtonText}>
+                                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </Text>
+                                <Feather name="calendar" size={18} color={colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {showDatePicker && Platform.OS === 'ios' && (
+                            <View style={styles.pickerContainerDark}>
+                                <View style={styles.pickerHeaderDark}>
+                                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                                        <Text style={styles.pickerDoneLight}>Done</Text>
+                                    </TouchableOpacity>
                                 </View>
-                            )}
-                            {showDatePicker && Platform.OS === 'android' && (
                                 <DateTimePicker
                                     value={date}
                                     mode="date"
-                                    display="calendar"
+                                    display="inline"
                                     onChange={onDateChange}
+                                    themeVariant="dark"
                                 />
-                            )}
+                            </View>
+                        )}
 
-                            {/* Description */}
-                            <Input
-                                label="Description (Optional)"
-                                placeholder="What was this expense for?"
-                                value={description}
-                                onChangeText={setDescription}
+                        {showDatePicker && Platform.OS === 'android' && (
+                            <DateTimePicker
+                                value={date}
+                                mode="date"
+                                display="calendar"
+                                onChange={onDateChange}
                             />
+                        )}
 
-                            {/* Submit Button */}
-                            <Button
-                                title="Add Expense"
-                                onPress={handleSubmit}
-                                loading={isLoading}
-                                size="lg"
-                                fullWidth
-                            />
-                        </View>
+                        <Input
+                            label="Description"
+                            placeholder="Whole Foods, Uber, rent, coffee..."
+                            value={description}
+                            onChangeText={setDescription}
+                        />
+
+                        <Button
+                            title="Add Expense"
+                            onPress={handleSubmit}
+                            loading={isLoading}
+                            size="lg"
+                            fullWidth
+                        />
                     </KeyboardAwareScrollView>
                 </Animated.View>
             </View>
@@ -295,14 +281,14 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(15, 23, 42, 0.4)',
+        backgroundColor: 'rgba(24, 29, 25, 0.18)',
         justifyContent: 'flex-end',
     },
     content: {
-        backgroundColor: colors.white,
-        borderTopLeftRadius: borderRadius['3xl'],
-        borderTopRightRadius: borderRadius['3xl'],
-        maxHeight: '85%',
+        backgroundColor: colors.surfaceBright,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
+        maxHeight: '86%',
     },
     handleArea: {
         paddingVertical: spacing.md,
@@ -311,66 +297,84 @@ const styles = StyleSheet.create({
     handleBar: {
         width: 48,
         height: 5,
-        backgroundColor: colors.slate300,
+        backgroundColor: colors.outlineVariant,
         borderRadius: 3,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        paddingHorizontal: spacing.lg,
+        marginBottom: spacing.md,
+    },
+    eyebrow: {
+        color: colors.outline,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.3,
+        marginBottom: 4,
+    },
+    title: {
+        color: colors.onSurface,
+        fontSize: fontSizes['3xl'],
+        fontWeight: fontWeights.extrabold,
+    },
+    closeButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: colors.surfaceContainerLow,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     scrollContent: {
         paddingHorizontal: spacing.lg,
         paddingBottom: spacing['4xl'],
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        marginBottom: spacing.md,
+    heroPanel: {
+        backgroundColor: colors.secondaryContainer,
+        borderRadius: borderRadius.lg,
+        padding: spacing['2xl'],
+        marginBottom: spacing.lg,
     },
-    title: {
-        fontSize: fontSizes['2xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
-    },
-    closeButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.slate100,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    closeIcon: {
-        fontSize: 22,
-        fontWeight: fontWeights.bold,
-        color: colors.slate500,
-        lineHeight: 24,
-    },
-    errorContainer: {
-        backgroundColor: colors.orangeBg,
-        padding: spacing.md,
-        borderRadius: borderRadius.xl,
-        marginBottom: spacing.md,
-    },
-    errorText: {
-        color: colors.orange,
-        fontWeight: fontWeights.semibold,
-        fontSize: fontSizes.sm,
-    },
-    form: {
-        gap: spacing.sm,
-    },
-    inputSection: {
-        marginBottom: spacing.sm,
-    },
-    label: {
+    heroLabel: {
+        color: 'rgba(255,255,255,0.82)',
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.bold,
-        color: colors.slate500,
-        letterSpacing: 1,
+        textTransform: 'uppercase',
+        letterSpacing: 1.3,
+        marginBottom: spacing.sm,
+    },
+    heroTitle: {
+        color: colors.white,
+        fontSize: fontSizes['2xl'],
+        fontWeight: fontWeights.extrabold,
+        lineHeight: 28,
+    },
+    errorContainer: {
+        backgroundColor: colors.dangerBg,
+        borderRadius: borderRadius.lg,
+        padding: spacing.md,
+        marginBottom: spacing.lg,
+    },
+    errorText: {
+        color: colors.danger,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.semibold,
+    },
+    inputSection: {
+        marginBottom: spacing.lg,
+    },
+    label: {
+        color: colors.primary,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
         marginBottom: spacing.xs,
         marginLeft: spacing.sm,
     },
-
-    // Category Grid
     categoryGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -381,50 +385,48 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: spacing.md,
-        borderRadius: borderRadius['2xl'],
-        backgroundColor: colors.slate50,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surfaceContainerHighest,
+        borderWidth: 2,
+        borderColor: 'transparent',
+        minHeight: 86,
     },
     categoryItemSelected: {
-        backgroundColor: colors.primary + '15',
-        borderWidth: 2,
-        borderColor: colors.primary,
+        backgroundColor: 'rgba(0, 109, 68, 0.10)',
+        borderColor: 'rgba(0, 109, 68, 0.18)',
     },
     categoryIcon: {
         fontSize: 24,
         marginBottom: spacing.xs,
     },
     categoryName: {
+        color: colors.outline,
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.semibold,
-        color: colors.slate500,
         textAlign: 'center',
+        paddingHorizontal: 2,
     },
     categoryNameSelected: {
         color: colors.primary,
         fontWeight: fontWeights.bold,
     },
-
-    // Date
     dateButton: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: colors.slate50,
-        padding: spacing.md,
-        borderRadius: borderRadius['2xl'],
+        backgroundColor: colors.surfaceContainerHighest,
+        padding: spacing.lg,
+        borderRadius: borderRadius.full,
     },
     dateButtonText: {
+        color: colors.onSurface,
         fontSize: fontSizes.lg,
         fontWeight: fontWeights.bold,
-        color: colors.slate800,
-    },
-    calendarIcon: {
-        fontSize: fontSizes.lg,
     },
     pickerContainerDark: {
         backgroundColor: colors.slate800,
-        borderRadius: borderRadius.xl,
-        marginBottom: spacing.md,
+        borderRadius: borderRadius.lg,
+        marginBottom: spacing.lg,
         overflow: 'hidden',
     },
     pickerHeaderDark: {
@@ -435,8 +437,8 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.slate600,
     },
     pickerDoneLight: {
+        color: colors.primarySoft,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
-        color: colors.primaryLight,
     },
 });

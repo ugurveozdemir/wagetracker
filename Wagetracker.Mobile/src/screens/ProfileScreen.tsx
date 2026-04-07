@@ -9,9 +9,8 @@ import {
     Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { MainStackParamList } from '../types';
+import Feather from 'react-native-vector-icons/Feather';
 import { useAuthStore } from '../stores';
 import { colors, spacing, fontSizes, fontWeights, borderRadius } from '../theme';
 import Toast from 'react-native-toast-message';
@@ -27,28 +26,27 @@ export const ProfileScreen: React.FC = () => {
         Toast.show({
             type: 'info',
             text1: 'Signed Out',
-            text2: 'See you next time!',
+            text2: 'See you next time.',
             visibilityTime: 2000,
         });
     };
 
-    // Format member since date
-    const formatMemberSince = () => {
-        // For now, we'll show a placeholder since we don't have createdAt in user
-        return 'Dec 2025';
+    const showComingSoon = (title: string, text2: string) => {
+        Toast.show({
+            type: 'info',
+            text1: title,
+            text2,
+            visibilityTime: 2000,
+        });
     };
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.slate50} />
+            <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
 
-            {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Text style={styles.backIcon}>←</Text>
+                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+                    <Feather name="arrow-left" size={20} color={colors.primary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Profile</Text>
                 <View style={styles.headerSpacer} />
@@ -59,100 +57,82 @@ export const ProfileScreen: React.FC = () => {
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Profile Card */}
-                <View style={styles.profileCard}>
+                <View style={styles.heroCard}>
                     <View style={styles.avatarContainer}>
-                        <Text style={styles.avatarText}>👤</Text>
+                        <Text style={styles.avatarText}>
+                            {(user?.fullName || 'U').slice(0, 1).toUpperCase()}
+                        </Text>
                     </View>
                     <Text style={styles.userName}>{user?.fullName || 'User'}</Text>
                     <Text style={styles.userEmail}>{user?.email || 'email@example.com'}</Text>
                     <View style={styles.memberBadge}>
-                        <Text style={styles.memberText}>Member since {formatMemberSince()}</Text>
+                        <Text style={styles.memberText}>Member since Dec 2025</Text>
                     </View>
                 </View>
 
-                {/* Settings Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>⚙️ SETTINGS</Text>
+                    <Text style={styles.sectionTitle}>Settings</Text>
                     <View style={styles.sectionContent}>
                         <View style={styles.settingRow}>
                             <View style={styles.settingLeft}>
-                                <Text style={styles.settingIcon}>🌙</Text>
+                                <View style={styles.settingIconWrap}>
+                                    <Feather name="moon" size={16} color={colors.primary} />
+                                </View>
                                 <Text style={styles.settingLabel}>Dark Mode</Text>
                             </View>
                             <Switch
                                 value={false}
-                                onValueChange={() => {
-                                    Toast.show({
-                                        type: 'info',
-                                        text1: 'Coming Soon',
-                                        text2: 'Dark mode will be available soon!',
-                                        visibilityTime: 2000,
-                                    });
-                                }}
-                                trackColor={{ false: colors.slate200, true: colors.primaryLight }}
-                                thumbColor={colors.white}
+                                onValueChange={() =>
+                                    showComingSoon('Coming Soon', 'Dark mode will be available soon.')
+                                }
+                                trackColor={{ false: colors.surfaceContainerHighest, true: colors.primarySoft }}
+                                thumbColor={colors.surfaceContainerLowest}
                             />
                         </View>
-                        <View style={styles.divider} />
+
                         <TouchableOpacity
                             style={styles.settingRow}
-                            onPress={() => {
-                                Toast.show({
-                                    type: 'info',
-                                    text1: 'Coming Soon',
-                                    text2: 'Currency selection will be available soon!',
-                                    visibilityTime: 2000,
-                                });
-                            }}
+                            onPress={() => showComingSoon('Coming Soon', 'Currency selection will be available soon.')}
+                            activeOpacity={0.8}
                         >
                             <View style={styles.settingLeft}>
-                                <Text style={styles.settingIcon}>💱</Text>
+                                <View style={styles.settingIconWrap}>
+                                    <Feather name="dollar-sign" size={16} color={colors.primary} />
+                                </View>
                                 <Text style={styles.settingLabel}>Currency</Text>
                             </View>
                             <View style={styles.settingRight}>
                                 <Text style={styles.settingValue}>USD</Text>
-                                <Text style={styles.chevron}>→</Text>
+                                <Feather name="chevron-right" size={16} color={colors.outline} />
                             </View>
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                {/* Account Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>🔐 ACCOUNT</Text>
+                    <Text style={styles.sectionTitle}>Account</Text>
                     <View style={styles.sectionContent}>
                         <TouchableOpacity
                             style={styles.settingRow}
-                            onPress={() => {
-                                Toast.show({
-                                    type: 'info',
-                                    text1: 'Coming Soon',
-                                    text2: 'Password change will be available soon!',
-                                    visibilityTime: 2000,
-                                });
-                            }}
+                            onPress={() => showComingSoon('Coming Soon', 'Password change will be available soon.')}
+                            activeOpacity={0.8}
                         >
                             <View style={styles.settingLeft}>
-                                <Text style={styles.settingIcon}>🔑</Text>
+                                <View style={styles.settingIconWrap}>
+                                    <Feather name="lock" size={16} color={colors.primary} />
+                                </View>
                                 <Text style={styles.settingLabel}>Change Password</Text>
                             </View>
-                            <Text style={styles.chevron}>→</Text>
+                            <Feather name="chevron-right" size={16} color={colors.outline} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                {/* Sign Out Button */}
-                <TouchableOpacity
-                    style={styles.signOutButton}
-                    onPress={handleLogout}
-                    activeOpacity={0.8}
-                >
-                    <Text style={styles.signOutIcon}>🚪</Text>
+                <TouchableOpacity style={styles.signOutButton} onPress={handleLogout} activeOpacity={0.84}>
+                    <Feather name="log-out" size={18} color={colors.secondaryContainer} />
                     <Text style={styles.signOutText}>Sign Out</Text>
                 </TouchableOpacity>
 
-                {/* App Version */}
                 <Text style={styles.version}>WageTracker v1.0.0</Text>
             </ScrollView>
         </SafeAreaView>
@@ -162,7 +142,7 @@ export const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: colors.slate50,
+        backgroundColor: colors.surfaceBright,
     },
     header: {
         flexDirection: 'row',
@@ -170,134 +150,119 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
-        backgroundColor: colors.slate50,
     },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.white,
+    headerButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: colors.surfaceContainerLow,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    backIcon: {
-        fontSize: 20,
-        color: colors.slate700,
     },
     headerTitle: {
+        color: colors.onSurface,
         fontSize: fontSizes.xl,
         fontWeight: fontWeights.bold,
-        color: colors.slate800,
     },
     headerSpacer: {
-        width: 40,
+        width: 42,
     },
     container: {
         flex: 1,
     },
     contentContainer: {
         padding: spacing.lg,
-        paddingBottom: spacing['4xl'],
+        paddingBottom: 120,
     },
-
-    // Profile Card
-    profileCard: {
-        backgroundColor: colors.white,
-        borderRadius: borderRadius['3xl'],
-        padding: spacing.xl,
+    heroCard: {
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.xl,
+        padding: spacing['3xl'],
         alignItems: 'center',
         marginBottom: spacing.xl,
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-        elevation: 4,
     },
     avatarContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: colors.primaryLight + '30',
+        width: 86,
+        height: 86,
+        borderRadius: 43,
+        backgroundColor: colors.surfaceContainerLowest,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.md,
-        borderWidth: 3,
-        borderColor: colors.primary,
     },
     avatarText: {
-        fontSize: 40,
+        color: colors.primary,
+        fontSize: 32,
+        fontWeight: fontWeights.extrabold,
     },
     userName: {
+        color: colors.onSurface,
         fontSize: fontSizes['2xl'],
-        fontWeight: fontWeights.bold,
-        color: colors.slate800,
+        fontWeight: fontWeights.extrabold,
         marginBottom: spacing.xs,
     },
     userEmail: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.base,
-        color: colors.slate500,
         marginBottom: spacing.md,
     },
     memberBadge: {
-        backgroundColor: colors.slate100,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
+        backgroundColor: colors.surfaceContainerLowest,
         borderRadius: borderRadius.full,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
     },
     memberText: {
+        color: colors.outline,
         fontSize: fontSizes.sm,
-        color: colors.slate500,
         fontWeight: fontWeights.medium,
     },
-
-    // Sections
     section: {
         marginBottom: spacing.xl,
     },
     sectionTitle: {
+        color: colors.outline,
         fontSize: fontSizes.sm,
         fontWeight: fontWeights.bold,
-        color: colors.slate400,
-        letterSpacing: 1,
+        textTransform: 'uppercase',
+        letterSpacing: 1.3,
         marginBottom: spacing.sm,
         marginLeft: spacing.sm,
     },
     sectionContent: {
-        backgroundColor: colors.white,
-        borderRadius: borderRadius['2xl'],
+        backgroundColor: colors.surfaceContainerLowest,
+        borderRadius: borderRadius.lg,
         overflow: 'hidden',
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.04,
+        shadowRadius: 40,
+        elevation: 4,
     },
-
-    // Setting Rows
     settingRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.lg,
     },
     settingLeft: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.md,
     },
-    settingIcon: {
-        fontSize: fontSizes.xl,
+    settingIconWrap: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.surfaceContainerLow,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     settingLabel: {
+        color: colors.onSurface,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.semibold,
-        color: colors.slate700,
     },
     settingRight: {
         flexDirection: 'row',
@@ -305,45 +270,33 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
     },
     settingValue: {
+        color: colors.outline,
         fontSize: fontSizes.base,
-        color: colors.slate400,
+        fontWeight: fontWeights.medium,
     },
-    chevron: {
-        fontSize: fontSizes.lg,
-        color: colors.slate300,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: colors.slate100,
-        marginHorizontal: spacing.lg,
-    },
-
-    // Sign Out Button
     signOutButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.white,
-        borderRadius: borderRadius['2xl'],
-        paddingVertical: spacing.lg,
         gap: spacing.md,
+        backgroundColor: colors.surfaceContainerLowest,
+        borderRadius: borderRadius.lg,
+        paddingVertical: spacing.lg,
         marginBottom: spacing.xl,
-        borderWidth: 2,
-        borderColor: colors.danger,
-    },
-    signOutIcon: {
-        fontSize: fontSizes.xl,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.04,
+        shadowRadius: 40,
+        elevation: 4,
     },
     signOutText: {
+        color: colors.secondaryContainer,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
-        color: colors.danger,
     },
-
-    // Version
     version: {
-        textAlign: 'center',
+        color: colors.outline,
         fontSize: fontSizes.sm,
-        color: colors.slate400,
+        textAlign: 'center',
     },
 });

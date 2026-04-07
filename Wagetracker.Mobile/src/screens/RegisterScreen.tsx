@@ -28,40 +28,36 @@ export const RegisterScreen: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-
-    // Error states
     const [fullNameError, setFullNameError] = useState('');
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [confirmPasswordError, setConfirmPasswordError] = useState('');
-    const [touched, setTouched] = useState({
-        fullName: false,
-        email: false,
-        password: false,
-        confirmPassword: false,
-    });
 
-    // Validation functions
-    const validateFullName = (value: string): string => {
+    const validateFullName = (value: string) => {
         if (!value.trim()) return 'Full name is required';
         if (value.trim().length < 2) return 'Name must be at least 2 characters';
         return '';
     };
 
-    const validateEmail = (value: string): string => {
+    const validateEmail = (value: string) => {
         if (!value.trim()) return 'Email is required';
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value)) return 'Invalid email format';
         return '';
     };
 
-    const validatePassword = (value: string): string => {
+    const validatePassword = (value: string) => {
         if (!value) return 'Password is required';
         if (value.length < 6) return 'Password must be at least 6 characters';
         return '';
     };
 
-    // Password strength calculator
+    const validateConfirmPassword = (value: string, pwd: string) => {
+        if (!value) return 'Please confirm your password';
+        if (value !== pwd) return 'Passwords do not match';
+        return '';
+    };
+
     const getPasswordStrength = (value: string): { level: number; label: string; color: string } => {
         if (!value) return { level: 0, label: '', color: colors.slate200 };
 
@@ -74,79 +70,13 @@ export const RegisterScreen: React.FC = () => {
 
         if (score <= 1) return { level: 1, label: 'Weak', color: colors.danger };
         if (score <= 2) return { level: 2, label: 'Fair', color: colors.orange };
-        if (score <= 3) return { level: 3, label: 'Good', color: '#eab308' };
-        return { level: 4, label: 'Strong', color: colors.emerald };
+        if (score <= 3) return { level: 3, label: 'Good', color: '#d9a400' };
+        return { level: 4, label: 'Strong', color: colors.primary };
     };
 
     const passwordStrength = getPasswordStrength(password);
 
-    const validateConfirmPassword = (value: string, pwd: string): string => {
-        if (!value) return 'Please confirm your password';
-        if (value !== pwd) return 'Passwords do not match';
-        return '';
-    };
-
-    // Change handlers
-    const handleFullNameChange = (value: string) => {
-        setFullName(value);
-        if (touched.fullName) setFullNameError(validateFullName(value));
-    };
-
-    const handleEmailChange = (value: string) => {
-        setEmail(value);
-        if (touched.email) setEmailError(validateEmail(value));
-    };
-
-    const handlePasswordChange = (value: string) => {
-        setPassword(value);
-        if (touched.password) setPasswordError(validatePassword(value));
-        // Also validate confirm password if it was touched
-        if (touched.confirmPassword) {
-            setConfirmPasswordError(validateConfirmPassword(confirmPassword, value));
-        }
-    };
-
-    const handleConfirmPasswordChange = (value: string) => {
-        setConfirmPassword(value);
-        if (touched.confirmPassword) {
-            setConfirmPasswordError(validateConfirmPassword(value, password));
-        }
-    };
-
-    // Blur handlers
-    const handleFullNameBlur = () => {
-        setTouched(prev => ({ ...prev, fullName: true }));
-        setFullNameError(validateFullName(fullName));
-    };
-
-    const handleEmailBlur = () => {
-        setTouched(prev => ({ ...prev, email: true }));
-        setEmailError(validateEmail(email));
-    };
-
-    const handlePasswordBlur = () => {
-        setTouched(prev => ({ ...prev, password: true }));
-        setPasswordError(validatePassword(password));
-    };
-
-    const handleConfirmPasswordBlur = () => {
-        setTouched(prev => ({ ...prev, confirmPassword: true }));
-        setConfirmPasswordError(validateConfirmPassword(confirmPassword, password));
-    };
-
-    // Check if form is valid
-    const isFormValid =
-        fullName.trim() &&
-        email.trim() &&
-        password &&
-        confirmPassword &&
-        !validateFullName(fullName) &&
-        !validateEmail(email) &&
-        !validatePassword(password) &&
-        !validateConfirmPassword(confirmPassword, password);
-
     const handleRegister = async () => {
-        // Validate all fields
         const nameErr = validateFullName(fullName);
         const emailErr = validateEmail(email);
         const passwordErr = validatePassword(password);
@@ -156,7 +86,6 @@ export const RegisterScreen: React.FC = () => {
         setEmailError(emailErr);
         setPasswordError(passwordErr);
         setConfirmPasswordError(confirmErr);
-        setTouched({ fullName: true, email: true, password: true, confirmPassword: true });
 
         if (nameErr || emailErr || passwordErr || confirmErr) {
             return;
@@ -167,7 +96,7 @@ export const RegisterScreen: React.FC = () => {
             Toast.show({
                 type: 'success',
                 text1: 'Account Created',
-                text2: 'Welcome to WageTracker!',
+                text2: 'Welcome to WageTracker',
                 visibilityTime: 2000,
             });
         } catch (err) {
@@ -180,9 +109,19 @@ export const RegisterScreen: React.FC = () => {
         }
     };
 
+    const isFormValid =
+        fullName.trim() &&
+        email.trim() &&
+        password &&
+        confirmPassword &&
+        !validateFullName(fullName) &&
+        !validateEmail(email) &&
+        !validatePassword(password) &&
+        !validateConfirmPassword(confirmPassword, password);
+
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.slate50} />
+            <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
@@ -192,31 +131,33 @@ export const RegisterScreen: React.FC = () => {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <Text style={styles.logo}>🚀</Text>
-                        <Text style={styles.title}>Create Account</Text>
-                        <Text style={styles.subtitle}>Start tracking your earnings</Text>
+                    <View style={styles.heroPanel}>
+                        <Text style={styles.eyebrow}>Create Account</Text>
+                        <Text style={styles.title}>Open a fresh page
+                            {'\n'}
+                            for your work.
+                        </Text>
+                        <Text style={styles.subtitle}>
+                            Same stack, same API contracts, upgraded visual language.
+                        </Text>
                     </View>
 
-                    {/* Error Message */}
-                    {error && (
+                    {error ? (
                         <View style={styles.errorContainer}>
                             <Text style={styles.errorText}>{error}</Text>
                             <TouchableOpacity onPress={clearError}>
                                 <Text style={styles.errorDismiss}>×</Text>
                             </TouchableOpacity>
                         </View>
-                    )}
+                    ) : null}
 
-                    {/* Form */}
-                    <View style={styles.form}>
+                    <View style={styles.formCard}>
                         <Input
                             label="Full Name"
                             placeholder="John Doe"
                             value={fullName}
-                            onChangeText={handleFullNameChange}
-                            onBlur={handleFullNameBlur}
+                            onChangeText={setFullName}
+                            onBlur={() => setFullNameError(validateFullName(fullName))}
                             error={fullNameError}
                             autoCapitalize="words"
                             autoComplete="name"
@@ -226,8 +167,8 @@ export const RegisterScreen: React.FC = () => {
                             label="Email"
                             placeholder="your@email.com"
                             value={email}
-                            onChangeText={handleEmailChange}
-                            onBlur={handleEmailBlur}
+                            onChangeText={setEmail}
+                            onBlur={() => setEmailError(validateEmail(email))}
                             error={emailError}
                             keyboardType="email-address"
                             autoCapitalize="none"
@@ -238,15 +179,14 @@ export const RegisterScreen: React.FC = () => {
                             label="Password"
                             placeholder="••••••••"
                             value={password}
-                            onChangeText={handlePasswordChange}
-                            onBlur={handlePasswordBlur}
+                            onChangeText={setPassword}
+                            onBlur={() => setPasswordError(validatePassword(password))}
                             error={passwordError}
                             secureTextEntry
                             autoComplete="password-new"
                         />
 
-                        {/* Password Strength Indicator */}
-                        {password.length > 0 && (
+                        {password.length > 0 ? (
                             <View style={styles.strengthContainer}>
                                 <View style={styles.strengthBarTrack}>
                                     {[1, 2, 3, 4].map((segment) => (
@@ -255,9 +195,10 @@ export const RegisterScreen: React.FC = () => {
                                             style={[
                                                 styles.strengthBarSegment,
                                                 {
-                                                    backgroundColor: segment <= passwordStrength.level
-                                                        ? passwordStrength.color
-                                                        : colors.slate200,
+                                                    backgroundColor:
+                                                        segment <= passwordStrength.level
+                                                            ? passwordStrength.color
+                                                            : colors.slate200,
                                                 },
                                             ]}
                                         />
@@ -267,14 +208,14 @@ export const RegisterScreen: React.FC = () => {
                                     {passwordStrength.label}
                                 </Text>
                             </View>
-                        )}
+                        ) : null}
 
                         <Input
                             label="Confirm Password"
                             placeholder="••••••••"
                             value={confirmPassword}
-                            onChangeText={handleConfirmPasswordChange}
-                            onBlur={handleConfirmPasswordBlur}
+                            onChangeText={setConfirmPassword}
+                            onBlur={() => setConfirmPasswordError(validateConfirmPassword(confirmPassword, password))}
                             error={confirmPasswordError}
                             secureTextEntry
                             autoComplete="password-new"
@@ -290,11 +231,10 @@ export const RegisterScreen: React.FC = () => {
                         />
                     </View>
 
-                    {/* Footer */}
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>Already have an account?</Text>
                         <TouchableOpacity onPress={() => navigation.goBack()}>
-                            <Text style={styles.footerLink}>Sign In</Text>
+                            <Text style={styles.footerLink}>Sign in</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -306,69 +246,74 @@ export const RegisterScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: colors.slate50,
+        backgroundColor: colors.surfaceBright,
     },
     container: {
         flex: 1,
     },
     scrollContent: {
         flexGrow: 1,
-        padding: spacing.xl,
         justifyContent: 'center',
+        padding: spacing.xl,
     },
-
-    // Header
-    header: {
-        alignItems: 'center',
-        marginBottom: spacing['3xl'],
+    heroPanel: {
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.xl,
+        padding: spacing['3xl'],
+        marginBottom: spacing.xl,
     },
-    logo: {
-        fontSize: 64,
-        marginBottom: spacing.lg,
-    },
-    title: {
-        fontSize: fontSizes['3xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
+    eyebrow: {
+        color: colors.primary,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.4,
         marginBottom: spacing.sm,
     },
-    subtitle: {
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.medium,
-        color: colors.slate400,
+    title: {
+        color: colors.onSurface,
+        fontSize: 34,
+        fontWeight: fontWeights.extrabold,
+        lineHeight: 38,
+        marginBottom: spacing.md,
     },
-
-    // Error
+    subtitle: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.base,
+        lineHeight: 22,
+    },
     errorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: colors.orangeBg,
+        backgroundColor: colors.dangerBg,
         padding: spacing.md,
-        borderRadius: borderRadius.xl,
+        borderRadius: borderRadius.lg,
         marginBottom: spacing.lg,
-        borderWidth: 1,
-        borderColor: colors.orangeLight,
     },
     errorText: {
         flex: 1,
-        color: colors.orange,
+        color: colors.danger,
         fontWeight: fontWeights.semibold,
         fontSize: fontSizes.sm,
     },
     errorDismiss: {
+        color: colors.danger,
         fontSize: 20,
         fontWeight: fontWeights.bold,
-        color: colors.orange,
         paddingLeft: spacing.md,
     },
-
-    // Form
-    form: {
-        marginBottom: spacing['2xl'],
+    formCard: {
+        backgroundColor: colors.surfaceContainerLowest,
+        borderRadius: borderRadius.lg,
+        padding: spacing['2xl'],
+        marginBottom: spacing.xl,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.05,
+        shadowRadius: 40,
+        elevation: 6,
     },
-
-    // Footer
     footer: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -376,17 +321,15 @@ const styles = StyleSheet.create({
         gap: spacing.sm,
     },
     footerText: {
+        color: colors.onSurfaceVariant,
         fontSize: fontSizes.base,
-        color: colors.slate400,
         fontWeight: fontWeights.medium,
     },
     footerLink: {
-        fontSize: fontSizes.base,
         color: colors.primary,
+        fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
     },
-
-    // Password Strength
     strengthContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -405,9 +348,9 @@ const styles = StyleSheet.create({
         borderRadius: 2,
     },
     strengthLabel: {
+        minWidth: 48,
+        textAlign: 'right',
         fontSize: fontSizes.xs,
         fontWeight: fontWeights.bold,
-        minWidth: 45,
-        textAlign: 'right',
     },
 });

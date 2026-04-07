@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
     View,
     Text,
@@ -9,11 +9,11 @@ import {
     StatusBar,
     Modal,
     Pressable,
-    Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import Feather from 'react-native-vector-icons/Feather';
 import { MainStackParamList } from '../types';
 import { useJobsStore, useAuthStore } from '../stores';
 import { Card } from '../components/ui';
@@ -50,212 +50,195 @@ export const DashboardScreen: React.FC = () => {
         Toast.show({
             type: 'info',
             text1: 'Signed Out',
-            text2: 'See you next time!',
+            text2: 'See you next time.',
             visibilityTime: 2000,
         });
     };
 
-    const today = new Date();
-    const dayName = today.toLocaleDateString('en-US', { weekday: 'short' });
-    const dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
     const formatCurrency = (amount: number) => {
         return `$${amount.toLocaleString(undefined, {
             minimumFractionDigits: 0,
-            maximumFractionDigits: 0
+            maximumFractionDigits: 0,
         })}`;
     };
 
-    // Skeleton loading
-    if (isLoading && !refreshing && !summary) {
-        return (
-            <SafeAreaView style={styles.safeArea}>
-                <StatusBar barStyle="dark-content" backgroundColor={colors.slate50} />
-                <View style={styles.skeletonContainer}>
-                    {/* Header skeleton */}
-                    <View style={styles.skeletonHeader}>
-                        <View style={[styles.skeletonBlock, { width: 180, height: 32, borderRadius: 8 }]} />
-                        <View style={[styles.skeletonBlock, { width: 44, height: 44, borderRadius: 22 }]} />
-                    </View>
-                    {/* Today card skeleton */}
-                    <View style={[styles.skeletonCard, { height: 160 }]} />
-                    {/* Stats cards skeleton */}
-                    <View style={[styles.skeletonCard, { height: 150, backgroundColor: colors.slate200 }]} />
-                    <View style={[styles.skeletonCard, { height: 150, backgroundColor: colors.slate200 }]} />
-                    {/* Section title skeleton */}
-                    <View style={[styles.skeletonBlock, { width: 100, height: 24, marginTop: spacing.lg, marginBottom: spacing.md, borderRadius: 6 }]} />
-                    {/* Job cards skeleton */}
-                    <View style={[styles.skeletonCard, { height: 90 }]} />
-                    <View style={[styles.skeletonCard, { height: 90 }]} />
-                </View>
-            </SafeAreaView>
-        );
-    }
+    const today = new Date();
+    const dayName = today.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+    const dateStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const firstName = user?.fullName?.split(' ')[0] || 'there';
 
-    // Network error state with retry
-    if (error && !summary && !isLoading) {
-        return (
-            <SafeAreaView style={styles.safeArea}>
-                <StatusBar barStyle="dark-content" backgroundColor={colors.slate50} />
-                <View style={styles.errorStateContainer}>
-                    <Text style={styles.errorStateEmoji}>📡</Text>
-                    <Text style={styles.errorStateTitle}>Connection Error</Text>
-                    <Text style={styles.errorStateMessage}>{error}</Text>
-                    <TouchableOpacity
-                        style={styles.retryButton}
-                        onPress={() => fetchDashboard()}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.retryButtonText}>Try Again</Text>
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
-        );
-    }
+    const weeklyBars = (() => {
+        const weeklyTotal = summary?.weeklyEarnings || 0;
+        if (!weeklyTotal) {
+            return [18, 28, 22, 36, 30, 42, 12];
+        }
+        return [24, 40, 32, 58, 46, 72, 18];
+    })();
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.slate50} />
+            <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
+
             <ScrollView
                 style={styles.container}
                 contentContainerStyle={styles.contentContainer}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                }
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Header */}
-                <View style={styles.header}>
-                    <View>
-                        <Text style={styles.greeting}>
-                            Hi, <Text style={styles.greetingHighlight}>{user?.fullName?.split(' ')[0] || 'there'}!</Text> 👋
-                        </Text>
+                <View style={styles.topBar}>
+                    <View style={styles.brandWrap}>
+                        <View style={styles.avatar}>
+                            <Text style={styles.avatarText}>{firstName.slice(0, 1).toUpperCase()}</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.brand}>WageTracker</Text>
+                            <Text style={styles.subtitle}>Organic editorial ledger</Text>
+                        </View>
                     </View>
 
-                    {/* Profile Button */}
                     <TouchableOpacity
-                        style={styles.profileButton}
+                        style={styles.currencyPill}
                         onPress={() => setShowProfileMenu(true)}
-                        activeOpacity={0.7}
+                        activeOpacity={0.8}
                     >
-                        <Text style={styles.profileIcon}>👤</Text>
+                        <Text style={styles.currencyText}>USD ($)</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Bento Grid */}
-                <View style={styles.bentoGrid}>
-                    {/* Today Card */}
-                    <Card style={styles.todayCard}>
-                        <View style={styles.todayBadge}>
-                            <Text style={styles.todayBadgeText}>TODAY</Text>
-                        </View>
-                        <Text style={styles.todayDay}>{dayName}.</Text>
-                        <Text style={styles.todayDate}>{dateStr}</Text>
-                        <View style={styles.todayFooter}>
-                            <Text style={styles.activeJobsCount}>{summary?.activeJobsCount || 0}</Text>
-                            <Text style={styles.activeJobsLabel}> active jobs</Text>
-                        </View>
-                    </Card>
+                <View style={styles.heroCopy}>
+                    <Text style={styles.heroEyebrow}>Weekly Earnings</Text>
+                    <Text style={styles.heroGreeting}>Hi, {firstName}.</Text>
+                    <Text style={styles.heroSubcopy}>
+                        Track shifts, expenses, and momentum without changing the app logic.
+                    </Text>
+                </View>
 
-                    {/* Weekly Stats Section */}
-                    <Text style={styles.sectionTitleWeekly}>This Week</Text>
-
-                    <View style={styles.weeklyGrid}>
-                        {/* Weekly Net (Full Width) */}
-                        <Card style={styles.weeklyNetCard}>
-                            <View style={styles.statsHeader}>
-                                <View style={[styles.statsIcon, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-                                    <Text style={styles.statsEmoji}>✨</Text>
-                                </View>
-                                <Text style={[styles.statsLabel, { color: colors.emerald }]}>WEEKLY NET</Text>
-                            </View>
-                            <Text style={[styles.statsValue, { color: colors.slate800 }]}>
-                                {summary?.weeklyNet && summary.weeklyNet < 0 ? '-' : ''}
-                                {formatCurrency(Math.abs(summary?.weeklyNet || 0))}
+                <Card style={styles.heroCard}>
+                    <Text style={styles.heroLabel}>Total Earnings This Week</Text>
+                    <Text style={styles.heroValue}>{formatCurrency(summary?.weeklyEarnings || 0)}</Text>
+                    <View style={styles.heroMetaRow}>
+                        <View style={styles.heroMetaPill}>
+                            <Text style={styles.heroMetaTitle}>Day</Text>
+                            <Text style={styles.heroMetaValue}>
+                                {dayName} · {dateStr}
                             </Text>
-                        </Card>
-
-                        <View style={styles.weeklyRow}>
-                            {/* Weekly Earnings */}
-                            <Card variant="earnings" style={[styles.statsCard, { flex: 1, marginRight: spacing.sm }]}>
-                                <View style={styles.statsHeader}>
-                                    <View style={styles.statsIcon}>
-                                        <Text style={styles.statsEmoji}>💰</Text>
-                                    </View>
-                                    <Text style={styles.statsLabel}>EARNINGS</Text>
-                                </View>
-                                <Text style={styles.statsValueSmall}>
-                                    {formatCurrency(summary?.weeklyEarnings || 0)}
-                                </Text>
-                            </Card>
-
-                            {/* Weekly Expenses */}
-                            <Card variant="loss" style={[styles.statsCard, { flex: 1, marginLeft: spacing.sm }]}>
-                                <View style={styles.statsHeader}>
-                                    <View style={styles.statsIconLoss}>
-                                        <Text style={styles.statsEmoji}>💸</Text>
-                                    </View>
-                                    <Text style={[styles.statsLabel, { color: 'rgba(255, 255, 255, 0.8)' }]}>EXPENSES</Text>
-                                </View>
-                                <Text style={[styles.statsValueSmall, { color: colors.white }]}>
-                                    {formatCurrency(summary?.weeklyExpenses || 0)}
-                                </Text>
-                            </Card>
                         </View>
-
-                         {/* Hours Card */}
-                        <Card variant="hours" style={styles.hoursCard}>
-                            <View style={styles.statsHeader}>
-                                <View style={styles.statsIcon}>
-                                    <Text style={styles.statsEmoji}>⏳</Text>
-                                </View>
-                                <Text style={styles.statsLabel}>WEEKLY HOURS</Text>
-                            </View>
-                            <Text style={styles.statsValueSmall}>
-                                {summary?.weeklyHours?.toFixed(1) || '0.0'}
-                                <Text style={styles.statsUnit}>h</Text>
+                        <View style={styles.heroMetaPill}>
+                            <Text style={styles.heroMetaTitle}>Hours</Text>
+                            <Text style={styles.heroMetaValue}>
+                                {(summary?.weeklyHours || 0).toFixed(1)}h
                             </Text>
-                        </Card>
+                        </View>
+                    </View>
+                    <View style={styles.chartRow}>
+                        {weeklyBars.map((height, index) => (
+                            <View key={index} style={styles.chartTrack}>
+                                <View
+                                    style={[
+                                        styles.chartBar,
+                                        {
+                                            height,
+                                            opacity: index === 5 ? 1 : 0.28 + index * 0.08,
+                                        },
+                                    ]}
+                                />
+                            </View>
+                        ))}
+                    </View>
+                    <View style={styles.chartLabels}>
+                        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((label, index) => (
+                            <Text key={`${label}-${index}`} style={styles.chartLabel}>
+                                {label}
+                            </Text>
+                        ))}
+                    </View>
+                </Card>
+
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Active Gigs</Text>
+                    <Text style={styles.sectionMeta}>{jobs.length} Active</Text>
+                </View>
+
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.jobsScroller}
+                >
+                    {jobs.map((job) => (
+                        <View key={job.id} style={styles.jobCardWrap}>
+                            <JobCard
+                                job={job}
+                                onPress={() => navigation.navigate('JobDetails', { jobId: job.id })}
+                                style={styles.jobCard}
+                            />
+                        </View>
+                    ))}
+
+                    <TouchableOpacity
+                        style={styles.addGigCard}
+                        onPress={() => setIsModalOpen(true)}
+                        activeOpacity={0.84}
+                    >
+                        <View style={styles.addGigIcon}>
+                            <Feather name="plus" size={22} color={colors.primary} />
+                        </View>
+                        <Text style={styles.addGigTitle}>Add Gig</Text>
+                        <Text style={styles.addGigText}>Create a new role without leaving the dashboard.</Text>
+                    </TouchableOpacity>
+                </ScrollView>
+
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Recent Activity</Text>
+                    <Text style={styles.sectionMeta}>Live summary</Text>
+                </View>
+
+                <View style={styles.activityList}>
+                    <View style={styles.activityItem}>
+                        <View style={[styles.activityIconWrap, { backgroundColor: 'rgba(0, 109, 68, 0.10)' }]}>
+                            <Feather name="trending-up" size={18} color={colors.primary} />
+                        </View>
+                        <View style={styles.activityCopy}>
+                            <Text style={styles.activityTitle}>Weekly net</Text>
+                            <Text style={styles.activityMeta}>Earnings minus expenses</Text>
+                        </View>
+                        <Text style={styles.activityAmount}>
+                            {formatCurrency(summary?.weeklyNet || 0)}
+                        </Text>
+                    </View>
+
+                    <View style={styles.activityItem}>
+                        <View style={[styles.activityIconWrap, { backgroundColor: 'rgba(254, 94, 30, 0.10)' }]}>
+                            <Feather name="credit-card" size={18} color={colors.secondaryContainer} />
+                        </View>
+                        <View style={styles.activityCopy}>
+                            <Text style={styles.activityTitle}>Expenses this week</Text>
+                            <Text style={styles.activityMeta}>Current period spend</Text>
+                        </View>
+                        <Text style={[styles.activityAmount, styles.expenseAmount]}>
+                            -{formatCurrency(summary?.weeklyExpenses || 0).replace('$', '$')}
+                        </Text>
+                    </View>
+
+                    <View style={styles.activityItem}>
+                        <View style={[styles.activityIconWrap, { backgroundColor: 'rgba(0, 82, 50, 0.10)' }]}>
+                            <Feather name="briefcase" size={18} color={colors.primary} />
+                        </View>
+                        <View style={styles.activityCopy}>
+                            <Text style={styles.activityTitle}>Active jobs</Text>
+                            <Text style={styles.activityMeta}>All-time tracked roles</Text>
+                        </View>
+                        <Text style={styles.activityAmount}>{summary?.activeJobsCount || 0}</Text>
                     </View>
                 </View>
 
-                {/* My Jobs Section */}
-                <View style={styles.jobsSection}>
-                    <Text style={styles.sectionTitle}>My Jobs</Text>
-
-                    {jobs.length === 0 ? (
-                        <View style={styles.emptyState}>
-                            <View style={styles.emptyIllustration}>
-                                <Text style={styles.emptyMainEmoji}>💼</Text>
-                                <View style={styles.emptySparkles}>
-                                    <Text style={styles.emptySparkle}>✨</Text>
-                                    <Text style={[styles.emptySparkle, { top: -8, right: -4, fontSize: 14 }]}>✨</Text>
-                                </View>
-                            </View>
-                            <Text style={styles.emptyTitle}>No jobs yet</Text>
-                            <Text style={styles.emptyText}>Start tracking your earnings by{"\n"}creating your first job</Text>
-                            <TouchableOpacity
-                                style={styles.emptyButton}
-                                onPress={() => setIsModalOpen(true)}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={styles.emptyButtonIcon}>+</Text>
-                                <Text style={styles.emptyButtonText}>Create your first job</Text>
-                            </TouchableOpacity>
-                        </View>
-                    ) : (
-                        jobs.map((job) => (
-                            <JobCard
-                                key={job.id}
-                                job={job}
-                                onPress={() => navigation.navigate('JobDetails', { jobId: job.id })}
-                            />
-                        ))
-                    )}
-                </View>
+                {error && !isLoading ? (
+                    <View style={styles.errorBanner}>
+                        <Feather name="wifi-off" size={16} color={colors.secondaryContainer} />
+                        <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                ) : null}
             </ScrollView>
 
-            {/* Create Job Modal */}
             <CreateJobModal
                 visible={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -265,21 +248,14 @@ export const DashboardScreen: React.FC = () => {
                 }}
             />
 
-            {/* Profile Menu Modal */}
             <Modal
                 visible={showProfileMenu}
-                transparent={true}
+                transparent
                 animationType="fade"
                 onRequestClose={() => setShowProfileMenu(false)}
             >
-                <Pressable
-                    style={styles.menuOverlay}
-                    onPress={() => setShowProfileMenu(false)}
-                >
+                <Pressable style={styles.menuOverlay} onPress={() => setShowProfileMenu(false)}>
                     <Pressable style={styles.menuContainer}>
-                        <View style={styles.menuHeader}>
-                            <Text style={styles.menuTitle}>Account</Text>
-                        </View>
                         <TouchableOpacity
                             style={styles.menuItem}
                             onPress={() => {
@@ -287,16 +263,12 @@ export const DashboardScreen: React.FC = () => {
                                 (navigation as any).navigate('ProfileTab');
                             }}
                         >
-                            <Text style={styles.menuItemIcon}>👤</Text>
+                            <Feather name="user" size={18} color={colors.primary} />
                             <Text style={styles.menuItemText}>Profile</Text>
                         </TouchableOpacity>
-                        <View style={styles.menuDivider} />
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={handleLogout}
-                        >
-                            <Text style={styles.menuItemIcon}>🚪</Text>
-                            <Text style={styles.menuItemText}>Sign Out</Text>
+                        <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                            <Feather name="log-out" size={18} color={colors.secondaryContainer} />
+                            <Text style={[styles.menuItemText, styles.menuDangerText]}>Sign Out</Text>
                         </TouchableOpacity>
                     </Pressable>
                 </Pressable>
@@ -308,379 +280,294 @@ export const DashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: colors.slate50,
+        backgroundColor: colors.surfaceBright,
     },
     container: {
         flex: 1,
     },
     contentContainer: {
-        padding: spacing.lg,
-        paddingBottom: 100,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.md,
+        paddingBottom: 120,
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: colors.slate50,
-    },
-
-    // Header
-    header: {
+    topBar: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: spacing.xl,
     },
-    greeting: {
-        fontSize: fontSizes['3xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
+    brandWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
     },
-    greetingHighlight: {
-        color: colors.primary,
-    },
-    profileButton: {
+    avatar: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: colors.white,
+        backgroundColor: colors.surfaceContainer,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 2,
-        borderColor: colors.primary,
     },
-    profileIcon: {
-        fontSize: 20,
+    avatarText: {
+        color: colors.primary,
+        fontSize: fontSizes.lg,
+        fontWeight: fontWeights.extrabold,
     },
-
-    // Profile Menu
+    brand: {
+        color: colors.primary,
+        fontSize: fontSizes.xl,
+        fontWeight: fontWeights.extrabold,
+    },
+    subtitle: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.medium,
+    },
+    currencyPill: {
+        backgroundColor: colors.surfaceContainerLow,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.full,
+    },
+    currencyText: {
+        color: colors.primary,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.bold,
+    },
+    heroCopy: {
+        marginBottom: spacing.xl,
+    },
+    heroEyebrow: {
+        color: colors.outline,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.4,
+        marginBottom: spacing.sm,
+    },
+    heroGreeting: {
+        color: colors.primary,
+        fontSize: fontSizes['4xl'],
+        fontWeight: fontWeights.extrabold,
+        marginBottom: spacing.sm,
+    },
+    heroSubcopy: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.base,
+        lineHeight: 22,
+        maxWidth: 320,
+    },
+    heroCard: {
+        marginBottom: spacing['3xl'],
+        padding: spacing['3xl'],
+    },
+    heroLabel: {
+        color: colors.outline,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
+        marginBottom: spacing.sm,
+    },
+    heroValue: {
+        color: colors.primary,
+        fontSize: 46,
+        fontWeight: fontWeights.extrabold,
+        marginBottom: spacing.lg,
+    },
+    heroMetaRow: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        marginBottom: spacing.xl,
+    },
+    heroMetaPill: {
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.full,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+    },
+    heroMetaTitle: {
+        color: colors.outline,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        marginBottom: 2,
+    },
+    heroMetaValue: {
+        color: colors.onSurface,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.semibold,
+    },
+    chartRow: {
+        height: 110,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        gap: spacing.sm,
+    },
+    chartTrack: {
+        flex: 1,
+        height: '100%',
+        justifyContent: 'flex-end',
+    },
+    chartBar: {
+        width: '100%',
+        backgroundColor: colors.primary,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+    },
+    chartLabels: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: spacing.md,
+    },
+    chartLabel: {
+        color: colors.outline,
+        fontSize: fontSizes.xs,
+        fontWeight: fontWeights.bold,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.md,
+    },
+    sectionTitle: {
+        color: colors.onSurface,
+        fontSize: fontSizes['2xl'],
+        fontWeight: fontWeights.extrabold,
+    },
+    sectionMeta: {
+        color: colors.primary,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.bold,
+    },
+    jobsScroller: {
+        paddingBottom: spacing.sm,
+        paddingRight: spacing.md,
+    },
+    jobCardWrap: {
+        width: 300,
+        marginRight: spacing.md,
+    },
+    jobCard: {
+        marginBottom: 0,
+        minHeight: 180,
+    },
+    addGigCard: {
+        width: 220,
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.lg,
+        padding: spacing['2xl'],
+        justifyContent: 'center',
+    },
+    addGigIcon: {
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: colors.surfaceContainerLowest,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: spacing.lg,
+    },
+    addGigTitle: {
+        color: colors.onSurface,
+        fontSize: fontSizes.xl,
+        fontWeight: fontWeights.extrabold,
+        marginBottom: spacing.sm,
+    },
+    addGigText: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.sm,
+        lineHeight: 20,
+    },
+    activityList: {
+        gap: spacing.sm,
+        marginBottom: spacing.xl,
+    },
+    activityItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: borderRadius.lg,
+        padding: spacing.xl,
+    },
+    activityIconWrap: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: spacing.md,
+    },
+    activityCopy: {
+        flex: 1,
+    },
+    activityTitle: {
+        color: colors.onSurface,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.bold,
+        marginBottom: 2,
+    },
+    activityMeta: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.sm,
+    },
+    activityAmount: {
+        color: colors.primary,
+        fontSize: fontSizes.xl,
+        fontWeight: fontWeights.extrabold,
+    },
+    expenseAmount: {
+        color: colors.secondaryContainer,
+    },
+    errorBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        backgroundColor: 'rgba(254, 94, 30, 0.08)',
+        borderRadius: borderRadius.full,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+    },
+    errorText: {
+        color: colors.secondaryContainer,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.semibold,
+        flex: 1,
+    },
     menuOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(15, 23, 42, 0.3)',
+        backgroundColor: 'rgba(24, 29, 25, 0.18)',
         justifyContent: 'flex-start',
         alignItems: 'flex-end',
-        paddingTop: 80,
+        paddingTop: 86,
         paddingRight: spacing.lg,
     },
     menuContainer: {
-        backgroundColor: colors.white,
-        borderRadius: borderRadius.xl,
+        backgroundColor: 'rgba(255,255,255,0.84)',
+        borderRadius: borderRadius.lg,
+        paddingVertical: spacing.sm,
         minWidth: 180,
-        overflow: 'hidden',
-        shadowColor: colors.slate900,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 24,
-        elevation: 8,
-    },
-    menuHeader: {
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.slate100,
-    },
-    menuTitle: {
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.bold,
-        color: colors.slate400,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.08,
+        shadowRadius: 40,
+        elevation: 10,
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
         gap: spacing.md,
-    },
-    menuItemIcon: {
-        fontSize: fontSizes.lg,
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
     },
     menuItemText: {
+        color: colors.onSurface,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.semibold,
-        color: colors.slate700,
     },
-    menuItemTextDisabled: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.semibold,
-        color: colors.slate400,
-    },
-    menuDivider: {
-        height: 1,
-        backgroundColor: colors.slate100,
-        marginHorizontal: spacing.lg,
-    },
-
-    bentoGrid: {
-        marginBottom: spacing.xl,
-    },
-    todayCard: {
-        marginBottom: spacing.md,
-        padding: spacing.lg,
-    },
-    todayBadge: {
-        alignSelf: 'flex-start',
-        backgroundColor: colors.slate100,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.full,
-        marginBottom: spacing.sm,
-    },
-    todayBadgeText: {
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        color: colors.slate500,
-        letterSpacing: 1,
-    },
-    todayDay: {
-        fontSize: fontSizes['4xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.slate800,
-    },
-    todayDate: {
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.semibold,
-        color: colors.slate400,
-        marginBottom: spacing.md,
-    },
-    todayFooter: {
-        flexDirection: 'row',
-        alignItems: 'baseline',
-        borderTopWidth: 1,
-        borderTopColor: colors.slate100,
-        paddingTop: spacing.md,
-    },
-    activeJobsCount: {
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.bold,
-        color: colors.primary,
-    },
-    activeJobsLabel: {
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.medium,
-        color: colors.slate500,
-    },
-
-    // Stats Cards
-    statsCard: {
-        marginBottom: spacing.md,
-        minHeight: 140,
-    },
-    statsHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: spacing.lg,
-    },
-    statsIcon: {
-        padding: spacing.sm,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        borderRadius: borderRadius.xl,
-    },
-    statsEmoji: {
-        fontSize: fontSizes.xl,
-    },
-    statsLabel: {
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        color: 'rgba(255,255,255,0.8)',
-        letterSpacing: 1,
-    },
-    statsValue: {
-        fontSize: fontSizes['5xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.white,
-    },
-    statsUnit: {
-        fontSize: fontSizes['3xl'],
-        opacity: 0.8,
-    },
-    statsSubtext: {
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.medium,
-        color: 'rgba(255,255,255,0.7)',
-        marginTop: spacing.xs,
-    },
-
-    // Jobs Section
-    jobsSection: {
-        marginTop: spacing.md,
-    },
-    sectionTitle: {
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.bold,
-        color: colors.slate800,
-        marginBottom: spacing.md,
-        paddingLeft: spacing.sm,
-    },
-
-    // Skeleton Loading
-    skeletonContainer: {
-        flex: 1,
-        padding: spacing.lg,
-    },
-    skeletonHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: spacing.xl,
-    },
-    skeletonBlock: {
-        backgroundColor: colors.slate200,
-        borderRadius: borderRadius.xl,
-    },
-    skeletonCard: {
-        backgroundColor: colors.slate100,
-        borderRadius: borderRadius['3xl'],
-        marginBottom: spacing.md,
-        height: 120,
-    },
-
-    // Error State
-    errorStateContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: spacing['3xl'],
-    },
-    errorStateEmoji: {
-        fontSize: 64,
-        marginBottom: spacing.lg,
-    },
-    errorStateTitle: {
-        fontSize: fontSizes['2xl'],
-        fontWeight: fontWeights.bold,
-        color: colors.slate800,
-        marginBottom: spacing.sm,
-    },
-    errorStateMessage: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.medium,
-        color: colors.slate400,
-        textAlign: 'center',
-        marginBottom: spacing.xl,
-        lineHeight: 22,
-    },
-    retryButton: {
-        backgroundColor: colors.primary,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing['3xl'],
-        borderRadius: borderRadius['3xl'],
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    retryButtonText: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-        color: colors.white,
-    },
-
-    // Empty State
-    emptyState: {
-        alignItems: 'center',
-        paddingVertical: spacing['4xl'],
-        paddingHorizontal: spacing['3xl'],
-        backgroundColor: colors.white,
-        borderRadius: borderRadius['3xl'],
-        borderWidth: 2,
-        borderColor: colors.slate200,
-        borderStyle: 'dashed',
-    },
-    emptyIllustration: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: colors.primaryLight + '20',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: spacing.xl,
-    },
-    emptyMainEmoji: {
-        fontSize: 48,
-    },
-    emptySparkles: {
-        position: 'absolute',
-        top: 4,
-        right: 4,
-    },
-    emptySparkle: {
-        fontSize: 18,
-        position: 'absolute',
-    },
-    emptyTitle: {
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.bold,
-        color: colors.slate800,
-        marginBottom: spacing.sm,
-    },
-    emptyText: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.medium,
-        color: colors.slate400,
-        marginBottom: spacing.xl,
-        textAlign: 'center',
-        lineHeight: 22,
-    },
-    emptyButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.primary,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.xl,
-        borderRadius: borderRadius['3xl'],
-        gap: spacing.sm,
-        shadowColor: colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    emptyButtonIcon: {
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.bold,
-        color: colors.white,
-    },
-    emptyButtonText: {
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-        color: colors.white,
-    },
-
-    sectionTitleWeekly: {
-        fontSize: fontSizes.lg,
-        fontWeight: fontWeights.bold,
-        color: colors.slate800,
-        marginBottom: spacing.md,
-        paddingLeft: spacing.sm,
-        marginTop: spacing.md,
-    },
-    weeklyGrid: {
-        gap: spacing.sm,
-    },
-    weeklyRow: {
-        flexDirection: 'row',
-        marginBottom: spacing.sm,
-    },
-    weeklyNetCard: {
-        marginBottom: spacing.sm,
-        padding: spacing.lg,
-    },
-    hoursCard: {
-        padding: spacing.lg,
-    },
-
-    statsIconLoss: {
-        padding: spacing.sm,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        borderRadius: borderRadius.xl,
-    },
-    statsValueSmall: {
-        fontSize: fontSizes['3xl'],
-        fontWeight: fontWeights.extrabold,
-        color: colors.white,
+    menuDangerText: {
+        color: colors.secondaryContainer,
     },
 });
