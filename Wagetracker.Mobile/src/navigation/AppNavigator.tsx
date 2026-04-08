@@ -18,6 +18,7 @@ import {
     HomeStackParamList,
     ExpenseStackParamList,
     OverviewStackParamList,
+    GoalStackParamList,
     TabParamList,
 } from '../types';
 import { useAuthStore } from '../stores';
@@ -40,6 +41,7 @@ const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const ExpenseStack = createNativeStackNavigator<ExpenseStackParamList>();
 const OverviewStack = createNativeStackNavigator<OverviewStackParamList>();
+const GoalStack = createNativeStackNavigator<GoalStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
 const AuthNavigator: React.FC = () => {
@@ -103,10 +105,25 @@ const ExpenseNavigator: React.FC = () => {
     );
 };
 
+const GoalNavigator: React.FC = () => {
+    return (
+        <GoalStack.Navigator
+            screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.surface },
+                animation: 'slide_from_right',
+            }}
+        >
+            <GoalStack.Screen name="Goal" component={GoalScreen} />
+        </GoalStack.Navigator>
+    );
+};
+
 const DummyScreen: React.FC = () => <View style={{ flex: 1, backgroundColor: '#fbf9f1' }} />;
 
 const visibleTabs = [
     { routeName: 'HomeTab', icon: 'dashboard', label: 'Dashboard' },
+    { routeName: 'GoalTab', icon: 'track-changes', label: 'Goal' },
     { routeName: 'OverviewTab', icon: 'work', label: 'Jobs' },
     { routeName: 'ExpensesTab', icon: 'payments', label: 'Expenses' },
     { routeName: 'ProfileTab', icon: 'person', label: 'Profile' },
@@ -271,6 +288,7 @@ const MainNavigator: React.FC = () => {
                 }}
             >
                 <Tab.Screen name="HomeTab" component={HomeNavigator} />
+                <Tab.Screen name="GoalTab" component={GoalNavigator} />
                 <Tab.Screen name="ExpensesTab" component={ExpenseNavigator} />
                 <Tab.Screen name="AddTab" component={DummyScreen} />
                 <Tab.Screen name="OverviewTab" component={OverviewNavigator} />

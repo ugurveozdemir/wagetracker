@@ -8,17 +8,12 @@ import {
     StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Feather from 'react-native-vector-icons/Feather';
+import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
-import { MainStackParamList } from '../types';
 import { Button, Input } from '../components/ui';
 import { useJobsStore } from '../stores';
 import { profileApi } from '../api';
 import { colors } from '../theme';
-
-type GoalNavigationProp = NativeStackNavigationProp<MainStackParamList, 'Goal'>;
 
 const RING_SEGMENTS = 40;
 const RING_SIZE = 240;
@@ -31,7 +26,6 @@ const formatCurrency = (amount: number) =>
     })}`;
 
 export const GoalScreen: React.FC = () => {
-    const navigation = useNavigation<GoalNavigationProp>();
     const { summary, fetchDashboard } = useJobsStore();
     const [goalInput, setGoalInput] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -94,19 +88,15 @@ export const GoalScreen: React.FC = () => {
         <SafeAreaView style={styles.safeArea}>
             <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
 
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()} activeOpacity={0.82}>
-                    <Feather name="arrow-left" size={20} color={colors.primary} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Goal</Text>
-                <View style={styles.headerSpacer} />
-            </View>
-
             <ScrollView
                 style={styles.container}
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
             >
+                <View style={styles.screenHeader}>
+                    <Text style={styles.screenTitle}>Goal</Text>
+                </View>
+
                 <View style={styles.heroCard}>
                     <Text style={styles.eyebrow}>Weekly Cycle</Text>
                     <Text style={styles.title}>Keep the ring filling until you hit your number.</Text>
@@ -198,34 +188,21 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.surfaceBright,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-    },
-    headerButton: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        backgroundColor: colors.surfaceContainerLow,
-        alignItems: 'center',
+    screenHeader: {
         justifyContent: 'center',
     },
-    headerTitle: {
-        color: colors.onSurface,
-        fontSize: 20,
+    screenTitle: {
+        color: '#006D44',
+        fontSize: 38,
         fontWeight: '800',
-    },
-    headerSpacer: {
-        width: 42,
+        letterSpacing: -1,
     },
     container: {
         flex: 1,
     },
     contentContainer: {
         paddingHorizontal: 24,
+        paddingTop: 18,
         paddingBottom: 120,
         gap: 20,
     },

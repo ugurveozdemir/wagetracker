@@ -209,6 +209,7 @@ export interface DailyEarningsPointResponse {
 // Bottom Tab Navigator
 export type TabParamList = {
     HomeTab: undefined;
+    GoalTab: undefined;
     ExpensesTab: undefined;
     AddTab: undefined;
     OverviewTab: undefined;
@@ -241,6 +242,10 @@ export type OverviewStackParamList = {
 export type ExpenseStackParamList = {
     Expenses: undefined;
     ExpenseHistory: undefined;
+};
+
+export type GoalStackParamList = {
+    Goal: undefined;
 };
 
 // Backward compat alias

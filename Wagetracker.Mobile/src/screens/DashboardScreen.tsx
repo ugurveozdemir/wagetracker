@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     goalCard: {
-        backgroundColor: '#0e5c3f',
+        backgroundColor: '#00429B',
         marginBottom: 16,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 16 },
