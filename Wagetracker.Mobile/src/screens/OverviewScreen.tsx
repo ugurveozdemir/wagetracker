@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useJobsStore } from '../stores';
 import { OverviewStackParamList } from '../types';
 import { colors } from '../theme';
+import { CreateJobModal } from '../components/CreateJobModal';
 
 type OverviewNavigationProp = NativeStackNavigationProp<OverviewStackParamList, 'Overview'>;
 
@@ -31,6 +32,7 @@ export const OverviewScreen: React.FC = () => {
     const navigation = useNavigation<OverviewNavigationProp>();
     const { summary, fetchDashboard } = useJobsStore();
     const [refreshing, setRefreshing] = useState(false);
+    const [showCreateJobModal, setShowCreateJobModal] = useState(false);
     const scale = Math.min(Math.max(width / 393, 0.84), 1);
     const compact = width < 380;
     const horizontalPadding = compact ? 18 : 24;
@@ -152,7 +154,11 @@ export const OverviewScreen: React.FC = () => {
                         </TouchableOpacity>
                     ))}
 
-                    <TouchableOpacity activeOpacity={0.88} style={[styles.addJobCard, { minHeight: 256 * scale, borderRadius: 24 * scale }]}>
+                    <TouchableOpacity
+                        activeOpacity={0.88}
+                        style={[styles.addJobCard, { minHeight: 256 * scale, borderRadius: 24 * scale }]}
+                        onPress={() => setShowCreateJobModal(true)}
+                    >
                         <View style={styles.addIconWrap}>
                             <MaterialIcons name="add" size={30} color="#8a948d" />
                         </View>
@@ -168,6 +174,15 @@ export const OverviewScreen: React.FC = () => {
                     <Text style={styles.goalLabel}>TRAVEL GOAL</Text>
                 </View>
                 */}
+
+                <CreateJobModal
+                    visible={showCreateJobModal}
+                    onClose={() => setShowCreateJobModal(false)}
+                    onCreated={() => {
+                        setShowCreateJobModal(false);
+                        fetchDashboard();
+                    }}
+                />
             </ScrollView>
         </SafeAreaView>
     );

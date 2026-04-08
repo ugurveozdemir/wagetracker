@@ -132,7 +132,7 @@ const visibleTabs = [
 const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
     const { width } = useWindowDimensions();
     const activeRouteName = state.routes[state.index]?.name;
-    const showFab = activeRouteName === 'HomeTab' || activeRouteName === 'ExpensesTab' || activeRouteName === 'OverviewTab';
+    const showFab = activeRouteName === 'ExpensesTab' || activeRouteName === 'OverviewTab';
     const compact = width < 380;
     const tabScale = Math.min(Math.max(width / 393, 0.84), 1);
 

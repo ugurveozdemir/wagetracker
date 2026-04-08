@@ -347,15 +347,27 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
         _progress: Animated.AnimatedInterpolation<number>,
         dragX: Animated.AnimatedInterpolation<number>
     ) => {
-        const bgScaleX = dragX.interpolate({
-            inputRange: [-100, 0],
-            outputRange: [1, 0],
+        const actionTranslateX = dragX.interpolate({
+            inputRange: [-120, -40, 0],
+            outputRange: [0, 26, 72],
             extrapolate: 'clamp',
         });
 
         const bgOpacity = dragX.interpolate({
-            inputRange: [-60, -20, 0],
-            outputRange: [1, 0.6, 0],
+            inputRange: [-120, -32, 0],
+            outputRange: [1, 0.82, 0],
+            extrapolate: 'clamp',
+        });
+
+        const iconTranslateX = dragX.interpolate({
+            inputRange: [-120, -40, 0],
+            outputRange: [0, 10, 22],
+            extrapolate: 'clamp',
+        });
+
+        const iconScale = dragX.interpolate({
+            inputRange: [-120, -40, 0],
+            outputRange: [1, 0.92, 0.84],
             extrapolate: 'clamp',
         });
 
@@ -365,13 +377,13 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
                     style={[
                         styles.swipeDeleteBackground,
                         {
-                            transform: [{ scaleX: bgScaleX }],
                             opacity: bgOpacity,
+                            transform: [{ translateX: actionTranslateX }],
                         },
                     ]}
                 />
                 <TouchableOpacity style={styles.swipeDeleteAction} onPress={onDelete} activeOpacity={0.8}>
-                    <Animated.View style={{ opacity: bgOpacity, transform: [{ scale: bgScaleX }] }}>
+                    <Animated.View style={{ opacity: bgOpacity, transform: [{ translateX: iconTranslateX }, { scale: iconScale }] }}>
                         <Feather name="trash-2" size={22} color={colors.white} />
                     </Animated.View>
                 </TouchableOpacity>
@@ -658,22 +670,23 @@ const styles = StyleSheet.create({
         marginLeft: spacing.md,
     },
     swipeDeleteContainer: {
-        width: 96,
+        width: 112,
         height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
         position: 'relative',
+        overflow: 'hidden',
     },
     swipeDeleteBackground: {
         position: 'absolute',
         right: 0,
         top: 0,
         bottom: 0,
-        width: 96,
+        width: 112,
         backgroundColor: colors.danger,
+        borderTopLeftRadius: 22,
+        borderBottomLeftRadius: 22,
     },
     swipeDeleteAction: {
-        width: 76,
+        width: 112,
         height: '100%',
         alignItems: 'center',
         justifyContent: 'center',

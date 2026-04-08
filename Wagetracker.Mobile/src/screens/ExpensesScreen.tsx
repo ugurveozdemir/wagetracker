@@ -8,21 +8,26 @@ import {
     TouchableOpacity,
     StatusBar,
     useWindowDimensions,
+    Alert,
+    Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useExpenseStore } from '../stores';
 import { EXPENSE_CATEGORIES, ExpenseStackParamList } from '../types';
 import { colors } from '../theme';
+import Feather from 'react-native-vector-icons/Feather';
+import Toast from 'react-native-toast-message';
 
 type ExpensesNavigationProp = NativeStackNavigationProp<ExpenseStackParamList, 'Expenses'>;
 
 export const ExpensesScreen: React.FC = () => {
     const { width } = useWindowDimensions();
     const navigation = useNavigation<ExpensesNavigationProp>();
-    const { expenses, fetchExpenses } = useExpenseStore();
+    const { expenses, fetchExpenses, deleteExpense } = useExpenseStore();
     const [refreshing, setRefreshing] = useState(false);
     const compact = width < 380;
     const scale = Math.min(Math.max(width / 393, 0.84), 1);
@@ -141,6 +146,38 @@ export const ExpensesScreen: React.FC = () => {
         [expenses]
     );
 
+    const handleDeleteExpense = (expenseId: number, title: string) => {
+        Alert.alert(
+            'Delete Expense',
+            'Are you sure you want to delete this expense?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteExpense(expenseId);
+                            Toast.show({
+                                type: 'delete',
+                                text1: 'Expense Deleted',
+                                text2: `${title} has been removed`,
+                                visibilityTime: 2000,
+                            });
+                        } catch {
+                            Toast.show({
+                                type: 'error',
+                                text1: 'Error',
+                                text2: 'Failed to delete expense',
+                                visibilityTime: 3000,
+                            });
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <StatusBar barStyle="dark-content" backgroundColor="#fbf9f1" />
@@ -216,45 +253,121 @@ export const ExpensesScreen: React.FC = () => {
 
                     <View style={styles.recentList}>
                         {recentItems.map((item) => (
-                            <View key={item.id} style={[styles.recentItem, { borderRadius: 24 * scale, padding: 20 * scale }]}>
-                                <View style={styles.recentLeft}>
-                                    <View style={[styles.recentIconWrap, { backgroundColor: item.iconBg }]}>
-                                        <MaterialIcons name={item.icon} size={24} color={item.iconColor} />
-                                    </View>
-
-                                    <View style={styles.recentCopy}>
-                                        <Text
-                                            numberOfLines={1}
-                                            style={[styles.recentTitle, { fontSize: compact ? 15 : 16 }]}
-                                        >
-                                            {item.title}
-                                        </Text>
-                                        <Text
-                                            numberOfLines={1}
-                                            style={[styles.recentMeta, { fontSize: compact ? 10 : 11 }]}
-                                        >
-                                            {item.meta}
-                                        </Text>
-                                        {item.description ? (
-                                            <Text
-                                                numberOfLines={1}
-                                                style={[styles.recentDescription, { fontSize: compact ? 10 : 11 }]}
-                                            >
-                                                {item.description}
-                                            </Text>
-                                        ) : null}
-                                    </View>
-                                </View>
-
-                                <View style={styles.recentAmountWrap}>
-                                    <Text style={[styles.recentAmount, { fontSize: compact ? 15 : 16 }]}>{item.amount}</Text>
-                                </View>
-                            </View>
+                            <RecentExpenseItem
+                                key={item.id}
+                                item={item}
+                                compact={compact}
+                                scale={scale}
+                                onDelete={() => handleDeleteExpense(item.id, item.title)}
+                            />
                         ))}
                     </View>
                 </View>
             </ScrollView>
         </SafeAreaView>
+    );
+};
+
+interface RecentExpenseItemProps {
+    item: {
+        id: number;
+        title: string;
+        meta: string;
+        description: string;
+        amount: string;
+        icon: string;
+        iconBg: string;
+        iconColor: string;
+    };
+    compact: boolean;
+    scale: number;
+    onDelete: () => void;
+}
+
+const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, scale, onDelete }) => {
+    const renderRightActions = (
+        _progress: Animated.AnimatedInterpolation<number>,
+        dragX: Animated.AnimatedInterpolation<number>
+    ) => {
+        const actionTranslateX = dragX.interpolate({
+            inputRange: [-120, -40, 0],
+            outputRange: [0, 26, 72],
+            extrapolate: 'clamp',
+        });
+
+        const bgOpacity = dragX.interpolate({
+            inputRange: [-120, -32, 0],
+            outputRange: [1, 0.82, 0],
+            extrapolate: 'clamp',
+        });
+
+        const iconTranslateX = dragX.interpolate({
+            inputRange: [-120, -40, 0],
+            outputRange: [0, 10, 22],
+            extrapolate: 'clamp',
+        });
+
+        const iconScale = dragX.interpolate({
+            inputRange: [-120, -40, 0],
+            outputRange: [1, 0.92, 0.84],
+            extrapolate: 'clamp',
+        });
+
+        return (
+            <View style={styles.swipeDeleteContainer}>
+                <Animated.View
+                    style={[
+                        styles.swipeDeleteBackground,
+                        {
+                            opacity: bgOpacity,
+                            transform: [{ translateX: actionTranslateX }],
+                        },
+                    ]}
+                />
+                <TouchableOpacity style={styles.swipeDeleteAction} onPress={onDelete} activeOpacity={0.8}>
+                    <Animated.View style={{ opacity: bgOpacity, transform: [{ translateX: iconTranslateX }, { scale: iconScale }] }}>
+                        <Feather name="trash-2" size={22} color={colors.white} />
+                    </Animated.View>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
+    return (
+        <Swipeable renderRightActions={renderRightActions} overshootRight={false} friction={2} rightThreshold={40}>
+            <View style={[styles.recentItem, { borderRadius: 24 * scale, padding: 20 * scale }]}> 
+                <View style={styles.recentLeft}>
+                    <View style={[styles.recentIconWrap, { backgroundColor: item.iconBg }]}> 
+                        <MaterialIcons name={item.icon} size={24} color={item.iconColor} />
+                    </View>
+
+                    <View style={styles.recentCopy}>
+                        <Text
+                            numberOfLines={1}
+                            style={[styles.recentTitle, { fontSize: compact ? 15 : 16 }]}
+                        >
+                            {item.title}
+                        </Text>
+                        <Text
+                            numberOfLines={1}
+                            style={[styles.recentMeta, { fontSize: compact ? 10 : 11 }]}
+                        >
+                            {item.meta}
+                        </Text>
+                        <Text
+                            numberOfLines={1}
+                            style={[styles.recentDescription, { fontSize: compact ? 10 : 11 }]}
+                        >
+                            {item.description || ' '}
+                        </Text>
+                    </View>
+                </View>
+
+                <View style={styles.recentAmountWrap}>
+                    <Text style={[styles.recentAmount, { fontSize: compact ? 15 : 16 }]}>{item.amount}</Text>
+                </View>
+            </View>
+        </Swipeable>
     );
 };
 
@@ -395,6 +508,7 @@ const styles = StyleSheet.create({
     },
     recentItem: {
         backgroundColor: '#ffffff',
+        height: 92,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -410,6 +524,7 @@ const styles = StyleSheet.create({
     recentCopy: {
         flex: 1,
         minWidth: 0,
+        justifyContent: 'center',
     },
     recentAmountWrap: {
         width: 76,
@@ -443,6 +558,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         lineHeight: 13,
         marginTop: 2,
+        minHeight: 13,
     },
     recentAmount: {
         color: '#ab3600',
@@ -450,5 +566,28 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         letterSpacing: -0.2,
         textAlign: 'right',
+    },
+    swipeDeleteContainer: {
+        width: 112,
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    swipeDeleteBackground: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 112,
+        backgroundColor: colors.danger,
+        borderTopRightRadius: 24,
+        borderBottomRightRadius: 24,
+    },
+    swipeDeleteAction: {
+        width: 112,
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1,
     },
 });

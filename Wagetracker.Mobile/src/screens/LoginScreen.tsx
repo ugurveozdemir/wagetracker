@@ -8,14 +8,15 @@ import {
     ScrollView,
     TouchableOpacity,
     StatusBar,
+    TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { AuthStackParamList } from '../types';
 import { useAuthStore } from '../stores';
-import { Button, Input } from '../components/ui';
-import { colors, spacing, fontSizes, fontWeights, borderRadius, useResponsiveLayout } from '../theme';
+import { colors, spacing, fontSizes, fontWeights, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
 
 type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -23,7 +24,7 @@ type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'
 export const LoginScreen: React.FC = () => {
     const navigation = useNavigation<LoginNavigationProp>();
     const { login, isLoading, error, clearError } = useAuthStore();
-    const { isCompact, isSmallHeight, horizontalPadding, panelRadius, rs } = useResponsiveLayout();
+    const { isCompact, horizontalPadding, rs } = useResponsiveLayout();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -89,6 +90,30 @@ export const LoginScreen: React.FC = () => {
 
     const isFormValid = email.trim() && password && !validateEmail(email) && !validatePassword(password);
 
+    const renderField = (
+        label: string,
+        value: string,
+        onChangeText: (text: string) => void,
+        placeholder: string,
+        errorText: string,
+        onBlur: () => void,
+        extraProps?: Partial<React.ComponentProps<typeof TextInput>>,
+    ) => (
+        <View style={styles.fieldBlock}>
+            <Text style={styles.fieldLabel}>{label}</Text>
+            <TextInput
+                style={[styles.input, errorText ? styles.inputError : null]}
+                placeholder={placeholder}
+                placeholderTextColor={colors.slate400}
+                value={value}
+                onChangeText={onChangeText}
+                onBlur={onBlur}
+                {...extraProps}
+            />
+            {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
+        </View>
+    );
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
@@ -101,77 +126,102 @@ export const LoginScreen: React.FC = () => {
                         styles.scrollContent,
                         {
                             paddingHorizontal: horizontalPadding,
-                            justifyContent: isSmallHeight ? 'flex-start' : 'center',
-                            paddingTop: isSmallHeight ? rs(24) : 0,
+                            paddingTop: rs(28),
+                            paddingBottom: rs(44),
                         },
                     ]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View style={[styles.heroPanel, { borderRadius: panelRadius, padding: rs(32) }]}>
-                        <Text style={styles.eyebrow}>WageTracker</Text>
-                        <Text style={[styles.title, { fontSize: isCompact ? 30 : 36, lineHeight: isCompact ? 34 : 40 }]}>Your ledger,
-                            {'\n'}
-                            framed softly.
-                        </Text>
-                        <Text style={[styles.subtitle, { fontSize: isCompact ? 15 : fontSizes.base, lineHeight: isCompact ? 21 : 22 }]}>
-                            Sign in to keep tracking earnings and expenses with the same backend workflow.
-                        </Text>
+                    <View style={styles.brandRow}>
+                        <View style={[styles.brandBadge, { width: rs(54), height: rs(54), borderRadius: rs(27) }]}> 
+                            <MaterialIcons name="eco" size={rs(26)} color={colors.onPrimary} />
+                        </View>
+                        <Text style={[styles.brandText, { fontSize: isCompact ? 22 : 25 }]}>WageTracker</Text>
+                    </View>
+
+                    <View style={styles.heroSection}>
+                        <Text style={[styles.title, { fontSize: isCompact ? 40 : 48, lineHeight: isCompact ? 44 : 52 }]}>Welcome Back</Text>
+                        <Text style={[styles.subtitle, { fontSize: isCompact ? 16 : 18 }]}>Sign in to continue tracking your work and money.</Text>
                     </View>
 
                     {error ? (
-                        <View style={[styles.errorContainer, { borderRadius: rs(24) }]}>
-                            <Text style={styles.errorText}>{error}</Text>
-                            <TouchableOpacity onPress={clearError}>
-                                <Text style={styles.errorDismiss}>×</Text>
+                        <View style={styles.errorBanner}>
+                            <Text style={styles.errorBannerText}>{error}</Text>
+                            <TouchableOpacity onPress={clearError} activeOpacity={0.7}>
+                                <MaterialIcons name="close" size={20} color={colors.danger} />
                             </TouchableOpacity>
                         </View>
                     ) : null}
 
-                    <View style={[styles.formCard, { borderRadius: rs(24), padding: rs(24) }]}>
-                        <Input
-                            label="Email"
-                            placeholder="your@email.com"
-                            value={email}
-                            onChangeText={handleEmailChange}
-                            onBlur={() => {
-                                setTouched((prev) => ({ ...prev, email: true }));
-                                setEmailError(validateEmail(email));
-                            }}
-                            error={emailError}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            autoComplete="email"
-                        />
+                    {renderField(
+                        'Email Address',
+                        email,
+                        handleEmailChange,
+                        'john@example.com',
+                        emailError,
+                        () => {
+                            setTouched((prev) => ({ ...prev, email: true }));
+                            setEmailError(validateEmail(email));
+                        },
+                        {
+                            keyboardType: 'email-address',
+                            autoCapitalize: 'none',
+                            autoComplete: 'email',
+                        }
+                    )}
 
-                        <Input
-                            label="Password"
-                            placeholder="••••••••"
-                            value={password}
-                            onChangeText={handlePasswordChange}
-                            onBlur={() => {
-                                setTouched((prev) => ({ ...prev, password: true }));
-                                setPasswordError(validatePassword(password));
-                            }}
-                            error={passwordError}
-                            secureTextEntry
-                            autoComplete="password"
-                        />
+                    {renderField(
+                        'Password',
+                        password,
+                        handlePasswordChange,
+                        '••••••••',
+                        passwordError,
+                        () => {
+                            setTouched((prev) => ({ ...prev, password: true }));
+                            setPasswordError(validatePassword(password));
+                        },
+                        {
+                            secureTextEntry: true,
+                            autoComplete: 'password',
+                        }
+                    )}
 
-                        <Button
-                            title="Sign In"
-                            onPress={handleLogin}
-                            loading={isLoading}
-                            disabled={!isFormValid}
-                            size="lg"
-                            fullWidth
-                        />
+                    <TouchableOpacity
+                        style={[styles.primaryButton, !isFormValid && styles.primaryButtonDisabled]}
+                        activeOpacity={0.88}
+                        onPress={handleLogin}
+                        disabled={!isFormValid || isLoading}
+                    >
+                        <Text style={styles.primaryButtonText}>{isLoading ? 'Signing In...' : 'Sign In'}</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.joinSection}>
+                        <View style={styles.divider} />
+                        <Text style={styles.joinLabel}>OR JOIN WITH</Text>
+                        <View style={styles.divider} />
+                    </View>
+
+                    <View style={styles.socialRow}>
+                        <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
+                            <View style={styles.socialIconWrap}>
+                                <Text style={styles.socialIconText}>G</Text>
+                            </View>
+                            <Text style={styles.socialButtonText}>Google</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
+                            <View style={styles.socialIconWrap}>
+                                <Text style={styles.socialIconText}>A</Text>
+                            </View>
+                            <Text style={styles.socialButtonText}>Apple</Text>
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>Don’t have an account?</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                            <Text style={styles.footerLink}>Create one</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('Register')} activeOpacity={0.8}>
+                            <Text style={styles.footerLink}>Sign Up</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -190,81 +240,168 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
+    },
+    brandRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'center',
+        gap: spacing.md,
+        marginBottom: spacing['4xl'],
+    },
+    brandBadge: {
+        backgroundColor: colors.primary,
+        alignItems: 'center',
         justifyContent: 'center',
-        padding: spacing.xl,
     },
-    heroPanel: {
-        backgroundColor: colors.surfaceContainerLow,
-        borderRadius: borderRadius.xl,
-        padding: spacing['3xl'],
-        marginBottom: spacing.xl,
-    },
-    eyebrow: {
+    brandText: {
         color: colors.primary,
-        fontSize: fontSizes.xs,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.4,
-        marginBottom: spacing.sm,
+        fontSize: 25,
+        fontWeight: fontWeights.extrabold,
+    },
+    heroSection: {
+        marginBottom: spacing['2xl'],
     },
     title: {
-        color: colors.onSurface,
-        fontSize: 36,
+        color: colors.primary,
         fontWeight: fontWeights.extrabold,
-        lineHeight: 40,
         marginBottom: spacing.md,
     },
     subtitle: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.base,
-        lineHeight: 22,
+        color: colors.onSurface,
+        fontWeight: fontWeights.medium,
     },
-    errorContainer: {
+    errorBanner: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: colors.dangerBg,
-        padding: spacing.md,
-        borderRadius: borderRadius.lg,
-        marginBottom: spacing.lg,
+        borderRadius: 20,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        marginBottom: spacing.xl,
+        gap: spacing.md,
     },
-    errorText: {
+    errorBannerText: {
         flex: 1,
         color: colors.danger,
-        fontWeight: fontWeights.semibold,
         fontSize: fontSizes.sm,
+        fontWeight: fontWeights.semibold,
     },
-    errorDismiss: {
-        color: colors.danger,
-        fontSize: 20,
-        fontWeight: fontWeights.bold,
-        paddingLeft: spacing.md,
-    },
-    formCard: {
-        backgroundColor: colors.surfaceContainerLowest,
-        borderRadius: borderRadius.lg,
-        padding: spacing['2xl'],
+    fieldBlock: {
         marginBottom: spacing.xl,
+    },
+    fieldLabel: {
+        color: colors.onSurface,
+        fontSize: fontSizes.xl,
+        fontWeight: fontWeights.bold,
+        marginBottom: spacing.md,
+        marginLeft: spacing.xs,
+    },
+    input: {
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: colors.surfaceContainerHigh,
+        paddingHorizontal: spacing.xl,
+        fontSize: 18,
+        color: colors.onSurface,
+    },
+    inputError: {
+        borderWidth: 1,
+        borderColor: 'rgba(186, 26, 26, 0.24)',
+    },
+    errorText: {
+        color: colors.danger,
+        fontSize: fontSizes.sm,
+        marginTop: spacing.sm,
+        marginLeft: spacing.sm,
+    },
+    primaryButton: {
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: colors.primaryLight,
+        alignItems: 'center',
+        justifyContent: 'center',
         shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.05,
-        shadowRadius: 40,
-        elevation: 6,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.12,
+        shadowRadius: 22,
+        elevation: 8,
+        marginTop: spacing.sm,
+    },
+    primaryButtonDisabled: {
+        opacity: 0.55,
+    },
+    primaryButtonText: {
+        color: colors.onPrimary,
+        fontSize: 18,
+        fontWeight: fontWeights.extrabold,
+    },
+    joinSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        marginTop: spacing['4xl'],
+        marginBottom: spacing['2xl'],
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: colors.surfaceContainerHigh,
+    },
+    joinLabel: {
+        color: colors.slate400,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.bold,
+        letterSpacing: 1.2,
+    },
+    socialRow: {
+        flexDirection: 'row',
+        gap: spacing.md,
+        marginBottom: spacing['4xl'],
+    },
+    socialButton: {
+        flex: 1,
+        minHeight: 80,
+        borderRadius: 28,
+        backgroundColor: colors.surfaceContainerLow,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+    },
+    socialIconWrap: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: colors.surfaceContainerLowest,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    socialIconText: {
+        color: colors.slate500,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.extrabold,
+    },
+    socialButtonText: {
+        color: colors.onSurface,
+        fontSize: fontSizes.xl,
+        fontWeight: fontWeights.bold,
     },
     footer: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: spacing.sm,
+        marginBottom: spacing.md,
     },
     footerText: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.base,
+        color: colors.onSurface,
+        fontSize: fontSizes.xl,
         fontWeight: fontWeights.medium,
     },
     footerLink: {
-        color: colors.primary,
-        fontSize: fontSizes.base,
+        color: colors.secondary,
+        fontSize: fontSizes.xl,
         fontWeight: fontWeights.bold,
     },
 });

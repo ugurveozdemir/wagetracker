@@ -8,8 +8,11 @@ import {
     TouchableOpacity,
     StatusBar,
     ActivityIndicator,
+    Alert,
+    Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
@@ -17,6 +20,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { ExpenseStackParamList, EXPENSE_CATEGORIES } from '../types';
 import { useExpenseStore } from '../stores';
 import { colors } from '../theme';
+import Toast from 'react-native-toast-message';
 
 type ExpenseHistoryNavigationProp = NativeStackNavigationProp<ExpenseStackParamList, 'ExpenseHistory'>;
 
@@ -33,7 +37,7 @@ const categoryIconMap: Record<number, string> = {
 
 export const ExpenseHistoryScreen: React.FC = () => {
     const navigation = useNavigation<ExpenseHistoryNavigationProp>();
-    const { weeklyGroups, fetchWeeklyGroups, isLoading } = useExpenseStore();
+    const { weeklyGroups, fetchWeeklyGroups, isLoading, deleteExpense } = useExpenseStore();
 
     useFocusEffect(
         useCallback(() => {
@@ -51,6 +55,38 @@ export const ExpenseHistoryScreen: React.FC = () => {
         const start = new Date(weekStart);
         const end = new Date(weekEnd);
         return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    };
+
+    const handleDeleteExpense = (expenseId: number, title: string) => {
+        Alert.alert(
+            'Delete Expense',
+            'Are you sure you want to delete this expense?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteExpense(expenseId);
+                            Toast.show({
+                                type: 'delete',
+                                text1: 'Expense Deleted',
+                                text2: `${title} has been removed`,
+                                visibilityTime: 2000,
+                            });
+                        } catch {
+                            Toast.show({
+                                type: 'error',
+                                text1: 'Error',
+                                text2: 'Failed to delete expense',
+                                visibilityTime: 3000,
+                            });
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     if (isLoading && weeklyGroups.length === 0) {
@@ -105,31 +141,14 @@ export const ExpenseHistoryScreen: React.FC = () => {
                                 {group.expenses.map((expense) => {
                                     const category = EXPENSE_CATEGORIES[expense.category] ?? EXPENSE_CATEGORIES[7];
                                     return (
-                                        <View key={expense.id} style={styles.expenseRow}>
-                                            <View style={[styles.expenseIconWrap, { backgroundColor: `${category.color}22` }]}>
-                                                <MaterialIcons
-                                                    name={categoryIconMap[expense.category] ?? 'receipt-long'}
-                                                    size={18}
-                                                    color={category.color}
-                                                />
-                                            </View>
-
-                                            <View style={styles.expenseCopy}>
-                                                <Text style={styles.expenseTitle}>{expense.categoryName}</Text>
-                                                <Text style={styles.expenseMeta}>
-                                                    {new Date(expense.date).toLocaleDateString('en-US', {
-                                                        weekday: 'short',
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                    })}
-                                                </Text>
-                                                {expense.description ? (
-                                                    <Text style={styles.expenseDescription}>{expense.description}</Text>
-                                                ) : null}
-                                            </View>
-
-                                            <Text style={styles.expenseAmount}>-{formatCurrency(expense.amount)}</Text>
-                                        </View>
+                                        <ExpenseHistoryItem
+                                            key={expense.id}
+                                            expense={expense}
+                                            color={category.color}
+                                            iconName={categoryIconMap[expense.category] ?? 'receipt-long'}
+                                            formatCurrency={formatCurrency}
+                                            onDelete={() => handleDeleteExpense(expense.id, expense.categoryName)}
+                                        />
                                     );
                                 })}
                             </View>
@@ -138,6 +157,97 @@ export const ExpenseHistoryScreen: React.FC = () => {
                 )}
             </ScrollView>
         </SafeAreaView>
+    );
+};
+
+interface ExpenseHistoryItemProps {
+    expense: {
+        id: number;
+        category: number;
+        categoryName: string;
+        date: string;
+        description: string | null;
+        amount: number;
+    };
+    color: string;
+    iconName: string;
+    formatCurrency: (amount: number) => string;
+    onDelete: () => void;
+}
+
+const ExpenseHistoryItem: React.FC<ExpenseHistoryItemProps> = ({ expense, color, iconName, formatCurrency, onDelete }) => {
+    const renderRightActions = (
+        _progress: Animated.AnimatedInterpolation<number>,
+        dragX: Animated.AnimatedInterpolation<number>
+    ) => {
+        const actionTranslateX = dragX.interpolate({
+            inputRange: [-120, -40, 0],
+            outputRange: [0, 26, 72],
+            extrapolate: 'clamp',
+        });
+
+        const bgOpacity = dragX.interpolate({
+            inputRange: [-120, -32, 0],
+            outputRange: [1, 0.82, 0],
+            extrapolate: 'clamp',
+        });
+
+        const iconTranslateX = dragX.interpolate({
+            inputRange: [-120, -40, 0],
+            outputRange: [0, 10, 22],
+            extrapolate: 'clamp',
+        });
+
+        const iconScale = dragX.interpolate({
+            inputRange: [-120, -40, 0],
+            outputRange: [1, 0.92, 0.84],
+            extrapolate: 'clamp',
+        });
+
+        return (
+            <View style={styles.swipeDeleteContainer}>
+                <Animated.View
+                    style={[
+                        styles.swipeDeleteBackground,
+                        {
+                            opacity: bgOpacity,
+                            transform: [{ translateX: actionTranslateX }],
+                        },
+                    ]}
+                />
+                <TouchableOpacity style={styles.swipeDeleteAction} onPress={onDelete} activeOpacity={0.8}>
+                    <Animated.View style={{ opacity: bgOpacity, transform: [{ translateX: iconTranslateX }, { scale: iconScale }] }}>
+                        <Feather name="trash-2" size={22} color={colors.white} />
+                    </Animated.View>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
+    return (
+        <Swipeable renderRightActions={renderRightActions} overshootRight={false} friction={2} rightThreshold={40}>
+            <View style={styles.expenseRow}>
+                <View style={[styles.expenseIconWrap, { backgroundColor: `${color}22` }]}> 
+                    <MaterialIcons name={iconName} size={18} color={color} />
+                </View>
+
+                <View style={styles.expenseCopy}>
+                    <Text style={styles.expenseTitle}>{expense.categoryName}</Text>
+                    <Text style={styles.expenseMeta}>
+                        {new Date(expense.date).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                        })}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.expenseDescription}>
+                        {expense.description?.trim() || ' '}
+                    </Text>
+                </View>
+
+                <Text style={styles.expenseAmount}>-{formatCurrency(expense.amount)}</Text>
+            </View>
+        </Swipeable>
     );
 };
 
@@ -268,6 +378,7 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     expenseRow: {
+        minHeight: 72,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
@@ -284,6 +395,7 @@ const styles = StyleSheet.create({
     },
     expenseCopy: {
         flex: 1,
+        justifyContent: 'center',
     },
     expenseTitle: {
         color: '#181d19',
@@ -299,11 +411,36 @@ const styles = StyleSheet.create({
     expenseDescription: {
         color: '#4f5a53',
         fontSize: 12,
+        lineHeight: 14,
         marginTop: 3,
+        minHeight: 14,
     },
     expenseAmount: {
         color: '#181d19',
         fontSize: 15,
         fontWeight: '800',
+    },
+    swipeDeleteContainer: {
+        width: 112,
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+    },
+    swipeDeleteBackground: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 112,
+        backgroundColor: colors.danger,
+        borderTopRightRadius: 18,
+        borderBottomRightRadius: 18,
+    },
+    swipeDeleteAction: {
+        width: 112,
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1,
     },
 });
