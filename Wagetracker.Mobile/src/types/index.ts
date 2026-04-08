@@ -20,6 +20,11 @@ export interface UserDto {
     id: number;
     email: string;
     fullName: string;
+    weeklyGoalAmount?: number | null;
+}
+
+export interface UpdateWeeklyGoalRequest {
+    targetAmount: number | null;
 }
 
 // ==================== JOB TYPES ====================
@@ -176,10 +181,21 @@ export interface DashboardSummaryResponse {
     weeklyExpenses: number;
     weeklyNet: number;
     weeklyHours: number;
+    weeklyGoal: WeeklyGoalStatusResponse;
     dailyEarningsSinceMonday: DailyEarningsPointResponse[];
 
     // Recent expenses
     recentExpenses: ExpenseResponse[];
+}
+
+export interface WeeklyGoalStatusResponse {
+    targetAmount: number | null;
+    currentAmount: number;
+    remainingAmount: number;
+    progressPercent: number;
+    isReached: boolean;
+    weekStart: string;
+    weekEnd: string;
 }
 
 export interface DailyEarningsPointResponse {
@@ -213,6 +229,7 @@ export type AuthStackParamList = {
 // Nested stacks inside tabs
 export type HomeStackParamList = {
     Dashboard: undefined;
+    Goal: undefined;
     JobDetails: { jobId: number };
 };
 
@@ -228,4 +245,3 @@ export type ExpenseStackParamList = {
 
 // Backward compat alias
 export type MainStackParamList = HomeStackParamList;
-

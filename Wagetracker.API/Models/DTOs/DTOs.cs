@@ -39,6 +39,13 @@ namespace WageTracker.API.Models.DTOs
         public int Id { get; set; }
         public string Email { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
+        public decimal? WeeklyGoalAmount { get; set; }
+    }
+
+    public class UpdateWeeklyGoalRequest
+    {
+        [Range(0, 1000000, ErrorMessage = "Weekly goal must be between $0 and $1,000,000")]
+        public decimal? TargetAmount { get; set; }
     }
 
     // ==================== JOB DTOs ====================
@@ -239,9 +246,21 @@ namespace WageTracker.API.Models.DTOs
         public decimal WeeklyExpenses { get; set; }
         public decimal WeeklyNet { get; set; }
         public decimal WeeklyHours { get; set; }
+        public WeeklyGoalStatusResponse WeeklyGoal { get; set; } = new();
         public List<DailyEarningsPointResponse> DailyEarningsSinceMonday { get; set; } = new();
 
         // Son giderler (Dashboard'da gösterilecek)
         public List<ExpenseResponse> RecentExpenses { get; set; } = new();
+    }
+
+    public class WeeklyGoalStatusResponse
+    {
+        public decimal? TargetAmount { get; set; }
+        public decimal CurrentAmount { get; set; }
+        public decimal RemainingAmount { get; set; }
+        public decimal ProgressPercent { get; set; }
+        public bool IsReached { get; set; }
+        public DateTime WeekStart { get; set; }
+        public DateTime WeekEnd { get; set; }
     }
 }

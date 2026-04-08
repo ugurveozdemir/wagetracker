@@ -70,6 +70,9 @@ export const DashboardScreen: React.FC = () => {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })}`;
+    const goalProgressPercent = summary?.weeklyGoal?.targetAmount != null
+        ? Math.max(0, Math.min(summary?.weeklyGoal?.progressPercent ?? 0, 100))
+        : 0;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -281,11 +284,55 @@ export const DashboardScreen: React.FC = () => {
                     </TouchableOpacity>
                 </ScrollView>
 
-                {/*
-                <View style={styles.goalCard}>
-                    Travel goal is intentionally kept for later reuse.
-                </View>
-                */}
+                <TouchableOpacity
+                    style={[styles.goalCard, { borderRadius: 28 * scale, padding: 24 * scale }]}
+                    activeOpacity={0.88}
+                    onPress={() => navigation.navigate('Goal')}
+                >
+                    <View style={styles.goalCardTop}>
+                        <View>
+                            <Text style={styles.goalEyebrow}>Weekly Goal</Text>
+                            <Text style={[styles.goalTitle, { fontSize: isCompact ? 26 : 30 }]}>Chase this week's target</Text>
+                        </View>
+                        <View style={styles.goalIconWrap}>
+                            <MaterialIcons name="track-changes" size={20} color={colors.white} />
+                        </View>
+                    </View>
+
+                    <View style={styles.goalProgressRow}>
+                        <View style={styles.goalProgressTrack}>
+                            <View
+                                style={[
+                                    styles.goalProgressFill,
+                                    {
+                                        width: `${goalProgressPercent}%`,
+                                    },
+                                ]}
+                            />
+                        </View>
+                        <Text style={styles.goalPercentText}>
+                            {Math.round(goalProgressPercent)}%
+                        </Text>
+                    </View>
+
+                    <View style={styles.goalMetaRow}>
+                        <View>
+                            <Text style={styles.goalMetaLabel}>Current</Text>
+                            <Text style={styles.goalMetaValue}>{formatCurrency(summary?.weeklyGoal?.currentAmount ?? 0)}</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.goalMetaLabel}>Target</Text>
+                            <Text style={styles.goalMetaValue}>
+                                {summary?.weeklyGoal?.targetAmount != null
+                                    ? formatCurrency(summary.weeklyGoal.targetAmount)
+                                    : 'Not set'}
+                            </Text>
+                        </View>
+                        <View style={styles.goalArrowWrap}>
+                            <MaterialIcons name="arrow-forward" size={16} color={colors.white} />
+                        </View>
+                    </View>
+                </TouchableOpacity>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
             </ScrollView>
@@ -557,13 +604,101 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '700',
     },
+    goalCard: {
+        backgroundColor: '#0e5c3f',
+        marginBottom: 16,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.14,
+        shadowRadius: 32,
+        elevation: 10,
+    },
+    goalCardTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 22,
+    },
+    goalEyebrow: {
+        color: 'rgba(255,255,255,0.72)',
+        fontSize: 12,
+        fontWeight: '700',
+        letterSpacing: 1.6,
+        textTransform: 'uppercase',
+        marginBottom: 8,
+    },
+    goalTitle: {
+        color: colors.white,
+        fontWeight: '800',
+        lineHeight: 34,
+        letterSpacing: -0.8,
+        maxWidth: 220,
+    },
+    goalIconWrap: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: 'rgba(255,255,255,0.16)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    goalProgressRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 22,
+    },
+    goalProgressTrack: {
+        flex: 1,
+        height: 14,
+        borderRadius: 999,
+        backgroundColor: 'rgba(255,255,255,0.14)',
+        overflow: 'hidden',
+    },
+    goalProgressFill: {
+        height: '100%',
+        borderRadius: 999,
+        backgroundColor: '#7cf0aa',
+    },
+    goalPercentText: {
+        color: colors.white,
+        fontSize: 17,
+        fontWeight: '800',
+        minWidth: 44,
+        textAlign: 'right',
+    },
+    goalMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    goalMetaLabel: {
+        color: 'rgba(255,255,255,0.64)',
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+        marginBottom: 6,
+    },
+    goalMetaValue: {
+        color: colors.white,
+        fontSize: 18,
+        fontWeight: '800',
+    },
+    goalArrowWrap: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 'auto',
+    },
     errorText: {
         marginTop: 16,
         color: colors.secondary,
         fontSize: 13,
         fontWeight: '600',
-    },
-    goalCard: {
-        display: 'none',
     },
 });

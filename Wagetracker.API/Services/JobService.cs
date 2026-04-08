@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WageTracker.API.Data;
 using WageTracker.API.Models.DTOs;
+using WageTracker.API.Utilities;
 using WageTracker.API.Models.Entities;
 
 namespace WageTracker.API.Services
@@ -131,6 +132,14 @@ namespace WageTracker.API.Services
                 .Where(j => j.UserId == userId)
                 .ToListAsync();
 
+            var user = await _context.Users
+                .Where(u => u.Id == userId)
+                .Select(u => new
+                {
+                    u.WeeklyGoalAmount
+                })
+                .FirstAsync();
+
             var allEntries = await _context.DailyEntries
                 .Where(e => e.UserId == userId)
                 .ToListAsync();
@@ -145,22 +154,28 @@ namespace WageTracker.API.Services
 
             // --- Weekly calculations (Monday-Sunday) ---
             var today = DateTime.UtcNow.Date;
-            var daysSinceMonday = ((int)today.DayOfWeek + 6) % 7; // Monday=0, Sunday=6
-            var weekStart = today.AddDays(-daysSinceMonday); // This Monday
-            var weekEnd = weekStart.AddDays(7); // Next Monday (exclusive)
+            var (weekStart, weekEndInclusive) = WeekCalculator.GetWeekRange(today, DayOfWeek.Monday);
+            var weekEndExclusive = weekEndInclusive.AddDays(1);
 
             var weeklyEntries = allEntries
-                .Where(e => e.Date.Date >= weekStart && e.Date.Date < weekEnd)
+                .Where(e => e.Date.Date >= weekStart && e.Date.Date < weekEndExclusive)
                 .ToList();
 
             var weeklyExpensesList = allExpenses
-                .Where(e => e.Date.Date >= weekStart && e.Date.Date < weekEnd)
+                .Where(e => e.Date.Date >= weekStart && e.Date.Date < weekEndExclusive)
                 .ToList();
 
             var weeklyEarnings = weeklyEntries.Sum(e => e.TotalEarnings);
             var weeklyHours = weeklyEntries.Sum(e => e.TotalHours);
             var weeklyExpensesTotal = weeklyExpensesList.Sum(e => e.Amount);
             var weeklyNet = weeklyEarnings - weeklyExpensesTotal;
+            var weeklyGoalTarget = user.WeeklyGoalAmount;
+            var weeklyGoalRemaining = weeklyGoalTarget.HasValue
+                ? Math.Max(0, weeklyGoalTarget.Value - weeklyEarnings)
+                : 0;
+            var weeklyGoalProgress = weeklyGoalTarget.HasValue && weeklyGoalTarget.Value > 0
+                ? Math.Min(100, Math.Round((weeklyEarnings / weeklyGoalTarget.Value) * 100, 2))
+                : 0;
 
             var dailyEarningsSinceMonday = Enumerable.Range(0, 7)
                 .Select(offset =>
@@ -229,6 +244,16 @@ namespace WageTracker.API.Services
                 WeeklyExpenses = weeklyExpensesTotal,
                 WeeklyNet = weeklyNet,
                 WeeklyHours = weeklyHours,
+                WeeklyGoal = new WeeklyGoalStatusResponse
+                {
+                    TargetAmount = weeklyGoalTarget,
+                    CurrentAmount = weeklyEarnings,
+                    RemainingAmount = weeklyGoalRemaining,
+                    ProgressPercent = weeklyGoalProgress,
+                    IsReached = weeklyGoalTarget.HasValue && weeklyGoalTarget.Value > 0 && weeklyEarnings >= weeklyGoalTarget.Value,
+                    WeekStart = weekStart,
+                    WeekEnd = weekEndInclusive
+                },
                 DailyEarningsSinceMonday = dailyEarningsSinceMonday,
 
                 // Recent
@@ -237,4 +262,3 @@ namespace WageTracker.API.Services
         }
     }
 }
-

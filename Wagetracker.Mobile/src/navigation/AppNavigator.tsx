@@ -25,6 +25,7 @@ import { colors } from '../theme';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
+import { GoalScreen } from '../screens/GoalScreen';
 import { JobDetailsScreen } from '../screens/JobDetailsScreen';
 import { ExpensesScreen } from '../screens/ExpensesScreen';
 import { ExpenseHistoryScreen } from '../screens/ExpenseHistoryScreen';
@@ -66,6 +67,7 @@ const HomeNavigator: React.FC = () => {
             }}
         >
             <HomeStack.Screen name="Dashboard" component={DashboardScreen} />
+            <HomeStack.Screen name="Goal" component={GoalScreen} />
             <HomeStack.Screen name="JobDetails" component={JobDetailsScreen} />
         </HomeStack.Navigator>
     );

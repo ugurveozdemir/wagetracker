@@ -53,7 +53,8 @@ namespace WageTracker.API.Services
                 {
                     Id = user.Id,
                     Email = user.Email,
-                    FullName = user.FullName
+                    FullName = user.FullName,
+                    WeeklyGoalAmount = user.WeeklyGoalAmount
                 }
             };
         }
@@ -83,7 +84,8 @@ namespace WageTracker.API.Services
                 {
                     Id = user.Id,
                     Email = user.Email,
-                    FullName = user.FullName
+                    FullName = user.FullName,
+                    WeeklyGoalAmount = user.WeeklyGoalAmount
                 }
             };
         }

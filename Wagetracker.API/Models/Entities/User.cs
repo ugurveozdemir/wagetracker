@@ -23,6 +23,9 @@ namespace WageTracker.API.Models.Entities
         [Required]
         public string PasswordHash { get; set; } = string.Empty;
 
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? WeeklyGoalAmount { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

@@ -15,4 +15,9 @@ namespace WageTracker.API.Services
     {
         Task<DashboardSummaryResponse> GetDashboardSummaryAsync(int userId);
     }
+
+    public interface IProfileService
+    {
+        Task<UserDto> UpdateWeeklyGoalAsync(int userId, UpdateWeeklyGoalRequest request);
+    }
 }
