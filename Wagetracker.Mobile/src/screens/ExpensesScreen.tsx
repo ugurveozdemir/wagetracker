@@ -156,14 +156,7 @@ export const ExpensesScreen: React.FC = () => {
             >
                 <View style={styles.topBar}>
                     <View style={styles.brandRow}>
-                        <View style={styles.avatarWrap}>
-                            <View style={styles.avatarDot} />
-                        </View>
-                        <Text style={styles.brandText}>The Kinetic Ledger</Text>
-                    </View>
-
-                    <View style={styles.currencyPill}>
-                        <Text style={styles.currencyText}>USD ($)</Text>
+                        <Text style={styles.brandText}>WageTracker</Text>
                     </View>
                 </View>
 
@@ -275,45 +268,17 @@ const styles = StyleSheet.create({
     },
     topBar: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 18,
     },
     brandRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    avatarWrap: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: '#263746',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    avatarDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#ffffff',
+        flexShrink: 1,
     },
     brandText: {
         color: '#006D44',
         fontSize: 20,
         fontWeight: '800',
         letterSpacing: -0.5,
-    },
-    currencyPill: {
-        backgroundColor: '#efeee5',
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 999,
-    },
-    currencyText: {
-        color: '#6f7a71',
-        fontSize: 12,
-        fontWeight: '700',
     },
     heroCard: {
         backgroundColor: '#ff8a00',

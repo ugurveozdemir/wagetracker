@@ -98,8 +98,8 @@ export const GoalScreen: React.FC = () => {
                 </View>
 
                 <View style={styles.heroCard}>
-                    <Text style={styles.eyebrow}>Weekly Cycle</Text>
-                    <Text style={styles.title}>Keep the ring filling until you hit your number.</Text>
+                    <Text style={styles.eyebrow}>Weekly Goal</Text>
+                    <Text style={styles.title}>Progress resets automatically every Monday.</Text>
 
                     <View style={styles.ringWrap}>
                         <View style={styles.ringBase}>
@@ -174,7 +174,7 @@ export const GoalScreen: React.FC = () => {
                     <View style={styles.targetSummary}>
                         <Text style={styles.targetSummaryLabel}>Active target</Text>
                         <Text style={styles.targetSummaryValue}>
-                            {targetAmount != null ? formatCurrency(targetAmount) : 'No goal set yet'}
+                            {targetAmount != null ? formatCurrency(targetAmount) : 'No goal set'}
                         </Text>
                     </View>
                 </View>

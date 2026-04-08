@@ -95,15 +95,8 @@ export const DashboardScreen: React.FC = () => {
                         activeOpacity={0.85}
                         onPress={() => (navigation as any).navigate('ProfileTab')}
                     >
-                        <View style={styles.avatarFrame}>
-                            <Text style={styles.avatarInitials}>TL</Text>
-                        </View>
-                        <Text style={styles.brandText}>The Kinetic Ledger</Text>
+                        <Text style={styles.brandText}>WageTracker</Text>
                     </TouchableOpacity>
-
-                    <View style={styles.currencyPill}>
-                        <Text style={styles.currencyText}>USD ($)</Text>
-                    </View>
                 </View>
 
                 <View
@@ -263,16 +256,11 @@ export const DashboardScreen: React.FC = () => {
                                             size={Math.round(32 * scale)}
                                             color={colors.white}
                                         />
-                                        <View style={styles.gigBadge}>
-                                            <Text style={styles.gigBadgeText}>
-                                                Job {index + 1}
-                                            </Text>
-                                        </View>
                                     </View>
 
                                     <Text style={[styles.gigTitle, { fontSize: isCompact ? 18 : 21 }]}>{job.title}</Text>
-                                    <Text style={[styles.gigSubtitle, { fontSize: isCompact ? 12 : 13 }]}>
-                                        Active income stream
+                                    <Text style={[styles.gigSubtitle, { fontSize: isCompact ? 12 : 13 }]}> 
+                                        First day: {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][job.firstDayOfWeek]}
                                     </Text>
                                 </View>
 
@@ -315,7 +303,7 @@ export const DashboardScreen: React.FC = () => {
                     <View style={styles.goalCardTop}>
                         <View>
                             <Text style={styles.goalEyebrow}>Weekly Goal</Text>
-                            <Text style={[styles.goalTitle, { fontSize: isCompact ? 26 : 30 }]}>Chase this week's target</Text>
+                            <Text style={[styles.goalTitle, { fontSize: isCompact ? 26 : 30 }]}>This week's goal</Text>
                         </View>
                         <View style={styles.goalIconWrap}>
                             <MaterialIcons name="track-changes" size={20} color={colors.white} />
@@ -348,7 +336,7 @@ export const DashboardScreen: React.FC = () => {
                             <Text style={styles.goalMetaValue}>
                                 {summary?.weeklyGoal?.targetAmount != null
                                     ? formatCurrency(summary.weeklyGoal.targetAmount)
-                                    : 'Not set'}
+                                    : 'Set a goal'}
                             </Text>
                         </View>
                         <View style={styles.goalArrowWrap}>
@@ -383,28 +371,10 @@ const styles = StyleSheet.create({
     topBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         marginBottom: 16,
     },
     brandBlock: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
         flexShrink: 1,
-    },
-    avatarFrame: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#efeee5',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    avatarInitials: {
-        color: '#006D44',
-        fontSize: 15,
-        fontWeight: '800',
-        letterSpacing: 0.4,
     },
     brandText: {
         color: '#006D44',
@@ -412,17 +382,6 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         letterSpacing: -0.3,
         flexShrink: 1,
-    },
-    currencyPill: {
-        backgroundColor: '#f5f4eb',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 9999,
-    },
-    currencyText: {
-        color: '#006D44',
-        fontSize: 14,
-        fontWeight: '700',
     },
     heroCard: {
         backgroundColor: colors.white,
@@ -594,20 +553,8 @@ const styles = StyleSheet.create({
     },
     gigTopRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         marginBottom: 14,
-    },
-    gigBadge: {
-        backgroundColor: 'rgba(255,255,255,0.20)',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 9999,
-    },
-    gigBadgeText: {
-        color: colors.white,
-        fontSize: 11,
-        fontWeight: '700',
     },
     gigTitle: {
         color: colors.white,

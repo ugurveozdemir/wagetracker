@@ -6,7 +6,6 @@ import {
     ScrollView,
     TouchableOpacity,
     StatusBar,
-    Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -28,15 +27,6 @@ export const ProfileScreen: React.FC = () => {
             type: 'info',
             text1: 'Signed Out',
             text2: 'See you next time.',
-            visibilityTime: 2000,
-        });
-    };
-
-    const showComingSoon = (title: string, text2: string) => {
-        Toast.show({
-            type: 'info',
-            text1: title,
-            text2,
             visibilityTime: 2000,
         });
     };
@@ -72,73 +62,12 @@ export const ProfileScreen: React.FC = () => {
                             { width: rs(86), height: rs(86), borderRadius: rs(43) },
                         ]}
                     >
-                        <Text style={[styles.avatarText, { fontSize: isCompact ? 28 : 32 }]}>
+                        <Text style={[styles.avatarText, { fontSize: isCompact ? 28 : 32 }]}> 
                             {(user?.fullName || 'U').slice(0, 1).toUpperCase()}
                         </Text>
                     </View>
-                    <Text style={[styles.userName, { fontSize: isCompact ? 24 : fontSizes['2xl'] }]}>{user?.fullName || 'User'}</Text>
-                    <Text style={[styles.userEmail, { fontSize: isCompact ? 15 : fontSizes.base }]}>{user?.email || 'email@example.com'}</Text>
-                    <View style={[styles.memberBadge, { borderRadius: rs(999), paddingHorizontal: rs(18), paddingVertical: rs(10) }]}>
-                        <Text style={styles.memberText}>Member since Dec 2025</Text>
-                    </View>
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Settings</Text>
-                    <View style={[styles.sectionContent, { borderRadius: rs(24) }]}>
-                        <View style={styles.settingRow}>
-                            <View style={styles.settingLeft}>
-                                <View style={styles.settingIconWrap}>
-                                    <Feather name="moon" size={16} color={colors.primary} />
-                                </View>
-                                <Text style={styles.settingLabel}>Dark Mode</Text>
-                            </View>
-                            <Switch
-                                value={false}
-                                onValueChange={() =>
-                                    showComingSoon('Coming Soon', 'Dark mode will be available soon.')
-                                }
-                                trackColor={{ false: colors.surfaceContainerHighest, true: colors.primarySoft }}
-                                thumbColor={colors.surfaceContainerLowest}
-                            />
-                        </View>
-
-                        <TouchableOpacity
-                            style={styles.settingRow}
-                            onPress={() => showComingSoon('Coming Soon', 'Currency selection will be available soon.')}
-                            activeOpacity={0.8}
-                        >
-                            <View style={styles.settingLeft}>
-                                <View style={styles.settingIconWrap}>
-                                    <Feather name="dollar-sign" size={16} color={colors.primary} />
-                                </View>
-                                <Text style={styles.settingLabel}>Currency</Text>
-                            </View>
-                            <View style={styles.settingRight}>
-                                <Text style={styles.settingValue}>USD</Text>
-                                <Feather name="chevron-right" size={16} color={colors.outline} />
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Account</Text>
-                    <View style={[styles.sectionContent, { borderRadius: rs(24) }]}>
-                        <TouchableOpacity
-                            style={styles.settingRow}
-                            onPress={() => showComingSoon('Coming Soon', 'Password change will be available soon.')}
-                            activeOpacity={0.8}
-                        >
-                            <View style={styles.settingLeft}>
-                                <View style={styles.settingIconWrap}>
-                                    <Feather name="lock" size={16} color={colors.primary} />
-                                </View>
-                                <Text style={styles.settingLabel}>Change Password</Text>
-                            </View>
-                            <Feather name="chevron-right" size={16} color={colors.outline} />
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={[styles.userName, { fontSize: isCompact ? 24 : fontSizes['2xl'] }]}>{user?.fullName || 'Account'}</Text>
+                    <Text style={[styles.userEmail, { fontSize: isCompact ? 15 : fontSizes.base }]}>{user?.email || ''}</Text>
                 </View>
 
                 <TouchableOpacity
@@ -222,74 +151,6 @@ const styles = StyleSheet.create({
         color: colors.onSurfaceVariant,
         fontSize: fontSizes.base,
         marginBottom: spacing.md,
-    },
-    memberBadge: {
-        backgroundColor: colors.surfaceContainerLowest,
-        borderRadius: borderRadius.full,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-    },
-    memberText: {
-        color: colors.outline,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.medium,
-    },
-    section: {
-        marginBottom: spacing.xl,
-    },
-    sectionTitle: {
-        color: colors.outline,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.bold,
-        textTransform: 'uppercase',
-        letterSpacing: 1.3,
-        marginBottom: spacing.sm,
-        marginLeft: spacing.sm,
-    },
-    sectionContent: {
-        backgroundColor: colors.surfaceContainerLowest,
-        borderRadius: borderRadius.lg,
-        overflow: 'hidden',
-        shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.04,
-        shadowRadius: 40,
-        elevation: 4,
-    },
-    settingRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.lg,
-    },
-    settingLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-    },
-    settingIconWrap: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.surfaceContainerLow,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    settingLabel: {
-        color: colors.onSurface,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.semibold,
-    },
-    settingRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-    },
-    settingValue: {
-        color: colors.outline,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.medium,
     },
     signOutButton: {
         flexDirection: 'row',
