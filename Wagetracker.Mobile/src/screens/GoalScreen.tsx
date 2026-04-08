@@ -94,7 +94,7 @@ export const GoalScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.screenHeader}>
-                    <Text style={styles.screenTitle}>Goal</Text>
+                    <Text style={styles.screenTitle}>My Goal</Text>
                 </View>
 
                 <View style={styles.heroCard}>
@@ -164,7 +164,7 @@ export const GoalScreen: React.FC = () => {
                             style={styles.clearButton}
                         />
                         <Button
-                            title={targetAmount == null ? 'Save Goal' : 'Update Goal'}
+                            title="Save"
                             onPress={handleSave}
                             loading={isSaving}
                             style={styles.saveButton}

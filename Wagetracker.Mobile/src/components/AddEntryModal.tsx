@@ -111,19 +111,8 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    <View style={styles.topBar}>
-                        <View style={styles.brandRow}>
-                            <View style={styles.avatarWrap}>
-                                <MaterialIcons name="person" size={14} color="#ffffff" />
-                            </View>
-                            <Text style={styles.brandText}>The Kinetic Ledger</Text>
-                        </View>
-                        <Text style={styles.currencyText}>USD ($)</Text>
-                    </View>
-
                     <View style={[styles.heroCard, { borderRadius: 48 * scale, padding: 28 * scale }]}>
                         <View>
-                            <Text style={styles.heroLabel}>New Work Entry</Text>
                             <Text style={[styles.heroValue, { fontSize: compact ? 36 : 40 }]}>Log today&apos;s shift</Text>
                         </View>
 
@@ -223,8 +212,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                         onPress={handleSubmit}
                         disabled={isCreating}
                     >
-                        <MaterialIcons name="add-circle" size={20} color="#412100" />
-                        <Text style={styles.confirmText}>{isCreating ? 'Saving...' : 'Confirm Entry'}</Text>
+                        <Text style={styles.confirmText}>{isCreating ? 'Saving...' : 'Save'}</Text>
                     </TouchableOpacity>
 
                     <View style={styles.successHint}>
@@ -248,50 +236,14 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fbf9f1',
     },
-    topBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 18,
-    },
-    brandRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    avatarWrap: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: '#263746',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    brandText: {
-        color: '#006D44',
-        fontSize: 20,
-        fontWeight: '800',
-        letterSpacing: -0.4,
-    },
-    currencyText: {
-        color: '#64748b',
-        fontSize: 14,
-        fontWeight: '700',
-    },
     heroCard: {
-        backgroundColor: '#f1f5ef',
+        backgroundColor: colors.primary,
         overflow: 'hidden',
         marginBottom: 20,
         position: 'relative',
     },
-    heroLabel: {
-        color: '#6f7a71',
-        fontSize: 16,
-        fontWeight: '700',
-        marginBottom: 6,
-    },
     heroValue: {
-        color: '#006D44',
+        color: colors.white,
         fontWeight: '800',
         letterSpacing: -0.8,
         marginBottom: 18,
@@ -301,20 +253,20 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     heroPill: {
-        backgroundColor: '#ffffff',
+        backgroundColor: 'rgba(255,255,255,0.16)',
         borderRadius: 999,
         paddingHorizontal: 14,
         paddingVertical: 10,
     },
     heroPillLabel: {
-        color: '#94a3b8',
+        color: 'rgba(255,255,255,0.72)',
         fontSize: 10,
         fontWeight: '700',
         letterSpacing: 1.2,
         marginBottom: 4,
     },
     heroPillValue: {
-        color: '#006D44',
+        color: colors.white,
         fontSize: 19,
         fontWeight: '700',
     },

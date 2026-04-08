@@ -105,12 +105,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    <TouchableOpacity style={styles.backRow} activeOpacity={0.8} onPress={onClose}>
-                        <MaterialIcons name="arrow-back" size={20} color="#3f4942" />
-                        <Text style={styles.backText}>Add Expense</Text>
-                    </TouchableOpacity>
-
-                    <View style={[styles.heroCard, { borderRadius: 40 * scale, padding: 28 * scale }]}>
+                    <View style={[styles.heroCard, { borderRadius: 40 * scale, padding: 28 * scale }]}> 
                         <Text style={styles.heroLabel}>NEW EXPENSE</Text>
                         <Text style={[styles.heroValue, { fontSize: compact ? 42 : 50 }]}>${amount || '0.00'}</Text>
                         <Text style={styles.heroSubtext}>Record the amount, category, date and an optional description.</Text>
@@ -206,8 +201,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                         onPress={handleSubmit}
                         disabled={isLoading}
                     >
-                        <MaterialIcons name="add-circle" size={20} color="#412100" />
-                        <Text style={styles.submitButtonText}>{isLoading ? 'Saving...' : 'Save Expense'}</Text>
+                        <Text style={styles.submitButtonText}>{isLoading ? 'Saving...' : 'Save'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -218,8 +212,6 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#fbf9f1' },
     container: { flex: 1, backgroundColor: '#fbf9f1' },
-    backRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 },
-    backText: { color: '#3f4942', fontSize: 18, fontWeight: '700' },
     heroCard: { backgroundColor: '#ff8a00', marginBottom: 18 },
     heroLabel: { color: 'rgba(65,33,0,0.80)', fontSize: 12, fontWeight: '700', letterSpacing: 1.7, marginBottom: 8 },
     heroValue: { color: '#412100', fontWeight: '800', letterSpacing: -1, marginBottom: 8 },
@@ -229,8 +221,8 @@ const styles = StyleSheet.create({
     fieldCard: { backgroundColor: '#f5f4eb', padding: 20, marginBottom: 16 },
     fieldLabel: { color: '#181d19', fontSize: 16, fontWeight: '700', marginBottom: 12 },
     moneyField: { backgroundColor: '#ffffff', borderRadius: 999, minHeight: 62, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center' },
-    moneyPrefix: { color: '#6f7a71', fontSize: 24, fontWeight: '700', marginRight: 8 },
-    moneyInput: { flex: 1, color: '#181d19', fontSize: 32, fontWeight: '700' },
+    moneyPrefix: { color: '#6f7a71', fontSize: 18, fontWeight: '700', marginRight: 8, lineHeight: 22 },
+    moneyInput: { flex: 1, color: '#181d19', fontSize: 24, fontWeight: '700', paddingTop: 8, paddingBottom: 0, textAlignVertical: 'center' },
     categoryWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     categoryChip: { backgroundColor: '#ffffff', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999 },
     categoryChipActive: { backgroundColor: '#ecf8f0' },

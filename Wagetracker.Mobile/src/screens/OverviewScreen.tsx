@@ -78,7 +78,7 @@ export const OverviewScreen: React.FC = () => {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={[styles.title, { fontSize: compact ? 34 : 38 }]}>Jobs</Text>
+                <Text style={[styles.title, { fontSize: compact ? 34 : 38 }]}>My Jobs</Text>
 
                 <View style={[styles.jobsStack, { gap: 18 * scale }]}>
                     {cards.map((job) => (

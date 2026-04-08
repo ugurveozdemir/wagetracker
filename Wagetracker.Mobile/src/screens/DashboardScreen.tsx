@@ -26,6 +26,8 @@ const emptyChartPoints = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((
     totalEarnings: 0,
 }));
 
+const dayLabelsByIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+
 const gigCardThemes = [
     { backgroundStyle: 'gigCardPrimary', icon: 'hotel' },
     { backgroundStyle: 'gigCardTertiary', icon: 'restaurant' },
@@ -53,6 +55,7 @@ export const DashboardScreen: React.FC = () => {
         ? summary.dailyEarningsSinceMonday
         : emptyChartPoints;
     const maxChartValue = Math.max(...chartPoints.map((point) => point.totalEarnings), 0);
+    const todayDayLabel = dayLabelsByIndex[new Date().getDay()];
 
     useFocusEffect(
         useCallback(() => {
@@ -133,8 +136,9 @@ export const DashboardScreen: React.FC = () => {
                                     ? Math.max((point.totalEarnings / maxChartValue) * 100, point.totalEarnings > 0 ? 10 : 4)
                                     : 4;
                                 const isSelected = selectedChartPoint === point.date;
+                                const isToday = point.dayLabel === todayDayLabel;
                                 const backgroundColor =
-                                    point.totalEarnings === maxChartValue && maxChartValue > 0
+                                    isToday
                                         ? colors.primary
                                         : point.totalEarnings > 0
                                           ? 'rgba(0, 109, 68, 0.20)'
@@ -184,7 +188,7 @@ export const DashboardScreen: React.FC = () => {
                                     key={point.date}
                                     style={[
                                         styles.chartLabel,
-                                        point.totalEarnings === maxChartValue && maxChartValue > 0 && styles.chartLabelActive,
+                                        point.dayLabel === todayDayLabel && styles.chartLabelActive,
                                     ]}
                                 >
                                     {point.dayLabel}
@@ -214,9 +218,10 @@ export const DashboardScreen: React.FC = () => {
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
+                    style={{ marginHorizontal: -horizontalPadding }}
                     contentContainerStyle={{
                         gap: 16 * scale,
-                        paddingLeft: 0,
+                        paddingLeft: horizontalPadding,
                         paddingRight: horizontalPadding,
                         paddingBottom: 8,
                     }}
@@ -296,7 +301,7 @@ export const DashboardScreen: React.FC = () => {
                 </ScrollView>
 
                 <TouchableOpacity
-                    style={[styles.goalCard, { borderRadius: 28 * scale, padding: 24 * scale }]}
+                    style={[styles.goalCard, { borderRadius: 28 * scale, padding: 24 * scale, marginTop: 18 * scale }]}
                     activeOpacity={0.88}
                     onPress={() => navigation.navigate('Goal')}
                 >

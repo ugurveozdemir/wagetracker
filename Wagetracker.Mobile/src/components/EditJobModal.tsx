@@ -146,8 +146,7 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({ visible, job, onClos
                         onPress={handleSubmit}
                         disabled={isUpdating}
                     >
-                        <Text style={styles.submitButtonText}>{isUpdating ? 'Saving...' : 'Save Changes'}</Text>
-                        <MaterialIcons name="edit" size={18} color="#412100" />
+                        <Text style={styles.submitButtonText}>{isUpdating ? 'Saving...' : 'Save'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>

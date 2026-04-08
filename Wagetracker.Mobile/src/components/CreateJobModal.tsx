@@ -99,18 +99,13 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <TouchableOpacity style={styles.backRow} activeOpacity={0.8} onPress={onClose}>
-                        <MaterialIcons name="arrow-back" size={20} color="#3f4942" />
-                        <Text style={styles.backText}>Add New Job</Text>
-                    </TouchableOpacity>
-
-                    <Text style={[styles.heading, { fontSize: compact ? 40 : 46 }]}>New Adventure.</Text>
-
                     {error ? (
                         <View style={styles.errorBanner}>
                             <Text style={styles.errorText}>{error}</Text>
                         </View>
                     ) : null}
+
+                    <Text style={[styles.heading, { fontSize: compact ? 40 : 46 }]}>New Adventure.</Text>
 
                     <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}> 
                         <View style={styles.fieldLabelRow}>
@@ -174,7 +169,6 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                         disabled={isCreating}
                     >
                         <Text style={styles.submitButtonText}>{isCreating ? 'Saving...' : 'Save'}</Text>
-                        <MaterialIcons name="rocket-launch" size={18} color="#ffffff" />
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -191,29 +185,18 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fbf9f1',
     },
-    backRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 18,
-    },
-    backText: {
-        color: '#3f4942',
-        fontSize: 18,
-        fontWeight: '700',
-    },
-    heading: {
-        color: '#006D44',
-        fontWeight: '800',
-        letterSpacing: -1.2,
-        marginBottom: 18,
-    },
     errorBanner: {
         backgroundColor: '#fff1ef',
         paddingHorizontal: 16,
         paddingVertical: 14,
         borderRadius: 24,
         marginBottom: 16,
+    },
+    heading: {
+        color: '#006D44',
+        fontWeight: '800',
+        letterSpacing: -1.2,
+        marginBottom: 18,
     },
     errorText: {
         color: '#ba1a1a',
