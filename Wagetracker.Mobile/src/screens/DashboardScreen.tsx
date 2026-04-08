@@ -39,6 +39,7 @@ export const DashboardScreen: React.FC = () => {
     const { summary, jobs, error, fetchDashboard } = useJobsStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedChartPoint, setSelectedChartPoint] = useState<string | null>(null);
     const scale = Math.min(Math.max(width / 393, 0.84), 1);
     const isCompact = width < 380;
     const heroPadding = 32 * scale;
@@ -138,6 +139,7 @@ export const DashboardScreen: React.FC = () => {
                                 const barHeight = maxChartValue > 0
                                     ? Math.max((point.totalEarnings / maxChartValue) * 100, point.totalEarnings > 0 ? 10 : 4)
                                     : 4;
+                                const isSelected = selectedChartPoint === point.date;
                                 const backgroundColor =
                                     point.totalEarnings === maxChartValue && maxChartValue > 0
                                         ? colors.primary
@@ -148,16 +150,37 @@ export const DashboardScreen: React.FC = () => {
                                             : 'rgba(0, 109, 68, 0.10)';
 
                                 return (
-                                    <View
+                                    <TouchableOpacity
                                         key={point.date}
+                                        activeOpacity={0.85}
                                         style={[
-                                            styles.chartBar,
-                                            {
-                                                height: `${barHeight}%`,
-                                                backgroundColor,
-                                            },
+                                            styles.chartBarSlot,
+                                            isSelected && styles.chartBarSlotSelected,
                                         ]}
-                                    />
+                                        onPress={() => setSelectedChartPoint((current) => current === point.date ? null : point.date)}
+                                    >
+                                        <View
+                                            style={[
+                                                styles.chartBarStack,
+                                                {
+                                                    height: `${barHeight}%`,
+                                                },
+                                            ]}
+                                        >
+                                            {isSelected ? (
+                                                <Text style={styles.chartTooltipText}>{formatCurrency(point.totalEarnings)}</Text>
+                                            ) : null}
+
+                                            <View
+                                                style={[
+                                                    styles.chartBar,
+                                                    {
+                                                        backgroundColor,
+                                                    },
+                                                ]}
+                                            />
+                                        </View>
+                                    </TouchableOpacity>
                                 );
                             })}
                         </View>
@@ -439,16 +462,41 @@ const styles = StyleSheet.create({
     },
     chartRow: {
         width: '100%',
-        height: 128,
+        height: 160,
         flexDirection: 'row',
         alignItems: 'flex-end',
         gap: 8,
         marginTop: 16,
     },
+    chartBarSlot: {
+        flex: 1,
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        position: 'relative',
+    },
+    chartBarSlotSelected: {
+        zIndex: 2,
+    },
+    chartBarStack: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        position: 'relative',
+    },
     chartBar: {
+        width: '100%',
         flex: 1,
         borderTopLeftRadius: 9999,
         borderTopRightRadius: 9999,
+    },
+    chartTooltipText: {
+        color: '#006D44',
+        fontSize: 10,
+        fontWeight: '500',
+        textAlign: 'center',
+        marginBottom: 4,
     },
     chartLabelsRow: {
         width: '100%',
