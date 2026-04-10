@@ -35,7 +35,6 @@ const config: ExpoConfig = {
     },
     plugins: [
         'expo-dev-client',
-        'react-native-purchases',
     ],
 };
 
