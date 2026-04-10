@@ -9,14 +9,18 @@ namespace WageTracker.API.Services
     public class JobService : IJobService
     {
         private readonly AppDbContext _context;
+        private readonly ISubscriptionService _subscriptionService;
 
-        public JobService(AppDbContext context)
+        public JobService(AppDbContext context, ISubscriptionService subscriptionService)
         {
             _context = context;
+            _subscriptionService = subscriptionService;
         }
 
         public async Task<JobResponse> CreateJobAsync(int userId, CreateJobRequest request)
         {
+            await _subscriptionService.EnsureCanCreateJobAsync(userId);
+
             var job = new Job
             {
                 UserId = userId,
@@ -41,6 +45,8 @@ namespace WageTracker.API.Services
             {
                 throw new UnauthorizedAccessException("Job not found or access denied");
             }
+
+            await _subscriptionService.EnsureJobUnlockedAsync(userId, jobId);
 
             job.Title = request.Title;
             job.HourlyRate = request.HourlyRate;
@@ -75,7 +81,8 @@ namespace WageTracker.API.Services
                 throw new UnauthorizedAccessException("Job not found or access denied");
             }
 
-            return await MapToJobResponseAsync(job);
+            var lockState = await _subscriptionService.GetJobLockStateAsync(userId, job.Id);
+            return await MapToJobResponseAsync(job, lockState);
         }
 
         public async Task<List<JobResponse>> GetUserJobsAsync(int userId)
@@ -85,16 +92,20 @@ namespace WageTracker.API.Services
                 .OrderByDescending(j => j.CreatedAt)
                 .ToListAsync();
 
+            var lockStates = await _subscriptionService.GetJobLockStatesAsync(userId);
             var responses = new List<JobResponse>();
             foreach (var job in jobs)
             {
-                responses.Add(await MapToJobResponseAsync(job));
+                var lockState = lockStates.TryGetValue(job.Id, out var state)
+                    ? state
+                    : new JobLockState(false, null);
+                responses.Add(await MapToJobResponseAsync(job, lockState));
             }
 
             return responses;
         }
 
-        private async Task<JobResponse> MapToJobResponseAsync(Job job)
+        private async Task<JobResponse> MapToJobResponseAsync(Job job, JobLockState? lockState = null)
         {
             var entries = await _context.DailyEntries
                 .Where(e => e.JobId == job.Id)
@@ -111,6 +122,8 @@ namespace WageTracker.API.Services
                 FirstDayOfWeek = job.FirstDayOfWeek,
                 TotalEarnings = totalEarnings,
                 TotalHours = totalHours,
+                IsLocked = lockState?.IsLocked ?? false,
+                LockedReason = lockState?.LockedReason,
                 CreatedAt = job.CreatedAt
             };
         }
@@ -119,10 +132,12 @@ namespace WageTracker.API.Services
     public class DashboardService : IDashboardService
     {
         private readonly AppDbContext _context;
+        private readonly ISubscriptionService _subscriptionService;
 
-        public DashboardService(AppDbContext context)
+        public DashboardService(AppDbContext context, ISubscriptionService subscriptionService)
         {
             _context = context;
+            _subscriptionService = subscriptionService;
         }
 
         public async Task<DashboardSummaryResponse> GetDashboardSummaryAsync(int userId)
@@ -148,9 +163,12 @@ namespace WageTracker.API.Services
                 .Where(e => e.UserId == userId)
                 .ToListAsync();
 
+            var access = await _subscriptionService.GetFeatureAccessSnapshotAsync(userId);
+            var lockStates = await _subscriptionService.GetJobLockStatesAsync(userId);
+
             var totalEarnings = allEntries.Sum(e => e.TotalEarnings);
             var totalHours = allEntries.Sum(e => e.TotalHours);
-            var totalExpenses = allExpenses.Sum(e => e.Amount);
+            var totalExpenses = access.CanUseExpenses ? allExpenses.Sum(e => e.Amount) : 0;
 
             // --- Weekly calculations (Monday-Sunday) ---
             var today = DateTime.UtcNow.Date;
@@ -167,9 +185,9 @@ namespace WageTracker.API.Services
 
             var weeklyEarnings = weeklyEntries.Sum(e => e.TotalEarnings);
             var weeklyHours = weeklyEntries.Sum(e => e.TotalHours);
-            var weeklyExpensesTotal = weeklyExpensesList.Sum(e => e.Amount);
+            var weeklyExpensesTotal = access.CanUseExpenses ? weeklyExpensesList.Sum(e => e.Amount) : 0;
             var weeklyNet = weeklyEarnings - weeklyExpensesTotal;
-            var weeklyGoalTarget = user.WeeklyGoalAmount;
+            var weeklyGoalTarget = access.CanUseGoals ? user.WeeklyGoalAmount : null;
             var weeklyGoalRemaining = weeklyGoalTarget.HasValue
                 ? Math.Max(0, weeklyGoalTarget.Value - weeklyEarnings)
                 : 0;
@@ -195,29 +213,34 @@ namespace WageTracker.API.Services
                 .ToList();
 
             // --- Recent expenses (son 5 gider) ---
-            var recentExpenses = allExpenses
-                .OrderByDescending(e => e.Date)
-                .ThenByDescending(e => e.CreatedAt)
-                .Take(5)
-                .Select(e => new ExpenseResponse
-                {
-                    Id = e.Id,
-                    Amount = e.Amount,
-                    Category = (int)e.Category,
-                    CategoryName = ExpenseService.GetCategoryName((int)e.Category),
-                    Date = e.Date,
-                    Description = e.Description,
-                    Source = e.Source.ToString(),
-                    ReceiptImageUrl = e.ReceiptImageUrl,
-                    CreatedAt = e.CreatedAt
-                })
-                .ToList();
+            var recentExpenses = access.CanUseExpenses
+                ? allExpenses
+                    .OrderByDescending(e => e.Date)
+                    .ThenByDescending(e => e.CreatedAt)
+                    .Take(5)
+                    .Select(e => new ExpenseResponse
+                    {
+                        Id = e.Id,
+                        Amount = e.Amount,
+                        Category = (int)e.Category,
+                        CategoryName = ExpenseService.GetCategoryName((int)e.Category),
+                        Date = e.Date,
+                        Description = e.Description,
+                        Source = e.Source.ToString(),
+                        ReceiptImageUrl = e.ReceiptImageUrl,
+                        CreatedAt = e.CreatedAt
+                    })
+                    .ToList()
+                : new List<ExpenseResponse>();
 
             // --- Job responses ---
             var jobResponses = new List<JobResponse>();
             foreach (var job in jobs)
             {
                 var jobEntries = allEntries.Where(e => e.JobId == job.Id).ToList();
+                var lockState = lockStates.TryGetValue(job.Id, out var state)
+                    ? state
+                    : new JobLockState(false, null);
                 jobResponses.Add(new JobResponse
                 {
                     Id = job.Id,
@@ -226,6 +249,8 @@ namespace WageTracker.API.Services
                     FirstDayOfWeek = job.FirstDayOfWeek,
                     TotalEarnings = jobEntries.Sum(e => e.TotalEarnings),
                     TotalHours = jobEntries.Sum(e => e.TotalHours),
+                    IsLocked = lockState.IsLocked,
+                    LockedReason = lockState.LockedReason,
                     CreatedAt = job.CreatedAt
                 });
             }
@@ -244,16 +269,18 @@ namespace WageTracker.API.Services
                 WeeklyExpenses = weeklyExpensesTotal,
                 WeeklyNet = weeklyNet,
                 WeeklyHours = weeklyHours,
-                WeeklyGoal = new WeeklyGoalStatusResponse
-                {
-                    TargetAmount = weeklyGoalTarget,
-                    CurrentAmount = weeklyEarnings,
-                    RemainingAmount = weeklyGoalRemaining,
-                    ProgressPercent = weeklyGoalProgress,
-                    IsReached = weeklyGoalTarget.HasValue && weeklyGoalTarget.Value > 0 && weeklyEarnings >= weeklyGoalTarget.Value,
-                    WeekStart = weekStart,
-                    WeekEnd = weekEndInclusive
-                },
+                WeeklyGoal = access.CanUseGoals
+                    ? new WeeklyGoalStatusResponse
+                    {
+                        TargetAmount = weeklyGoalTarget,
+                        CurrentAmount = weeklyEarnings,
+                        RemainingAmount = weeklyGoalRemaining,
+                        ProgressPercent = weeklyGoalProgress,
+                        IsReached = weeklyGoalTarget.HasValue && weeklyGoalTarget.Value > 0 && weeklyEarnings >= weeklyGoalTarget.Value,
+                        WeekStart = weekStart,
+                        WeekEnd = weekEndInclusive
+                    }
+                    : null,
                 DailyEarningsSinceMonday = dailyEarningsSinceMonday,
 
                 // Recent

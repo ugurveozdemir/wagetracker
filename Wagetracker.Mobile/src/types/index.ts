@@ -16,11 +16,33 @@ export interface AuthResponse {
     user: UserDto;
 }
 
+export interface SubscriptionSummary {
+    isPremium: boolean;
+    status: string;
+    productId: string | null;
+    planTerm: string;
+    store: string;
+    expiresAt: string | null;
+    willRenew: boolean;
+    lastSyncedAt: string;
+}
+
+export interface FeatureAccess {
+    maxUnlockedJobs: number;
+    unlockedJobCount: number;
+    canUseGoals: boolean;
+    canUseExpenses: boolean;
+    hasLockedJobs: boolean;
+}
+
 export interface UserDto {
     id: number;
     email: string;
     fullName: string;
     weeklyGoalAmount?: number | null;
+    billingCustomerId: string;
+    subscription: SubscriptionSummary;
+    access: FeatureAccess;
 }
 
 export interface UpdateWeeklyGoalRequest {
@@ -36,6 +58,8 @@ export interface JobResponse {
     firstDayOfWeek: number; // 0 = Sunday, 1 = Monday, etc.
     totalEarnings: number;
     totalHours: number;
+    isLocked: boolean;
+    lockedReason: string | null;
     createdAt: string;
 }
 
@@ -181,7 +205,7 @@ export interface DashboardSummaryResponse {
     weeklyExpenses: number;
     weeklyNet: number;
     weeklyHours: number;
-    weeklyGoal: WeeklyGoalStatusResponse;
+    weeklyGoal: WeeklyGoalStatusResponse | null;
     dailyEarningsSinceMonday: DailyEarningsPointResponse[];
 
     // Recent expenses
@@ -220,6 +244,10 @@ export type TabParamList = {
 export type RootStackParamList = {
     Auth: undefined;
     Main: undefined;
+    Paywall: {
+        source: 'goals' | 'expenses' | 'job_limit' | 'locked_job' | 'profile' | 'dashboard';
+        feature: 'premium' | 'goals' | 'expenses' | 'jobs';
+    };
 };
 
 export type AuthStackParamList = {

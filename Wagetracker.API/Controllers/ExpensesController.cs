@@ -32,17 +32,31 @@ namespace WageTracker.API.Controllers
         [HttpGet]
         public async Task<ActionResult<List<ExpenseResponse>>> GetAll()
         {
-            var userId = GetUserId();
-            var expenses = await _expenseService.GetUserExpensesAsync(userId);
-            return Ok(expenses);
+            try
+            {
+                var userId = GetUserId();
+                var expenses = await _expenseService.GetUserExpensesAsync(userId);
+                return Ok(expenses);
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
+            }
         }
 
         [HttpGet("weekly")]
         public async Task<ActionResult<List<WeeklyExpenseGroupResponse>>> GetWeekly()
         {
-            var userId = GetUserId();
-            var weeklyGroups = await _expenseService.GetWeeklyExpenseGroupsAsync(userId);
-            return Ok(weeklyGroups);
+            try
+            {
+                var userId = GetUserId();
+                var weeklyGroups = await _expenseService.GetWeeklyExpenseGroupsAsync(userId);
+                return Ok(weeklyGroups);
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
+            }
         }
 
         [HttpGet("{id}")]
@@ -58,6 +72,10 @@ namespace WageTracker.API.Controllers
             {
                 return NotFound(new { message = "Expense not found" });
             }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -72,6 +90,10 @@ namespace WageTracker.API.Controllers
             catch (ArgumentException ex)
             {
                 return BadRequest(new { message = ex.Message });
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
             }
         }
 
@@ -92,6 +114,10 @@ namespace WageTracker.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
@@ -106,6 +132,10 @@ namespace WageTracker.API.Controllers
             catch (UnauthorizedAccessException)
             {
                 return NotFound(new { message = "Expense not found" });
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
             }
         }
     }

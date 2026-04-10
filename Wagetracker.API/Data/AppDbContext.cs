@@ -18,6 +18,8 @@ namespace WageTracker.API.Data
         public DbSet<Job> Jobs { get; set; }
         public DbSet<DailyEntry> DailyEntries { get; set; }
         public DbSet<Expense> Expenses { get; set; }
+        public DbSet<UserSubscription> UserSubscriptions { get; set; }
+        public DbSet<RevenueCatWebhookEvent> RevenueCatWebhookEvents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -33,6 +35,8 @@ namespace WageTracker.API.Data
                 entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(255);
                 entity.Property(e => e.FullName).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.WeeklyGoalAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.BillingCustomerId).HasMaxLength(100);
+                entity.HasIndex(e => e.BillingCustomerId).IsUnique();
                 entity.Property(e => e.CreatedAt).IsRequired();
             });
 
@@ -109,6 +113,38 @@ namespace WageTracker.API.Data
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserSubscription>(entity =>
+            {
+                entity.ToTable("UserSubscriptions");
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.UserId).IsUnique();
+                entity.Property(e => e.EntitlementId).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.ProductId).HasMaxLength(150);
+                entity.Property(e => e.Status).IsRequired();
+                entity.Property(e => e.PlanTerm).IsRequired();
+                entity.Property(e => e.Store).IsRequired();
+                entity.Property(e => e.IsPremium).IsRequired();
+                entity.Property(e => e.WillRenew).IsRequired();
+                entity.Property(e => e.LastSyncedAt).IsRequired();
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<RevenueCatWebhookEvent>(entity =>
+            {
+                entity.ToTable("RevenueCatWebhookEvents");
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.EventId).IsUnique();
+                entity.Property(e => e.EventId).IsRequired().HasMaxLength(150);
+                entity.Property(e => e.EventType).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.AppUserId).HasMaxLength(100);
+                entity.Property(e => e.Payload).IsRequired();
+                entity.Property(e => e.ReceivedAt).IsRequired();
             });
         }
     }

@@ -26,6 +26,9 @@ namespace WageTracker.API.Models.Entities
         [Column(TypeName = "decimal(18,2)")]
         public decimal? WeeklyGoalAmount { get; set; }
 
+        [MaxLength(100)]
+        public string? BillingCustomerId { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

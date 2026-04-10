@@ -13,11 +13,13 @@ namespace WageTracker.API.Services
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly ISubscriptionService _subscriptionService;
 
-        public AuthService(AppDbContext context, IConfiguration configuration)
+        public AuthService(AppDbContext context, IConfiguration configuration, ISubscriptionService subscriptionService)
         {
             _context = context;
             _configuration = configuration;
+            _subscriptionService = subscriptionService;
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
@@ -49,13 +51,7 @@ namespace WageTracker.API.Services
             return new AuthResponse
             {
                 Token = token,
-                User = new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    FullName = user.FullName,
-                    WeeklyGoalAmount = user.WeeklyGoalAmount
-                }
+                User = await _subscriptionService.BuildUserDtoAsync(user)
             };
         }
 
@@ -80,13 +76,7 @@ namespace WageTracker.API.Services
             return new AuthResponse
             {
                 Token = token,
-                User = new UserDto
-                {
-                    Id = user.Id,
-                    Email = user.Email,
-                    FullName = user.FullName,
-                    WeeklyGoalAmount = user.WeeklyGoalAmount
-                }
+                User = await _subscriptionService.BuildUserDtoAsync(user)
             };
         }
 

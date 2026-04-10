@@ -7,14 +7,29 @@ namespace WageTracker.API.Services
     public class ProfileService : IProfileService
     {
         private readonly AppDbContext _context;
+        private readonly ISubscriptionService _subscriptionService;
 
-        public ProfileService(AppDbContext context)
+        public ProfileService(AppDbContext context, ISubscriptionService subscriptionService)
         {
             _context = context;
+            _subscriptionService = subscriptionService;
+        }
+
+        public async Task<UserDto> GetProfileAsync(int userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                throw new KeyNotFoundException("User not found");
+            }
+
+            return await _subscriptionService.BuildUserDtoAsync(user);
         }
 
         public async Task<UserDto> UpdateWeeklyGoalAsync(int userId, UpdateWeeklyGoalRequest request)
         {
+            await _subscriptionService.EnsureGoalsAccessAsync(userId);
+
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
             {
@@ -24,13 +39,7 @@ namespace WageTracker.API.Services
             user.WeeklyGoalAmount = request.TargetAmount;
             await _context.SaveChangesAsync();
 
-            return new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email,
-                FullName = user.FullName,
-                WeeklyGoalAmount = user.WeeklyGoalAmount
-            };
+            return await _subscriptionService.BuildUserDtoAsync(user);
         }
     }
 }

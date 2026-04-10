@@ -9,10 +9,12 @@ namespace WageTracker.API.Services
     public class DailyEntryService : IDailyEntryService
     {
         private readonly AppDbContext _context;
+        private readonly ISubscriptionService _subscriptionService;
 
-        public DailyEntryService(AppDbContext context)
+        public DailyEntryService(AppDbContext context, ISubscriptionService subscriptionService)
         {
             _context = context;
+            _subscriptionService = subscriptionService;
         }
 
         public async Task<EntryResponse> CreateEntryAsync(int userId, CreateEntryRequest request)
@@ -25,6 +27,8 @@ namespace WageTracker.API.Services
             {
                 throw new UnauthorizedAccessException("Job not found or access denied");
             }
+
+            await _subscriptionService.EnsureJobUnlockedAsync(userId, job.Id);
 
             // Calculate TotalHours if StartTime and EndTime are provided
             decimal totalHours;
@@ -89,6 +93,8 @@ namespace WageTracker.API.Services
                 throw new UnauthorizedAccessException("Entry not found or access denied");
             }
 
+            await _subscriptionService.EnsureJobUnlockedAsync(userId, entry.JobId);
+
             var oldDate = entry.Date;
 
             // Calculate TotalHours
@@ -144,6 +150,8 @@ namespace WageTracker.API.Services
                 throw new UnauthorizedAccessException("Entry not found or access denied");
             }
 
+            await _subscriptionService.EnsureJobUnlockedAsync(userId, entry.JobId);
+
             var job = entry.Job!;
             var entryDate = entry.Date;
 
@@ -186,6 +194,8 @@ namespace WageTracker.API.Services
             {
                 throw new UnauthorizedAccessException("Job not found or access denied");
             }
+
+            var lockState = await _subscriptionService.GetJobLockStateAsync(userId, jobId);
 
             var entries = await _context.DailyEntries
                 .Where(e => e.JobId == jobId)
@@ -232,6 +242,8 @@ namespace WageTracker.API.Services
                     FirstDayOfWeek = job.FirstDayOfWeek,
                     TotalEarnings = totalJobEarnings,
                     TotalHours = totalJobHours,
+                    IsLocked = lockState.IsLocked,
+                    LockedReason = lockState.LockedReason,
                     CreatedAt = job.CreatedAt
                 },
                 Weeks = weekGroups

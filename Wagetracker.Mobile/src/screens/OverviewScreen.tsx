@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useJobsStore } from '../stores';
+import { useAuthStore, useJobsStore } from '../stores';
 import { OverviewStackParamList } from '../types';
 import { colors } from '../theme';
 import { CreateJobModal } from '../components/CreateJobModal';
@@ -29,7 +29,8 @@ const overviewCardThemes = [
 
 export const OverviewScreen: React.FC = () => {
     const { width } = useWindowDimensions();
-    const navigation = useNavigation<OverviewNavigationProp>();
+    const navigation = useNavigation<any>();
+    const { user } = useAuthStore();
     const { summary, fetchDashboard } = useJobsStore();
     const [refreshing, setRefreshing] = useState(false);
     const [showCreateJobModal, setShowCreateJobModal] = useState(false);
@@ -116,6 +117,7 @@ export const OverviewScreen: React.FC = () => {
 
                             <View>
                                 <Text style={[styles.jobName, { fontSize: compact ? 24 : 27 }]}>{job.title}</Text>
+                                {job.isLocked ? <Text style={styles.lockedTag}>Locked on free tier</Text> : null}
                                 <View
                                     style={[
                                         styles.ratePill,
@@ -157,14 +159,23 @@ export const OverviewScreen: React.FC = () => {
                     <TouchableOpacity
                         activeOpacity={0.88}
                         style={[styles.addJobCard, { minHeight: 256 * scale, borderRadius: 24 * scale }]}
-                        onPress={() => setShowCreateJobModal(true)}
+                        onPress={() => {
+                            if (!user?.subscription.isPremium && jobs.length >= 2) {
+                                navigation.navigate('Paywall', { source: 'job_limit', feature: 'jobs' });
+                                return;
+                            }
+
+                            setShowCreateJobModal(true);
+                        }}
                     >
                         <View style={styles.addIconWrap}>
                             <MaterialIcons name="add" size={30} color="#8a948d" />
                         </View>
-                        <Text style={styles.addJobTitle}>Add New Job</Text>
+                        <Text style={styles.addJobTitle}>{!user?.subscription.isPremium && jobs.length >= 2 ? 'Upgrade for more' : 'Add New Job'}</Text>
                         <Text style={styles.addJobCopy}>
-                            Maximize your income by tracking a second or third role.
+                            {!user?.subscription.isPremium && jobs.length >= 2
+                                ? 'Free accounts keep 2 jobs unlocked. Upgrade to add more without locking older roles.'
+                                : 'Maximize your income by tracking a second or third role.'}
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -344,6 +355,14 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         textAlign: 'center',
         maxWidth: 260,
+    },
+    lockedTag: {
+        color: '#ffddb8',
+        fontSize: 11,
+        fontWeight: '800',
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
+        marginBottom: 10,
     },
     goalCard: {
         backgroundColor: '#00429B',

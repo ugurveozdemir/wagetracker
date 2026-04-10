@@ -18,6 +18,7 @@ namespace WageTracker.API.Services
 
     public interface IProfileService
     {
+        Task<UserDto> GetProfileAsync(int userId);
         Task<UserDto> UpdateWeeklyGoalAsync(int userId, UpdateWeeklyGoalRequest request);
     }
 }

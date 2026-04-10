@@ -50,6 +50,10 @@ namespace WageTracker.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
+            }
         }
 
         [HttpGet("job/{jobId}/weekly")]
@@ -64,6 +68,10 @@ namespace WageTracker.API.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return NotFound(new { message = ex.Message });
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
             }
         }
 
@@ -83,6 +91,10 @@ namespace WageTracker.API.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return NotFound(new { message = ex.Message });
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
             }
         }
 

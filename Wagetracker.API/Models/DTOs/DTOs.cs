@@ -40,6 +40,30 @@ namespace WageTracker.API.Models.DTOs
         public string Email { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public decimal? WeeklyGoalAmount { get; set; }
+        public string BillingCustomerId { get; set; } = string.Empty;
+        public SubscriptionSummaryDto Subscription { get; set; } = new();
+        public FeatureAccessDto Access { get; set; } = new();
+    }
+
+    public class SubscriptionSummaryDto
+    {
+        public bool IsPremium { get; set; }
+        public string Status { get; set; } = "free";
+        public string? ProductId { get; set; }
+        public string PlanTerm { get; set; } = "none";
+        public string Store { get; set; } = "unknown";
+        public DateTime? ExpiresAt { get; set; }
+        public bool WillRenew { get; set; }
+        public DateTime LastSyncedAt { get; set; }
+    }
+
+    public class FeatureAccessDto
+    {
+        public int MaxUnlockedJobs { get; set; }
+        public int UnlockedJobCount { get; set; }
+        public bool CanUseGoals { get; set; }
+        public bool CanUseExpenses { get; set; }
+        public bool HasLockedJobs { get; set; }
     }
 
     public class UpdateWeeklyGoalRequest
@@ -84,6 +108,8 @@ namespace WageTracker.API.Models.DTOs
         public DayOfWeek FirstDayOfWeek { get; set; }
         public decimal TotalEarnings { get; set; }
         public decimal TotalHours { get; set; }
+        public bool IsLocked { get; set; }
+        public string? LockedReason { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
@@ -246,7 +272,7 @@ namespace WageTracker.API.Models.DTOs
         public decimal WeeklyExpenses { get; set; }
         public decimal WeeklyNet { get; set; }
         public decimal WeeklyHours { get; set; }
-        public WeeklyGoalStatusResponse WeeklyGoal { get; set; } = new();
+        public WeeklyGoalStatusResponse? WeeklyGoal { get; set; }
         public List<DailyEarningsPointResponse> DailyEarningsSinceMonday { get; set; } = new();
 
         // Son giderler (Dashboard'da gösterilecek)

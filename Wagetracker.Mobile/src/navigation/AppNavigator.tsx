@@ -1,27 +1,28 @@
 import React, { useEffect } from 'react';
 import {
     ActivityIndicator,
-    View,
-    StyleSheet,
-    TouchableOpacity,
-    Text,
+    AppState,
     Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
     useWindowDimensions,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {
-    RootStackParamList,
     AuthStackParamList,
-    HomeStackParamList,
     ExpenseStackParamList,
-    OverviewStackParamList,
     GoalStackParamList,
+    HomeStackParamList,
+    OverviewStackParamList,
+    RootStackParamList,
     TabParamList,
 } from '../types';
-import { useAuthStore } from '../stores';
+import { useAuthStore, useJobsStore, useSubscriptionStore } from '../stores';
 import { colors } from '../theme';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
@@ -32,6 +33,8 @@ import { ExpensesScreen } from '../screens/ExpensesScreen';
 import { ExpenseHistoryScreen } from '../screens/ExpenseHistoryScreen';
 import { OverviewScreen } from '../screens/OverviewScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { PaywallScreen } from '../screens/PaywallScreen';
+import { PremiumFeatureScreen } from '../screens/PremiumFeatureScreen';
 import { AddExpenseModal } from '../components/AddExpenseModal';
 import { AddEntryModal } from '../components/AddEntryModal';
 import { CreateJobModal } from '../components/CreateJobModal';
@@ -119,6 +122,8 @@ const GoalNavigator: React.FC = () => {
     );
 };
 
+const LockedGoalScreen: React.FC = () => <PremiumFeatureScreen feature="goals" />;
+const LockedExpensesScreen: React.FC = () => <PremiumFeatureScreen feature="expenses" />;
 const DummyScreen: React.FC = () => <View style={{ flex: 1, backgroundColor: '#fbf9f1' }} />;
 
 const visibleTabs = [
@@ -227,10 +232,20 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
 };
 
 const MainNavigator: React.FC = () => {
+    const rootNavigation = useNavigation<any>();
     const [showExpenseModal, setShowExpenseModal] = React.useState(false);
     const [showJobModal, setShowJobModal] = React.useState(false);
     const [showEntryModal, setShowEntryModal] = React.useState(false);
     const [activeJobId, setActiveJobId] = React.useState<number | null>(null);
+    const { user } = useAuthStore();
+    const { jobs } = useJobsStore();
+
+    const openPaywall = (
+        source: RootStackParamList['Paywall']['source'],
+        feature: RootStackParamList['Paywall']['feature'],
+    ) => {
+        rootNavigation.navigate('Paywall', { source, feature });
+    };
 
     const openEntryModalFromNestedRoute = (activeTabRoute: any) => {
         const nestedState = activeTabRoute.state;
@@ -240,6 +255,12 @@ const MainNavigator: React.FC = () => {
 
         const innerRoute = nestedState.routes[nestedState.index];
         if (innerRoute.name === 'JobDetails' && innerRoute.params?.jobId) {
+            const selectedJob = jobs.find((job) => job.id === innerRoute.params.jobId);
+            if (selectedJob?.isLocked) {
+                openPaywall('locked_job', 'jobs');
+                return true;
+            }
+
             setActiveJobId(innerRoute.params.jobId);
             setShowEntryModal(true);
             return true;
@@ -253,21 +274,22 @@ const MainNavigator: React.FC = () => {
         const tabName = activeTabRoute.name;
 
         if (tabName === 'ExpensesTab') {
+            if (!user?.access.canUseExpenses) {
+                openPaywall('expenses', 'expenses');
+                return;
+            }
+
             setShowExpenseModal(true);
             return;
         }
 
-        if (tabName === 'HomeTab') {
+        if (tabName === 'HomeTab' || tabName === 'OverviewTab') {
             if (openEntryModalFromNestedRoute(activeTabRoute)) {
                 return;
             }
 
-            setShowJobModal(true);
-            return;
-        }
-
-        if (tabName === 'OverviewTab') {
-            if (openEntryModalFromNestedRoute(activeTabRoute)) {
+            if (!user?.subscription.isPremium && jobs.length >= 2) {
+                openPaywall('job_limit', 'jobs');
                 return;
             }
 
@@ -288,8 +310,8 @@ const MainNavigator: React.FC = () => {
                 }}
             >
                 <Tab.Screen name="HomeTab" component={HomeNavigator} />
-                <Tab.Screen name="GoalTab" component={GoalNavigator} />
-                <Tab.Screen name="ExpensesTab" component={ExpenseNavigator} />
+                <Tab.Screen name="GoalTab" component={user?.access.canUseGoals ? GoalNavigator : LockedGoalScreen} />
+                <Tab.Screen name="ExpensesTab" component={user?.access.canUseExpenses ? ExpenseNavigator : LockedExpensesScreen} />
                 <Tab.Screen name="AddTab" component={DummyScreen} />
                 <Tab.Screen name="OverviewTab" component={OverviewNavigator} />
                 <Tab.Screen name="ProfileTab" component={ProfileScreen} />
@@ -324,11 +346,31 @@ const MainNavigator: React.FC = () => {
 };
 
 export const AppNavigator: React.FC = () => {
-    const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
+    const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
+    const { bootstrap, clear, refreshSubscriptionStatus } = useSubscriptionStore();
 
     useEffect(() => {
         checkAuth();
     }, [checkAuth]);
+
+    useEffect(() => {
+        if (isAuthenticated && user) {
+            bootstrap(user).catch(console.error);
+            return;
+        }
+
+        clear().catch(console.error);
+    }, [bootstrap, clear, isAuthenticated, user]);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextState) => {
+            if (nextState === 'active' && isAuthenticated) {
+                refreshSubscriptionStatus().catch(console.error);
+            }
+        });
+
+        return () => subscription.remove();
+    }, [isAuthenticated, refreshSubscriptionStatus]);
 
     if (isLoading) {
         return (
@@ -342,7 +384,10 @@ export const AppNavigator: React.FC = () => {
         <NavigationContainer>
             <RootStack.Navigator screenOptions={{ headerShown: false }}>
                 {isAuthenticated ? (
-                    <RootStack.Screen name="Main" component={MainNavigator} />
+                    <>
+                        <RootStack.Screen name="Main" component={MainNavigator} />
+                        <RootStack.Screen name="Paywall" component={PaywallScreen} />
+                    </>
                 ) : (
                     <RootStack.Screen name="Auth" component={AuthNavigator} />
                 )}

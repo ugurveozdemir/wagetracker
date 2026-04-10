@@ -1,5 +1,7 @@
 import React, { useCallback } from 'react';
 import {
+    Linking,
+    Platform,
     View,
     Text,
     StyleSheet,
@@ -13,7 +15,8 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-toast-message';
-import { useAuthStore, useJobsStore } from '../stores';
+import { useAuthStore, useJobsStore, useSubscriptionStore } from '../stores';
+import { config } from '../config';
 import { colors, fontSizes, fontWeights, spacing, useResponsiveLayout } from '../theme';
 
 type ProfileNavigationProp = any;
@@ -26,9 +29,10 @@ const menuItems = [
 ] as const;
 
 export const ProfileScreen: React.FC = () => {
-    const navigation = useNavigation<ProfileNavigationProp>();
+    const navigation = useNavigation<any>();
     const { user, logout } = useAuthStore();
     const { summary, fetchDashboard } = useJobsStore();
+    const { restorePurchases } = useSubscriptionStore();
     const { isCompact, horizontalPadding, rs } = useResponsiveLayout();
     const [refreshing, setRefreshing] = React.useState(false);
 
@@ -61,6 +65,34 @@ export const ProfileScreen: React.FC = () => {
             text2: 'This section is not wired yet.',
             visibilityTime: 1800,
         });
+    };
+
+    const handleRestore = async () => {
+        try {
+            const updatedUser = await restorePurchases();
+            Toast.show({
+                type: updatedUser?.subscription.isPremium ? 'success' : 'info',
+                text1: updatedUser?.subscription.isPremium ? 'Purchases Restored' : 'No Active Subscription',
+                text2: updatedUser?.subscription.isPremium
+                    ? 'Premium access is active on this account.'
+                    : 'No active subscription was found.',
+                visibilityTime: 2200,
+            });
+        } catch (error) {
+            Toast.show({
+                type: 'error',
+                text1: 'Restore Failed',
+                text2: error instanceof Error ? error.message : 'Please try again.',
+                visibilityTime: 2600,
+            });
+        }
+    };
+
+    const handleManageSubscription = async () => {
+        const url = Platform.OS === 'ios'
+            ? config.APP_STORE_SUBSCRIPTIONS_URL
+            : config.PLAY_STORE_SUBSCRIPTIONS_URL;
+        await Linking.openURL(url);
     };
 
     const formatCurrency = (amount: number | undefined) =>
@@ -149,6 +181,57 @@ export const ProfileScreen: React.FC = () => {
                         </View>
                         <Text style={styles.statLabel}>Weekly Net</Text>
                         <Text style={[styles.statValue, { fontSize: isCompact ? 24 : 28 }]}>{formatCurrency(summary?.weeklyNet)}</Text>
+                    </View>
+                </View>
+
+                <View style={[styles.subscriptionCard, { borderRadius: rs(30), padding: rs(24) }]}>
+                    <View style={styles.subscriptionHeader}>
+                        <View>
+                            <Text style={styles.subscriptionEyebrow}>Subscription</Text>
+                            <Text style={[styles.subscriptionTitle, { fontSize: isCompact ? 24 : 28 }]}>
+                                {user?.subscription.isPremium
+                                    ? user.subscription.planTerm === 'annual'
+                                        ? '12 Month Premium'
+                                        : user.subscription.planTerm === 'six_month'
+                                            ? '6 Month Premium'
+                                            : 'Monthly Premium'
+                                    : 'Free Tier'}
+                            </Text>
+                        </View>
+                        <MaterialIcons
+                            name={user?.subscription.isPremium ? 'workspace-premium' : 'lock-outline'}
+                            size={26}
+                            color={user?.subscription.isPremium ? '#ff8a00' : colors.primary}
+                        />
+                    </View>
+
+                    <Text style={styles.subscriptionCopy}>
+                        {user?.subscription.isPremium
+                            ? `Status: ${user.subscription.status.replace('_', ' ')}`
+                            : 'Upgrade for goals, expenses, and unlimited unlocked jobs.'}
+                    </Text>
+
+                    <View style={styles.subscriptionActions}>
+                        <TouchableOpacity
+                            style={styles.subscriptionButtonPrimary}
+                            activeOpacity={0.86}
+                            onPress={() => {
+                                if (user?.subscription.isPremium) {
+                                    handleManageSubscription();
+                                    return;
+                                }
+
+                                navigation.navigate('Paywall', { source: 'profile', feature: 'premium' });
+                            }}
+                        >
+                            <Text style={styles.subscriptionButtonPrimaryText}>
+                                {user?.subscription.isPremium ? 'Manage' : 'Upgrade'}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.subscriptionButtonSecondary} activeOpacity={0.86} onPress={handleRestore}>
+                            <Text style={styles.subscriptionButtonSecondaryText}>Restore</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -330,6 +413,64 @@ const styles = StyleSheet.create({
     },
     logoutText: {
         color: colors.danger,
+        fontWeight: fontWeights.bold,
+    },
+    subscriptionCard: {
+        backgroundColor: colors.surfaceContainerLowest,
+        marginBottom: spacing.xl,
+    },
+    subscriptionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: spacing.md,
+    },
+    subscriptionEyebrow: {
+        color: colors.primary,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.bold,
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
+        marginBottom: spacing.xs,
+    },
+    subscriptionTitle: {
+        color: colors.onSurface,
+        fontWeight: fontWeights.extrabold,
+    },
+    subscriptionCopy: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.base,
+        lineHeight: 22,
+        marginBottom: spacing.lg,
+    },
+    subscriptionActions: {
+        flexDirection: 'row',
+        gap: spacing.md,
+    },
+    subscriptionButtonPrimary: {
+        flex: 1,
+        minHeight: 52,
+        borderRadius: 999,
+        backgroundColor: colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    subscriptionButtonPrimaryText: {
+        color: colors.white,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.bold,
+    },
+    subscriptionButtonSecondary: {
+        flex: 1,
+        minHeight: 52,
+        borderRadius: 999,
+        backgroundColor: colors.surfaceContainerHigh,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    subscriptionButtonSecondaryText: {
+        color: colors.onSurface,
+        fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
     },
 });

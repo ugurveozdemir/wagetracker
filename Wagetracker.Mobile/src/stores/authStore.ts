@@ -15,6 +15,7 @@ interface AuthState {
     logout: () => Promise<void>;
     checkAuth: () => Promise<void>;
     clearError: () => void;
+    setUser: (user: UserDto | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -74,23 +75,22 @@ export const useAuthStore = create<AuthState>((set) => ({
         try {
             const token = await getAuthToken();
             if (token) {
-                // Validate token by making a real API call
                 try {
-                    const { apiClient } = await import('../api/client');
-                    await apiClient.get('/api/dashboard');
-                    set({ isAuthenticated: true, isLoading: false });
+                    const user = await authApi.getCurrentUser();
+                    set({ user, isAuthenticated: true, isLoading: false });
                 } catch (apiError) {
                     // Token is invalid or expired - clear it
                     await removeAuthToken();
-                    set({ isAuthenticated: false, isLoading: false });
+                    set({ user: null, isAuthenticated: false, isLoading: false });
                 }
             } else {
-                set({ isAuthenticated: false, isLoading: false });
+                set({ user: null, isAuthenticated: false, isLoading: false });
             }
         } catch (error) {
-            set({ isAuthenticated: false, isLoading: false });
+            set({ user: null, isAuthenticated: false, isLoading: false });
         }
     },
 
     clearError: () => set({ error: null }),
+    setUser: (user) => set({ user, isAuthenticated: !!user }),
 }));

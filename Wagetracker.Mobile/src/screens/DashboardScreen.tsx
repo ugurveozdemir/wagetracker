@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { MainStackParamList } from '../types';
-import { useJobsStore } from '../stores';
+import { useAuthStore, useJobsStore } from '../stores';
 import { CreateJobModal } from '../components/CreateJobModal';
 import { colors } from '../theme';
 
@@ -37,7 +37,8 @@ const gigCardThemes = [
 
 export const DashboardScreen: React.FC = () => {
     const { width } = useWindowDimensions();
-    const navigation = useNavigation<DashboardNavigationProp>();
+    const navigation = useNavigation<any>();
+    const { user } = useAuthStore();
     const { summary, jobs, error, fetchDashboard } = useJobsStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -200,13 +201,13 @@ export const DashboardScreen: React.FC = () => {
 
                 <View style={[styles.spendingCard, { borderRadius: 28 * scale, padding: 24 * scale }]}>
                     <View style={styles.spendingCardHeader}>
-                        <Text style={styles.spendingLabel}>Total Spending Since Monday</Text>
+                    <Text style={styles.spendingLabel}>Total Spending Since Monday</Text>
                         <View style={styles.spendingIconWrap}>
-                            <MaterialIcons name="receipt-long" size={18} color="#ffffff" />
+                            <MaterialIcons name={user?.access.canUseExpenses ? 'receipt-long' : 'lock'} size={18} color="#ffffff" />
                         </View>
                     </View>
                     <Text style={[styles.spendingValue, { fontSize: isCompact ? 28 : 32 }]}>
-                        {formatCurrency(summary?.weeklyExpenses ?? 0)}
+                        {user?.access.canUseExpenses ? formatCurrency(summary?.weeklyExpenses ?? 0) : 'Premium'}
                     </Text>
                 </View>
 
@@ -264,6 +265,7 @@ export const DashboardScreen: React.FC = () => {
                                     </View>
 
                                     <Text style={[styles.gigTitle, { fontSize: isCompact ? 18 : 21 }]}>{job.title}</Text>
+                                    {job.isLocked ? <Text style={styles.lockedTag}>Locked</Text> : null}
                                     <Text style={[styles.gigSubtitle, { fontSize: isCompact ? 12 : 13 }]}> 
                                         First day: {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][job.firstDayOfWeek]}
                                     </Text>
@@ -293,17 +295,31 @@ export const DashboardScreen: React.FC = () => {
                             },
                         ]}
                         activeOpacity={0.85}
-                        onPress={() => setIsModalOpen(true)}
+                        onPress={() => {
+                            if (!user?.subscription.isPremium && jobs.length >= 2) {
+                                navigation.navigate('Paywall', { source: 'job_limit', feature: 'jobs' });
+                                return;
+                            }
+
+                            setIsModalOpen(true);
+                        }}
                     >
                         <MaterialIcons name="add-circle" size={Math.round(28 * scale)} color={colors.outline} />
-                        <Text style={styles.addGigText}>Add Gig</Text>
+                        <Text style={styles.addGigText}>{!user?.subscription.isPremium && jobs.length >= 2 ? 'Upgrade' : 'Add Gig'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
 
                 <TouchableOpacity
                     style={[styles.goalCard, { borderRadius: 28 * scale, padding: 24 * scale, marginTop: 18 * scale }]}
                     activeOpacity={0.88}
-                    onPress={() => navigation.navigate('Goal')}
+                    onPress={() => {
+                        if (!user?.access.canUseGoals) {
+                            navigation.navigate('Paywall', { source: 'goals', feature: 'goals' });
+                            return;
+                        }
+
+                        navigation.navigate('Goal');
+                    }}
                 >
                     <View style={styles.goalCardTop}>
                         <View>
@@ -339,9 +355,11 @@ export const DashboardScreen: React.FC = () => {
                         <View>
                             <Text style={styles.goalMetaLabel}>Target</Text>
                             <Text style={styles.goalMetaValue}>
-                                {summary?.weeklyGoal?.targetAmount != null
+                                {user?.access.canUseGoals && summary?.weeklyGoal?.targetAmount != null
                                     ? formatCurrency(summary.weeklyGoal.targetAmount)
-                                    : 'Set a goal'}
+                                    : user?.access.canUseGoals
+                                        ? 'Set a goal'
+                                        : 'Premium only'}
                             </Text>
                         </View>
                         <View style={styles.goalArrowWrap}>
@@ -603,6 +621,14 @@ const styles = StyleSheet.create({
         color: '#6f7a71',
         fontSize: 14,
         fontWeight: '700',
+    },
+    lockedTag: {
+        color: '#ffddb8',
+        fontSize: 11,
+        fontWeight: '800',
+        textTransform: 'uppercase',
+        letterSpacing: 1.2,
+        marginBottom: 4,
     },
     goalCard: {
         backgroundColor: '#00429B',

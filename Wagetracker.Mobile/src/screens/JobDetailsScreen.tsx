@@ -30,7 +30,7 @@ type JobDetailsNavigationProp = NativeStackNavigationProp<MainStackParamList, 'J
 type JobDetailsRouteProp = RouteProp<MainStackParamList, 'JobDetails'>;
 
 export const JobDetailsScreen: React.FC = () => {
-    const navigation = useNavigation<JobDetailsNavigationProp>();
+    const navigation = useNavigation<any>();
     const route = useRoute<JobDetailsRouteProp>();
     const { jobId } = route.params;
     const { isCompact, horizontalPadding, panelRadius, rs } = useResponsiveLayout();
@@ -149,6 +149,7 @@ export const JobDetailsScreen: React.FC = () => {
     }
 
     const job = jobDetails?.job;
+    const isLocked = job?.isLocked ?? false;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -182,10 +183,12 @@ export const JobDetailsScreen: React.FC = () => {
             >
                 <Pressable style={styles.menuOverlay} onPress={() => setShowOptionsMenu(false)}>
                     <Pressable style={styles.menuContainer}>
-                        <TouchableOpacity style={styles.menuItem} onPress={handleEditJob}>
-                            <Feather name="edit-2" size={18} color={colors.primary} />
-                            <Text style={styles.menuItemText}>Edit Job</Text>
-                        </TouchableOpacity>
+                        {!isLocked ? (
+                            <TouchableOpacity style={styles.menuItem} onPress={handleEditJob}>
+                                <Feather name="edit-2" size={18} color={colors.primary} />
+                                <Text style={styles.menuItemText}>Edit Job</Text>
+                            </TouchableOpacity>
+                        ) : null}
                         <TouchableOpacity style={styles.menuItem} onPress={handleDeleteJob}>
                             <Feather name="trash-2" size={18} color={colors.secondaryContainer} />
                             <Text style={[styles.menuItemText, styles.menuItemDanger]}>Delete Job</Text>
@@ -239,6 +242,7 @@ export const JobDetailsScreen: React.FC = () => {
                             key={index}
                             week={week}
                             onDeleteEntry={handleDeleteEntry}
+                            isLocked={isLocked}
                         />
                     ))
                 )}
@@ -272,9 +276,10 @@ export const JobDetailsScreen: React.FC = () => {
 interface WeekGroupProps {
     week: WeeklyGroupResponse;
     onDeleteEntry: (id: number) => void;
+    isLocked: boolean;
 }
 
-const WeekGroupComponent: React.FC<WeekGroupProps> = ({ week, onDeleteEntry }) => {
+const WeekGroupComponent: React.FC<WeekGroupProps> = ({ week, onDeleteEntry, isLocked }) => {
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -312,6 +317,7 @@ const WeekGroupComponent: React.FC<WeekGroupProps> = ({ week, onDeleteEntry }) =
                         entry={entry}
                         isLast={idx === week.entries.length - 1}
                         onDelete={() => onDeleteEntry(entry.id)}
+                        isLocked={isLocked}
                     />
                 ))}
             </View>
@@ -323,9 +329,10 @@ interface EntryItemProps {
     entry: EntryResponse;
     isLast: boolean;
     onDelete: () => void;
+    isLocked: boolean;
 }
 
-const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
+const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete, isLocked }) => {
     const formatTime = (time: string | null) => {
         if (!time) return null;
         const parts = time.split(':');
@@ -391,24 +398,32 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete }) => {
         );
     };
 
+    const content = (
+        <View style={[styles.entryItem, !isLast && styles.entryItemBorder]}>
+            <View style={styles.entryLeft}>
+                <View style={styles.dateBox}>
+                    <Text style={styles.dateWeekday}>{entry.dayOfWeek.slice(0, 3).toUpperCase()}</Text>
+                    <Text style={styles.dateDay}>{entry.dayOfMonth}</Text>
+                </View>
+                <View style={styles.entryDetails}>
+                    <Text style={styles.entryHours}>{entry.totalHours} hrs</Text>
+                    <Text style={styles.entryMeta}>{getTimeDisplay()}</Text>
+                    {entry.tip > 0 ? (
+                        <Text style={styles.entryTip}>+ ${entry.tip} tip</Text>
+                    ) : null}
+                </View>
+            </View>
+            <Text style={styles.entryEarnings}>${entry.totalEarnings.toFixed(0)}</Text>
+        </View>
+    );
+
+    if (isLocked) {
+        return content;
+    }
+
     return (
         <Swipeable renderRightActions={renderRightActions} overshootRight={false} friction={2} rightThreshold={40}>
-            <View style={[styles.entryItem, !isLast && styles.entryItemBorder]}>
-                <View style={styles.entryLeft}>
-                    <View style={styles.dateBox}>
-                        <Text style={styles.dateWeekday}>{entry.dayOfWeek.slice(0, 3).toUpperCase()}</Text>
-                        <Text style={styles.dateDay}>{entry.dayOfMonth}</Text>
-                    </View>
-                    <View style={styles.entryDetails}>
-                        <Text style={styles.entryHours}>{entry.totalHours} hrs</Text>
-                        <Text style={styles.entryMeta}>{getTimeDisplay()}</Text>
-                        {entry.tip > 0 ? (
-                            <Text style={styles.entryTip}>+ ${entry.tip} tip</Text>
-                        ) : null}
-                    </View>
-                </View>
-                <Text style={styles.entryEarnings}>${entry.totalEarnings.toFixed(0)}</Text>
-            </View>
+            {content}
         </Swipeable>
     );
 };

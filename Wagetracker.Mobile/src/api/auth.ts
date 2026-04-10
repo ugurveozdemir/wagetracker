@@ -1,5 +1,6 @@
 import { apiClient, setAuthToken, removeAuthToken } from './client';
 import { LoginRequest, RegisterRequest, AuthResponse } from '../types';
+import { profileApi } from './profile';
 
 export const authApi = {
     login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -12,6 +13,10 @@ export const authApi = {
         const response = await apiClient.post<AuthResponse>('/api/auth/register', data);
         await setAuthToken(response.data.token);
         return response.data;
+    },
+
+    getCurrentUser: async () => {
+        return await profileApi.getMe();
     },
 
     logout: async (): Promise<void> => {

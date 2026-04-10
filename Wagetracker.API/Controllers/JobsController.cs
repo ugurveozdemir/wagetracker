@@ -55,9 +55,16 @@ namespace WageTracker.API.Controllers
         [HttpPost]
         public async Task<ActionResult<JobResponse>> CreateJob([FromBody] CreateJobRequest request)
         {
-            var userId = GetUserId();
-            var job = await _jobService.CreateJobAsync(userId, request);
-            return CreatedAtAction(nameof(GetJob), new { id = job.Id }, job);
+            try
+            {
+                var userId = GetUserId();
+                var job = await _jobService.CreateJobAsync(userId, request);
+                return CreatedAtAction(nameof(GetJob), new { id = job.Id }, job);
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
@@ -72,6 +79,10 @@ namespace WageTracker.API.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return NotFound(new { message = ex.Message });
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
             }
         }
 

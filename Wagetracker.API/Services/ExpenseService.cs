@@ -8,6 +8,7 @@ namespace WageTracker.API.Services
     public class ExpenseService : IExpenseService
     {
         private readonly AppDbContext _context;
+        private readonly ISubscriptionService _subscriptionService;
 
         // Kategori isim mapping'i (enum int → string)
         private static readonly Dictionary<int, string> CategoryNames = new()
@@ -22,13 +23,16 @@ namespace WageTracker.API.Services
             { 7, "Other" }
         };
 
-        public ExpenseService(AppDbContext context)
+        public ExpenseService(AppDbContext context, ISubscriptionService subscriptionService)
         {
             _context = context;
+            _subscriptionService = subscriptionService;
         }
 
         public async Task<ExpenseResponse> CreateAsync(int userId, CreateExpenseRequest request)
         {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId);
+
             // Validate category
             if (!Enum.IsDefined(typeof(ExpenseCategory), request.Category))
             {
@@ -54,6 +58,8 @@ namespace WageTracker.API.Services
 
         public async Task<ExpenseResponse> UpdateAsync(int userId, int expenseId, UpdateExpenseRequest request)
         {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId);
+
             var expense = await _context.Expenses
                 .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
 
@@ -80,6 +86,8 @@ namespace WageTracker.API.Services
 
         public async Task DeleteAsync(int userId, int expenseId)
         {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId);
+
             var expense = await _context.Expenses
                 .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
 
@@ -94,6 +102,8 @@ namespace WageTracker.API.Services
 
         public async Task<ExpenseResponse> GetByIdAsync(int userId, int expenseId)
         {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId);
+
             var expense = await _context.Expenses
                 .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
 
@@ -107,6 +117,8 @@ namespace WageTracker.API.Services
 
         public async Task<List<ExpenseResponse>> GetUserExpensesAsync(int userId)
         {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId);
+
             var expenses = await _context.Expenses
                 .Where(e => e.UserId == userId)
                 .OrderByDescending(e => e.Date)
@@ -118,6 +130,8 @@ namespace WageTracker.API.Services
 
         public async Task<List<WeeklyExpenseGroupResponse>> GetWeeklyExpenseGroupsAsync(int userId)
         {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId);
+
             var expenses = await _context.Expenses
                 .Where(e => e.UserId == userId)
                 .OrderByDescending(e => e.Date)
