@@ -182,7 +182,7 @@ export const JobDetailsScreen: React.FC = () => {
                 onRequestClose={() => setShowOptionsMenu(false)}
             >
                 <Pressable style={styles.menuOverlay} onPress={() => setShowOptionsMenu(false)}>
-                    <Pressable style={styles.menuContainer}>
+                    <View style={styles.menuContainer}>
                         {!isLocked ? (
                             <TouchableOpacity style={styles.menuItem} onPress={handleEditJob}>
                                 <Feather name="edit-2" size={18} color={colors.primary} />
@@ -193,7 +193,7 @@ export const JobDetailsScreen: React.FC = () => {
                             <Feather name="trash-2" size={18} color={colors.secondaryContainer} />
                             <Text style={[styles.menuItemText, styles.menuItemDanger]}>Delete Job</Text>
                         </TouchableOpacity>
-                    </Pressable>
+                    </View>
                 </Pressable>
             </Modal>
 

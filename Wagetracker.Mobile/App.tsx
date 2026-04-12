@@ -1,5 +1,5 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import Toast, { ToastConfig, ToastConfigParams } from 'react-native-toast-message';
@@ -63,12 +63,22 @@ const toastConfig: ToastConfig = {
   delete: (props) => <CustomToast {...props} type="delete" />,
 };
 
+function AppContent() {
+  const { top } = useSafeAreaInsets();
+
+  return (
+    <>
+      <AppNavigator />
+      <Toast config={toastConfig} topOffset={top + 12} />
+    </>
+  );
+}
+
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <AppNavigator />
-        <Toast config={toastConfig} topOffset={18} />
+        <AppContent />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
