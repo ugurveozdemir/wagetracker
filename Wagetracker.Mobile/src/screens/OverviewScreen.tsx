@@ -12,14 +12,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore, useJobsStore } from '../stores';
-import { OverviewStackParamList } from '../types';
+import { OverviewStackParamList, RootStackParamList } from '../types';
 import { colors } from '../theme';
 import { CreateJobModal } from '../components/CreateJobModal';
+import { LockedFeatureModal } from '../components/LockedFeaturePreview';
 
-type OverviewNavigationProp = NativeStackNavigationProp<OverviewStackParamList, 'Overview'>;
+type OverviewNavigationProp = CompositeNavigationProp<
+    NativeStackNavigationProp<OverviewStackParamList, 'Overview'>,
+    NativeStackNavigationProp<RootStackParamList>
+>;
+
+type PaywallTarget = RootStackParamList['Paywall'];
 
 const overviewCardThemes = [
     { tone: 'primary', icon: 'cleaning-services' },
@@ -30,11 +36,12 @@ const overviewCardThemes = [
 
 export const OverviewScreen: React.FC = () => {
     const { width } = useWindowDimensions();
-    const navigation = useNavigation<any>();
+    const navigation = useNavigation<OverviewNavigationProp>();
     const { user } = useAuthStore();
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const [refreshing, setRefreshing] = useState(false);
     const [showCreateJobModal, setShowCreateJobModal] = useState(false);
+    const [showJobLimitLocked, setShowJobLimitLocked] = useState(false);
     const scale = Math.min(Math.max(width / 393, 0.84), 1);
     const compact = width < 380;
     const horizontalPadding = compact ? 18 : 24;
@@ -66,6 +73,13 @@ export const OverviewScreen: React.FC = () => {
             })),
         [jobs]
     );
+    const openPremiumPaywall = (target: PaywallTarget) => {
+        navigation.navigate('Paywall', target);
+    };
+    const openJobLimitPaywall = () => {
+        setShowJobLimitLocked(false);
+        openPremiumPaywall({ source: 'job_limit', feature: 'jobs' });
+    };
 
     if (isLoading && !hasLoadedDashboard) {
         return (
@@ -170,7 +184,7 @@ export const OverviewScreen: React.FC = () => {
                         style={[styles.addJobCard, { minHeight: 256 * scale, borderRadius: 24 * scale }]}
                         onPress={() => {
                             if (!user?.subscription.isPremium && jobs.length >= 2) {
-                                navigation.navigate('Paywall', { source: 'job_limit', feature: 'jobs' });
+                                setShowJobLimitLocked(true);
                                 return;
                             }
 
@@ -202,6 +216,12 @@ export const OverviewScreen: React.FC = () => {
                         setShowCreateJobModal(false);
                         fetchDashboard();
                     }}
+                />
+                <LockedFeatureModal
+                    visible={showJobLimitLocked}
+                    feature="jobs"
+                    onClose={() => setShowJobLimitLocked(false)}
+                    onUnlock={openJobLimitPaywall}
                 />
             </ScrollView>
         </SafeAreaView>

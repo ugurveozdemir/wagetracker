@@ -10,7 +10,7 @@ import {
     useWindowDimensions,
 } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {
@@ -38,6 +38,7 @@ import { PremiumFeatureScreen } from '../screens/PremiumFeatureScreen';
 import { AddExpenseModal } from '../components/AddExpenseModal';
 import { AddEntryModal } from '../components/AddEntryModal';
 import { CreateJobModal } from '../components/CreateJobModal';
+import { LockedFeatureModal } from '../components/LockedFeaturePreview';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -135,9 +136,10 @@ const visibleTabs = [
 ] as const;
 
 const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
+    const { user } = useAuthStore();
     const { width } = useWindowDimensions();
     const activeRouteName = state.routes[state.index]?.name;
-    const showFab = activeRouteName === 'ExpensesTab' || activeRouteName === 'OverviewTab';
+    const showFab = activeRouteName === 'OverviewTab' || (activeRouteName === 'ExpensesTab' && user?.access.canUseExpenses);
     const compact = width < 380;
     const tabScale = Math.min(Math.max(width / 393, 0.84), 1);
 
@@ -231,9 +233,10 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
 };
 
 const MainNavigator: React.FC = () => {
-    const rootNavigation = useNavigation<any>();
+    const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [showExpenseModal, setShowExpenseModal] = React.useState(false);
     const [showJobModal, setShowJobModal] = React.useState(false);
+    const [showJobLimitLocked, setShowJobLimitLocked] = React.useState(false);
     const [showEntryModal, setShowEntryModal] = React.useState(false);
     const [activeJobId, setActiveJobId] = React.useState<number | null>(null);
     const { user } = useAuthStore();
@@ -288,7 +291,7 @@ const MainNavigator: React.FC = () => {
             }
 
             if (!user?.subscription.isPremium && jobs.length >= 2) {
-                openPaywall('job_limit', 'jobs');
+                setShowJobLimitLocked(true);
                 return;
             }
 
@@ -325,6 +328,15 @@ const MainNavigator: React.FC = () => {
                 visible={showJobModal}
                 onClose={() => setShowJobModal(false)}
                 onCreated={() => setShowJobModal(false)}
+            />
+            <LockedFeatureModal
+                visible={showJobLimitLocked}
+                feature="jobs"
+                onClose={() => setShowJobLimitLocked(false)}
+                onUnlock={() => {
+                    setShowJobLimitLocked(false);
+                    openPaywall('job_limit', 'jobs');
+                }}
             />
             {activeJobId ? (
                 <AddEntryModal

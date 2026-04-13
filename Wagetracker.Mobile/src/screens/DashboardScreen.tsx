@@ -12,14 +12,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { CompositeNavigationProp, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { MainStackParamList } from '../types';
+import { HomeStackParamList, RootStackParamList, TabParamList } from '../types';
 import { useAuthStore, useJobsStore } from '../stores';
 import { CreateJobModal } from '../components/CreateJobModal';
+import { LockedFeatureCard, LockedFeatureModal } from '../components/LockedFeaturePreview';
 import { colors } from '../theme';
 
-type DashboardNavigationProp = NativeStackNavigationProp<MainStackParamList, 'Dashboard'>;
+type DashboardNavigationProp = CompositeNavigationProp<
+    NativeStackNavigationProp<HomeStackParamList, 'Dashboard'>,
+    CompositeNavigationProp<
+        BottomTabNavigationProp<TabParamList>,
+        NativeStackNavigationProp<RootStackParamList>
+    >
+>;
+
+type PaywallTarget = RootStackParamList['Paywall'];
 
 const emptyChartPoints = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((dayLabel, index) => ({
     date: `placeholder-${index}`,
@@ -38,10 +48,11 @@ const gigCardThemes = [
 
 export const DashboardScreen: React.FC = () => {
     const { width } = useWindowDimensions();
-    const navigation = useNavigation<any>();
+    const navigation = useNavigation<DashboardNavigationProp>();
     const { user } = useAuthStore();
     const { summary, jobs, error, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showJobLimitLocked, setShowJobLimitLocked] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedChartPoint, setSelectedChartPoint] = useState<string | null>(null);
     const scale = Math.min(Math.max(width / 393, 0.84), 1);
@@ -79,6 +90,14 @@ export const DashboardScreen: React.FC = () => {
     const goalProgressPercent = summary?.weeklyGoal?.targetAmount != null
         ? Math.max(0, Math.min(summary?.weeklyGoal?.progressPercent ?? 0, 100))
         : 0;
+    const openPremiumPaywall = (target: PaywallTarget) => {
+        navigation.navigate('Paywall', target);
+    };
+    const openGoalsPaywall = () => openPremiumPaywall({ source: 'goals', feature: 'goals' });
+    const openJobLimitPaywall = () => {
+        setShowJobLimitLocked(false);
+        openPremiumPaywall({ source: 'job_limit', feature: 'jobs' });
+    };
 
     if (isLoading && !hasLoadedDashboard) {
         return (
@@ -106,7 +125,7 @@ export const DashboardScreen: React.FC = () => {
                     <TouchableOpacity
                         style={styles.brandBlock}
                         activeOpacity={0.85}
-                        onPress={() => (navigation as any).navigate('ProfileTab')}
+                        onPress={() => navigation.navigate('ProfileTab')}
                     >
                         <Text style={styles.brandText}>WageTracker</Text>
                     </TouchableOpacity>
@@ -306,7 +325,7 @@ export const DashboardScreen: React.FC = () => {
                         activeOpacity={0.85}
                         onPress={() => {
                             if (!user?.subscription.isPremium && jobs.length >= 2) {
-                                navigation.navigate('Paywall', { source: 'job_limit', feature: 'jobs' });
+                                setShowJobLimitLocked(true);
                                 return;
                             }
 
@@ -318,64 +337,64 @@ export const DashboardScreen: React.FC = () => {
                     </TouchableOpacity>
                 </ScrollView>
 
-                <TouchableOpacity
-                    style={[styles.goalCard, { borderRadius: 28 * scale, padding: 24 * scale, marginTop: 18 * scale }]}
-                    activeOpacity={0.88}
-                    onPress={() => {
-                        if (!user?.access.canUseGoals) {
-                            navigation.navigate('Paywall', { source: 'goals', feature: 'goals' });
-                            return;
-                        }
+                {user?.access.canUseGoals ? (
+                    <TouchableOpacity
+                        style={[styles.goalCard, { borderRadius: 28 * scale, padding: 24 * scale, marginTop: 18 * scale }]}
+                        activeOpacity={0.88}
+                        onPress={() => navigation.navigate('Goal')}
+                    >
+                        <View style={styles.goalCardTop}>
+                            <View>
+                                <Text style={styles.goalEyebrow}>Weekly Goal</Text>
+                                <Text style={[styles.goalTitle, { fontSize: isCompact ? 26 : 30 }]}>This week's goal</Text>
+                            </View>
+                            <View style={styles.goalIconWrap}>
+                                <MaterialIcons name="track-changes" size={20} color={colors.white} />
+                            </View>
+                        </View>
 
-                        navigation.navigate('Goal');
-                    }}
-                >
-                    <View style={styles.goalCardTop}>
-                        <View>
-                            <Text style={styles.goalEyebrow}>Weekly Goal</Text>
-                            <Text style={[styles.goalTitle, { fontSize: isCompact ? 26 : 30 }]}>This week's goal</Text>
-                        </View>
-                        <View style={styles.goalIconWrap}>
-                            <MaterialIcons name="track-changes" size={20} color={colors.white} />
-                        </View>
-                    </View>
-
-                    <View style={styles.goalProgressRow}>
-                        <View style={styles.goalProgressTrack}>
-                            <View
-                                style={[
-                                    styles.goalProgressFill,
-                                    {
-                                        width: `${goalProgressPercent}%`,
-                                    },
-                                ]}
-                            />
-                        </View>
-                        <Text style={styles.goalPercentText}>
-                            {Math.round(goalProgressPercent)}%
-                        </Text>
-                    </View>
-
-                    <View style={styles.goalMetaRow}>
-                        <View>
-                            <Text style={styles.goalMetaLabel}>Current</Text>
-                            <Text style={styles.goalMetaValue}>{formatCurrency(summary?.weeklyGoal?.currentAmount ?? 0)}</Text>
-                        </View>
-                        <View>
-                            <Text style={styles.goalMetaLabel}>Target</Text>
-                            <Text style={styles.goalMetaValue}>
-                                {user?.access.canUseGoals && summary?.weeklyGoal?.targetAmount != null
-                                    ? formatCurrency(summary.weeklyGoal.targetAmount)
-                                    : user?.access.canUseGoals
-                                        ? 'Set a goal'
-                                        : 'Premium only'}
+                        <View style={styles.goalProgressRow}>
+                            <View style={styles.goalProgressTrack}>
+                                <View
+                                    style={[
+                                        styles.goalProgressFill,
+                                        {
+                                            width: `${goalProgressPercent}%`,
+                                        },
+                                    ]}
+                                />
+                            </View>
+                            <Text style={styles.goalPercentText}>
+                                {Math.round(goalProgressPercent)}%
                             </Text>
                         </View>
-                        <View style={styles.goalArrowWrap}>
-                            <MaterialIcons name="arrow-forward" size={16} color={colors.white} />
+
+                        <View style={styles.goalMetaRow}>
+                            <View>
+                                <Text style={styles.goalMetaLabel}>Current</Text>
+                                <Text style={styles.goalMetaValue}>{formatCurrency(summary?.weeklyGoal?.currentAmount ?? 0)}</Text>
+                            </View>
+                            <View>
+                                <Text style={styles.goalMetaLabel}>Target</Text>
+                                <Text style={styles.goalMetaValue}>
+                                    {summary?.weeklyGoal?.targetAmount != null
+                                        ? formatCurrency(summary.weeklyGoal.targetAmount)
+                                        : 'Set a goal'}
+                                </Text>
+                            </View>
+                            <View style={styles.goalArrowWrap}>
+                                <MaterialIcons name="arrow-forward" size={16} color={colors.white} />
+                            </View>
                         </View>
-                    </View>
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                ) : (
+                    <LockedFeatureCard
+                        feature="goals"
+                        compact={isCompact}
+                        scale={scale}
+                        onUnlock={openGoalsPaywall}
+                    />
+                )}
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
             </ScrollView>
@@ -387,6 +406,12 @@ export const DashboardScreen: React.FC = () => {
                     setIsModalOpen(false);
                     fetchDashboard();
                 }}
+            />
+            <LockedFeatureModal
+                visible={showJobLimitLocked}
+                feature="jobs"
+                onClose={() => setShowJobLimitLocked(false)}
+                onUnlock={openJobLimitPaywall}
             />
         </SafeAreaView>
     );

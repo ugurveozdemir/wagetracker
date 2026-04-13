@@ -6,3 +6,4 @@ export { CreateJobModal } from './CreateJobModal';
 export { EditJobModal } from './EditJobModal';
 export { AddEntryModal } from './AddEntryModal';
 export { AddExpenseModal } from './AddExpenseModal';
+export { LockedFeatureCard, LockedFeatureModal, LockedFeatureScreen } from './LockedFeaturePreview';
