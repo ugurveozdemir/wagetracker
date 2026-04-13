@@ -22,4 +22,9 @@ export const authApi = {
     logout: async (): Promise<void> => {
         await removeAuthToken();
     },
+
+    deleteAccount: async (): Promise<void> => {
+        await profileApi.deleteAccount();
+        await removeAuthToken();
+    },
 };

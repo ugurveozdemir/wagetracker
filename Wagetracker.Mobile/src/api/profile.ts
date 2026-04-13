@@ -11,4 +11,8 @@ export const profileApi = {
         const response = await apiClient.put<UserDto>('/api/profile/weekly-goal', data);
         return response.data;
     },
+
+    deleteAccount: async (): Promise<void> => {
+        await apiClient.delete('/api/profile/account');
+    },
 };

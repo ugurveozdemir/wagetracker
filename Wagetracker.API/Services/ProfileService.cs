@@ -41,5 +41,26 @@ namespace WageTracker.API.Services
 
             return await _subscriptionService.BuildUserDtoAsync(user);
         }
+
+        public async Task DeleteAccountAsync(int userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                throw new KeyNotFoundException("User not found");
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.BillingCustomerId))
+            {
+                var webhookEvents = await _context.RevenueCatWebhookEvents
+                    .Where(e => e.AppUserId == user.BillingCustomerId)
+                    .ToListAsync();
+
+                _context.RevenueCatWebhookEvents.RemoveRange(webhookEvents);
+            }
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+        }
     }
 }

@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import {
+    Alert,
     Linking,
     Platform,
     View,
@@ -9,6 +10,7 @@ import {
     TouchableOpacity,
     StatusBar,
     RefreshControl,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -19,27 +21,26 @@ import { useAuthStore, useJobsStore, useSubscriptionStore } from '../stores';
 import { config } from '../config';
 import { colors, fontSizes, fontWeights, spacing, useResponsiveLayout } from '../theme';
 
-type ProfileNavigationProp = any;
-
 const menuItems = [
     { key: 'personal', label: 'Personal Info', icon: 'person' },
-    { key: 'payments', label: 'Payment Methods', icon: 'account-balance-wallet' },
-    { key: 'settings', label: 'App Settings', icon: 'tune' },
     { key: 'support', label: 'Help & Support', icon: 'help-outline' },
 ] as const;
 
+type ProfileMenuKey = typeof menuItems[number]['key'];
+
 export const ProfileScreen: React.FC = () => {
     const navigation = useNavigation<any>();
-    const { user, logout } = useAuthStore();
-    const { summary, fetchDashboard } = useJobsStore();
+    const { user, logout, deleteAccount } = useAuthStore();
+    const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const { restorePurchases } = useSubscriptionStore();
     const { isCompact, horizontalPadding, rs } = useResponsiveLayout();
     const [refreshing, setRefreshing] = React.useState(false);
+    const [expandedSection, setExpandedSection] = React.useState<ProfileMenuKey | null>('personal');
 
     useFocusEffect(
         useCallback(() => {
-            fetchDashboard();
-        }, [fetchDashboard])
+            fetchDashboard({ silent: hasLoadedDashboard });
+        }, [fetchDashboard, hasLoadedDashboard])
     );
 
     const onRefresh = useCallback(async () => {
@@ -55,15 +56,6 @@ export const ProfileScreen: React.FC = () => {
             text1: 'Signed Out',
             text2: 'See you next time.',
             visibilityTime: 2000,
-        });
-    };
-
-    const handleMenuPress = (label: string) => {
-        Toast.show({
-            type: 'info',
-            text1: label,
-            text2: 'This section is not wired yet.',
-            visibilityTime: 1800,
         });
     };
 
@@ -95,11 +87,85 @@ export const ProfileScreen: React.FC = () => {
         await Linking.openURL(url);
     };
 
+    const handleSupportEmail = async () => {
+        try {
+            await Linking.openURL(`mailto:${config.SUPPORT_EMAIL}?subject=${encodeURIComponent('WageTracker support')}`);
+        } catch (error) {
+            Toast.show({
+                type: 'error',
+                text1: 'Email Unavailable',
+                text2: `Please email ${config.SUPPORT_EMAIL} directly.`,
+                visibilityTime: 2200,
+            });
+        }
+    };
+
+    const openUrl = async (url: string) => {
+        try {
+            await Linking.openURL(url);
+        } catch {
+            Toast.show({
+                type: 'error',
+                text1: 'Link Unavailable',
+                text2: 'Please try again later.',
+                visibilityTime: 2200,
+            });
+        }
+    };
+
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            'Delete Account',
+            'This permanently deletes your WageTracker account, jobs, entries, expenses, and profile data. This cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteAccount();
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Account Deleted',
+                                text2: 'Your WageTracker account has been removed.',
+                                visibilityTime: 2400,
+                            });
+                        } catch (error) {
+                            Toast.show({
+                                type: 'error',
+                                text1: 'Deletion Failed',
+                                text2: error instanceof Error ? error.message : 'Please try again.',
+                                visibilityTime: 2800,
+                            });
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const toggleSection = (key: ProfileMenuKey) => {
+        setExpandedSection((current) => (current === key ? null : key));
+    };
+
     const formatCurrency = (amount: number | undefined) =>
         `$${(amount ?? 0).toLocaleString(undefined, {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
         })}`;
+
+    const formatDate = (date: string | null | undefined) => {
+        if (!date) {
+            return 'Not set';
+        }
+
+        return new Date(date).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        });
+    };
 
     const initials = (user?.fullName || 'U')
         .split(' ')
@@ -107,6 +173,78 @@ export const ProfileScreen: React.FC = () => {
         .slice(0, 2)
         .map((part) => part[0]?.toUpperCase())
         .join('');
+
+    const subscriptionTitle = user?.subscription.isPremium
+        ? user.subscription.planTerm === 'annual'
+            ? '12 Month Premium'
+            : user.subscription.planTerm === 'six_month'
+                ? '6 Month Premium'
+                : 'Monthly Premium'
+        : 'Free Tier';
+
+    const subscriptionStatus = user?.subscription.status
+        ? user.subscription.status.replace('_', ' ')
+        : 'inactive';
+
+    const weeklyGoalAmount = user?.weeklyGoalAmount ?? summary?.weeklyGoal?.targetAmount;
+    const unlockedJobs = user?.access.unlockedJobCount ?? 0;
+    const maxUnlockedJobs = user?.access.maxUnlockedJobs ?? 0;
+
+    const renderInfoRow = (label: string, value: string) => (
+        <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{label}</Text>
+            <Text style={styles.detailValue}>{value}</Text>
+        </View>
+    );
+
+    const renderSectionContent = (key: ProfileMenuKey) => {
+        if (key === 'personal') {
+            return (
+                <View style={styles.detailPanel}>
+                    {renderInfoRow('Full name', user?.fullName || 'Account')}
+                    {renderInfoRow('Email', user?.email || 'No email available')}
+                    {renderInfoRow('Weekly goal', weeklyGoalAmount != null ? formatCurrency(weeklyGoalAmount) : 'Not set')}
+                    {renderInfoRow('Active jobs', `${summary?.activeJobsCount ?? 0}`)}
+                    {renderInfoRow('Plan', subscriptionTitle)}
+                </View>
+            );
+        }
+
+        return (
+            <View style={styles.detailPanel}>
+                <Text style={styles.supportCopy}>
+                    Need help with your account, subscription, or wage entries? Send an email and include the device you use.
+                </Text>
+                <TouchableOpacity style={styles.supportEmailRow} onPress={handleSupportEmail} activeOpacity={0.82}>
+                    <Feather name="mail" size={18} color={colors.primary} />
+                    <Text style={styles.supportEmail}>{config.SUPPORT_EMAIL}</Text>
+                </TouchableOpacity>
+                <View style={styles.supportLinkRow}>
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openUrl(config.TERMS_URL)}>
+                        <Text style={styles.supportLink}>Terms</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openUrl(config.PRIVACY_URL)}>
+                        <Text style={styles.supportLink}>Privacy</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openUrl(config.ACCOUNT_DELETION_URL)}>
+                        <Text style={styles.supportLink}>Delete account page</Text>
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={styles.deleteInlineButton} onPress={handleDeleteAccount} activeOpacity={0.82}>
+                    <Feather name="trash-2" size={18} color={colors.danger} />
+                    <Text style={styles.deleteInlineText}>Delete account in app</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
+    if (isLoading && !hasLoadedDashboard) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -123,13 +261,7 @@ export const ProfileScreen: React.FC = () => {
 
                 <Text style={[styles.headerTitle, { fontSize: isCompact ? 19 : 22 }]}>Profile</Text>
 
-                <TouchableOpacity
-                    style={[styles.headerIconButton, { width: rs(42), height: rs(42), borderRadius: rs(21) }]}
-                    onPress={() => handleMenuPress('Settings')}
-                    activeOpacity={0.85}
-                >
-                    <Feather name="settings" size={20} color={colors.primary} />
-                </TouchableOpacity>
+                <View style={{ width: rs(42), height: rs(42) }} />
             </View>
 
             <ScrollView
@@ -148,14 +280,6 @@ export const ProfileScreen: React.FC = () => {
                             <Text style={[styles.avatarText, { fontSize: isCompact ? 46 : 52 }]}>{initials}</Text>
                         </View>
                     </View>
-
-                    <TouchableOpacity
-                        style={[styles.editAvatarButton, { width: rs(58), height: rs(58), borderRadius: rs(29) }]}
-                        onPress={() => handleMenuPress('Profile photo')}
-                        activeOpacity={0.88}
-                    >
-                        <MaterialIcons name="photo-camera" size={22} color={colors.onSurface} />
-                    </TouchableOpacity>
 
                     <Text style={[styles.userName, { fontSize: isCompact ? 32 : 36 }]}>{user?.fullName || 'Account'}</Text>
                     <View style={styles.locationRow}>
@@ -184,23 +308,17 @@ export const ProfileScreen: React.FC = () => {
                     </View>
                 </View>
 
-                <View style={[styles.subscriptionCard, { borderRadius: rs(30), padding: rs(24) }]}>
+                <View style={[styles.subscriptionCard, { borderRadius: rs(30), padding: rs(isCompact ? 24 : 28) }]}>
                     <View style={styles.subscriptionHeader}>
                         <View>
                             <Text style={styles.subscriptionEyebrow}>Subscription</Text>
                             <Text style={[styles.subscriptionTitle, { fontSize: isCompact ? 24 : 28 }]}>
-                                {user?.subscription.isPremium
-                                    ? user.subscription.planTerm === 'annual'
-                                        ? '12 Month Premium'
-                                        : user.subscription.planTerm === 'six_month'
-                                            ? '6 Month Premium'
-                                            : 'Monthly Premium'
-                                    : 'Free Tier'}
+                                {subscriptionTitle}
                             </Text>
                         </View>
                         <MaterialIcons
                             name={user?.subscription.isPremium ? 'workspace-premium' : 'lock-outline'}
-                            size={26}
+                            size={34}
                             color={user?.subscription.isPremium ? '#ff8a00' : colors.primary}
                         />
                     </View>
@@ -210,6 +328,29 @@ export const ProfileScreen: React.FC = () => {
                             ? `Status: ${user.subscription.status.replace('_', ' ')}`
                             : 'Upgrade for goals, expenses, and unlimited unlocked jobs.'}
                     </Text>
+
+                    <View style={styles.subscriptionMetaGrid}>
+                        <View style={styles.subscriptionMetaItem}>
+                            <Text style={styles.subscriptionMetaLabel}>Status</Text>
+                            <Text style={styles.subscriptionMetaValue}>{subscriptionStatus}</Text>
+                        </View>
+                        <View style={styles.subscriptionMetaItem}>
+                            <Text style={styles.subscriptionMetaLabel}>Renews</Text>
+                            <Text style={styles.subscriptionMetaValue}>
+                                {user?.subscription.willRenew ? 'On' : 'Off'}
+                            </Text>
+                        </View>
+                        <View style={styles.subscriptionMetaItem}>
+                            <Text style={styles.subscriptionMetaLabel}>Expires</Text>
+                            <Text style={styles.subscriptionMetaValue}>{formatDate(user?.subscription.expiresAt)}</Text>
+                        </View>
+                        <View style={styles.subscriptionMetaItem}>
+                            <Text style={styles.subscriptionMetaLabel}>Jobs</Text>
+                            <Text style={styles.subscriptionMetaValue}>
+                                {user?.subscription.isPremium ? 'Unlimited' : `${unlockedJobs}/${maxUnlockedJobs}`}
+                            </Text>
+                        </View>
+                    </View>
 
                     <View style={styles.subscriptionActions}>
                         <TouchableOpacity
@@ -237,18 +378,24 @@ export const ProfileScreen: React.FC = () => {
 
                 <View style={[styles.menuPanel, { borderRadius: rs(32), paddingVertical: rs(10) }]}>
                     {menuItems.map((item) => (
-                        <TouchableOpacity
-                            key={item.key}
-                            style={[styles.menuRow, { paddingHorizontal: rs(22), paddingVertical: rs(20) }]}
-                            onPress={() => handleMenuPress(item.label)}
-                            activeOpacity={0.82}
-                        >
-                            <View style={[styles.menuIconBubble, { width: rs(52), height: rs(52), borderRadius: rs(26) }]}> 
-                                <MaterialIcons name={item.icon} size={24} color={colors.primary} />
-                            </View>
-                            <Text style={[styles.menuLabel, { fontSize: isCompact ? 18 : 20 }]}>{item.label}</Text>
-                            <Feather name="chevron-right" size={22} color={colors.onSurfaceVariant} />
-                        </TouchableOpacity>
+                        <View key={item.key}>
+                            <TouchableOpacity
+                                style={[styles.menuRow, { paddingHorizontal: rs(22), paddingVertical: rs(20) }]}
+                                onPress={() => toggleSection(item.key)}
+                                activeOpacity={0.82}
+                            >
+                                <View style={[styles.menuIconBubble, { width: rs(52), height: rs(52), borderRadius: rs(26) }]}>
+                                    <MaterialIcons name={item.icon} size={24} color={colors.primary} />
+                                </View>
+                                <Text style={[styles.menuLabel, { fontSize: isCompact ? 18 : 20 }]}>{item.label}</Text>
+                                <Feather
+                                    name={expandedSection === item.key ? 'chevron-up' : 'chevron-down'}
+                                    size={22}
+                                    color={colors.onSurfaceVariant}
+                                />
+                            </TouchableOpacity>
+                            {expandedSection === item.key ? renderSectionContent(item.key) : null}
+                        </View>
                     ))}
                 </View>
 
@@ -257,10 +404,24 @@ export const ProfileScreen: React.FC = () => {
                     onPress={handleLogout}
                     activeOpacity={0.86}
                 >
-                    <View style={[styles.logoutIconBubble, { width: rs(48), height: rs(48), borderRadius: rs(24) }]}> 
+                    <View style={[styles.logoutIconBubble, { width: rs(48), height: rs(48), borderRadius: rs(24) }]}>
                         <Feather name="log-out" size={20} color={colors.danger} />
                     </View>
                     <Text style={[styles.logoutText, { fontSize: isCompact ? 18 : 20 }]}>Log Out</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.deleteAccountCard, { borderRadius: rs(30), paddingHorizontal: rs(24), paddingVertical: rs(22) }]}
+                    onPress={handleDeleteAccount}
+                    activeOpacity={0.86}
+                >
+                    <View style={[styles.deleteAccountIconBubble, { width: rs(48), height: rs(48), borderRadius: rs(24) }]}>
+                        <Feather name="trash-2" size={20} color={colors.danger} />
+                    </View>
+                    <View style={styles.deleteAccountTextBlock}>
+                        <Text style={[styles.deleteAccountTitle, { fontSize: isCompact ? 18 : 20 }]}>Delete Account</Text>
+                        <Text style={styles.deleteAccountCopy}>Permanently remove your account and tracked data.</Text>
+                    </View>
                 </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
@@ -270,6 +431,12 @@ export const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
+        backgroundColor: colors.surfaceBright,
+    },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: colors.surfaceBright,
     },
     container: {
@@ -310,18 +477,6 @@ const styles = StyleSheet.create({
     avatarText: {
         color: colors.onPrimary,
         fontWeight: fontWeights.extrabold,
-    },
-    editAvatarButton: {
-        marginTop: -spacing.lg,
-        marginLeft: 118,
-        backgroundColor: colors.secondaryContainer,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.12,
-        shadowRadius: 18,
-        elevation: 6,
     },
     userName: {
         color: colors.onSurface,
@@ -443,6 +598,34 @@ const styles = StyleSheet.create({
         lineHeight: 22,
         marginBottom: spacing.lg,
     },
+    subscriptionMetaGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.md,
+        marginBottom: spacing.xl,
+    },
+    subscriptionMetaItem: {
+        width: '47%',
+        minHeight: 72,
+        borderRadius: 18,
+        backgroundColor: colors.surfaceLow,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.md,
+        justifyContent: 'center',
+    },
+    subscriptionMetaLabel: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.medium,
+        marginBottom: spacing.xs,
+        textTransform: 'uppercase',
+    },
+    subscriptionMetaValue: {
+        color: colors.onSurface,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.bold,
+        textTransform: 'capitalize',
+    },
     subscriptionActions: {
         flexDirection: 'row',
         gap: spacing.md,
@@ -472,5 +655,104 @@ const styles = StyleSheet.create({
         color: colors.onSurface,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
+    },
+    detailPanel: {
+        marginHorizontal: spacing.lg,
+        marginBottom: spacing.md,
+        borderRadius: 22,
+        backgroundColor: colors.surfaceContainerLowest,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+    },
+    detailRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: spacing.md,
+        paddingVertical: spacing.sm,
+    },
+    detailLabel: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.medium,
+    },
+    detailValue: {
+        flex: 1,
+        color: colors.onSurface,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.bold,
+        textAlign: 'right',
+    },
+    supportCopy: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.base,
+        lineHeight: 22,
+        marginBottom: spacing.md,
+    },
+    supportEmailRow: {
+        minHeight: 48,
+        borderRadius: 18,
+        backgroundColor: colors.surfaceContainerHigh,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.md,
+    },
+    supportEmail: {
+        color: colors.primary,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.bold,
+    },
+    supportLinkRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.md,
+        marginTop: spacing.md,
+    },
+    supportLink: {
+        color: colors.primary,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.bold,
+    },
+    deleteInlineButton: {
+        minHeight: 48,
+        borderRadius: 18,
+        backgroundColor: colors.dangerBg,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.md,
+        marginTop: spacing.md,
+    },
+    deleteInlineText: {
+        color: colors.danger,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.bold,
+    },
+    deleteAccountCard: {
+        marginTop: spacing.lg,
+        backgroundColor: colors.dangerBg,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+    },
+    deleteAccountIconBubble: {
+        backgroundColor: colors.surfaceContainerLowest,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    deleteAccountTextBlock: {
+        flex: 1,
+    },
+    deleteAccountTitle: {
+        color: colors.danger,
+        fontWeight: fontWeights.extrabold,
+        marginBottom: spacing.xs,
+    },
+    deleteAccountCopy: {
+        color: colors.danger,
+        fontSize: fontSizes.sm,
+        lineHeight: 20,
+        fontWeight: fontWeights.medium,
     },
 });

@@ -62,5 +62,20 @@ namespace WageTracker.API.Controllers
                 return NotFound(new { message = ex.Message });
             }
         }
+
+        [HttpDelete("account")]
+        public async Task<ActionResult> DeleteAccount()
+        {
+            try
+            {
+                var userId = GetUserId();
+                await _profileService.DeleteAccountAsync(userId);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
     }
 }

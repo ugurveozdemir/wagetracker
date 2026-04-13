@@ -11,7 +11,6 @@
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
     "@gorhom/bottom-sheet": "^5.2.8",
-    "@openai/codex": "^0.118.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-navigation/bottom-tabs": "^7.15.9",
     "@react-navigation/native": "^7.1.25",
@@ -26,7 +25,6 @@
     "expo-linear-gradient": "^15.0.8",
     "expo-secure-store": "^15.0.8",
     "expo-status-bar": "~3.0.9",
-    "oh-my-codex": "^0.12.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",

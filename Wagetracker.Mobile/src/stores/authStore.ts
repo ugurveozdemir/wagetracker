@@ -13,6 +13,7 @@ interface AuthState {
     login: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string, fullName: string) => Promise<void>;
     logout: () => Promise<void>;
+    deleteAccount: () => Promise<void>;
     checkAuth: () => Promise<void>;
     clearError: () => void;
     setUser: (user: UserDto | null) => void;
@@ -68,6 +69,26 @@ export const useAuthStore = create<AuthState>((set) => ({
             isLoading: false,
             error: null
         });
+    },
+
+    deleteAccount: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            await authApi.deleteAccount();
+            await removeAuthToken();
+            set({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: null
+            });
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Account deletion failed',
+                isLoading: false
+            });
+            throw error;
+        }
     },
 
     checkAuth: async () => {

@@ -196,28 +196,6 @@ export const LoginScreen: React.FC = () => {
                         <Text style={styles.primaryButtonText}>{isLoading ? 'Signing In...' : 'Sign In'}</Text>
                     </TouchableOpacity>
 
-                    <View style={styles.joinSection}>
-                        <View style={styles.divider} />
-                        <Text style={styles.joinLabel}>OR JOIN WITH</Text>
-                        <View style={styles.divider} />
-                    </View>
-
-                    <View style={styles.socialRow}>
-                        <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
-                            <View style={styles.socialIconWrap}>
-                                <Text style={styles.socialIconText}>G</Text>
-                            </View>
-                            <Text style={styles.socialButtonText}>Google</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
-                            <View style={styles.socialIconWrap}>
-                                <Text style={styles.socialIconText}>A</Text>
-                            </View>
-                            <Text style={styles.socialButtonText}>Apple</Text>
-                        </TouchableOpacity>
-                    </View>
-
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>Don’t have an account?</Text>
                         <TouchableOpacity onPress={() => navigation.navigate('Register')} activeOpacity={0.8}>
@@ -336,62 +314,12 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: fontWeights.extrabold,
     },
-    joinSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-        marginTop: spacing['4xl'],
-        marginBottom: spacing['2xl'],
-    },
-    divider: {
-        flex: 1,
-        height: 1,
-        backgroundColor: colors.surfaceContainerHigh,
-    },
-    joinLabel: {
-        color: colors.slate400,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-        letterSpacing: 1.2,
-    },
-    socialRow: {
-        flexDirection: 'row',
-        gap: spacing.md,
-        marginBottom: spacing['4xl'],
-    },
-    socialButton: {
-        flex: 1,
-        minHeight: 80,
-        borderRadius: 28,
-        backgroundColor: colors.surfaceContainerLow,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.sm,
-    },
-    socialIconWrap: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: colors.surfaceContainerLowest,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    socialIconText: {
-        color: colors.slate500,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.extrabold,
-    },
-    socialButtonText: {
-        color: colors.onSurface,
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.bold,
-    },
     footer: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: spacing.sm,
+        marginTop: spacing['4xl'],
         marginBottom: spacing.md,
     },
     footerText: {

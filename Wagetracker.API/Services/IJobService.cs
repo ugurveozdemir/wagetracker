@@ -20,5 +20,6 @@ namespace WageTracker.API.Services
     {
         Task<UserDto> GetProfileAsync(int userId);
         Task<UserDto> UpdateWeeklyGoalAsync(int userId, UpdateWeeklyGoalRequest request);
+        Task DeleteAccountAsync(int userId);
     }
 }

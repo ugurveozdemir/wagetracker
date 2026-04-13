@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Threading.RateLimiting;
 using WageTracker.API.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,6 +50,22 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", context =>
+    {
+        var partitionKey = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 8,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0
+        });
+    });
+});
+
 // Configure CORS
 builder.Services.AddCors(options =>
 {
@@ -82,14 +100,7 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            // Fallback: Allow all if no origins configured
-            Console.WriteLine("[CORS] WARNING: No origins configured, allowing all");
-            options.AddPolicy("AllowAll", policy =>
-            {
-                policy.AllowAnyOrigin()
-                      .AllowAnyMethod()
-                      .AllowAnyHeader();
-            });
+            throw new InvalidOperationException("Cors:AllowedOrigins must be configured in production.");
         }
     }
 });
@@ -184,6 +195,8 @@ if (app.Environment.IsDevelopment())
 // CORS must be before auth
 app.UseCors("AllowAll");
 
+app.UseRateLimiter();
+
 // Skip HTTPS redirect in development
 if (!app.Environment.IsDevelopment())
 {
@@ -197,5 +210,30 @@ app.MapControllers();
 
 // Health check endpoint for container orchestration
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
+app.MapGet("/account-deletion", (IConfiguration configuration) =>
+{
+    var supportEmail = configuration["Support:Email"] ?? "support@wagetracker.xyz";
+    var html = $"""
+        <!doctype html>
+        <html lang="en">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Delete Your WageTracker Account</title>
+        </head>
+        <body>
+            <main style="font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; max-width: 680px; margin: 40px auto; padding: 0 20px; line-height: 1.6;">
+                <h1>Delete Your WageTracker Account</h1>
+                <p>You can delete your account inside the WageTracker app from Profile &gt; Help &amp; Support &gt; Delete account in app.</p>
+                <p>Deleting your account removes your profile, jobs, wage entries, expenses, weekly goals, and subscription access snapshot from WageTracker.</p>
+                <p>If you cannot access the app, email <a href="mailto:{supportEmail}">{supportEmail}</a> from the email address on your account and ask us to delete it.</p>
+            </main>
+        </body>
+        </html>
+        """;
+
+    return Results.Content(html, "text/html");
+});
 
 app.Run();

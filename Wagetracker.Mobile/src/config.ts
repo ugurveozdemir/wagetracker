@@ -13,6 +13,8 @@ const ENV = {
         REVENUECAT_ANDROID_API_KEY: '',
         TERMS_URL: 'https://wagetracker.xyz/terms',
         PRIVACY_URL: 'https://wagetracker.xyz/privacy',
+        SUPPORT_EMAIL: 'support@wagetracker.xyz',
+        ACCOUNT_DELETION_URL: 'https://api.wagetracker.xyz/account-deletion',
         APP_STORE_SUBSCRIPTIONS_URL: 'https://apps.apple.com/account/subscriptions',
         PLAY_STORE_SUBSCRIPTIONS_URL: 'https://play.google.com/store/account/subscriptions',
     },
@@ -25,6 +27,8 @@ const ENV = {
         REVENUECAT_ANDROID_API_KEY: '',
         TERMS_URL: 'https://wagetracker.xyz/terms',
         PRIVACY_URL: 'https://wagetracker.xyz/privacy',
+        SUPPORT_EMAIL: 'support@wagetracker.xyz',
+        ACCOUNT_DELETION_URL: 'https://api.wagetracker.xyz/account-deletion',
         APP_STORE_SUBSCRIPTIONS_URL: 'https://apps.apple.com/account/subscriptions',
         PLAY_STORE_SUBSCRIPTIONS_URL: 'https://play.google.com/store/account/subscriptions',
     },
@@ -44,6 +48,9 @@ const getEnvConfig = () => {
             REVENUECAT_ANDROID_API_KEY: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || '',
             TERMS_URL: process.env.EXPO_PUBLIC_TERMS_URL || ENV.production.TERMS_URL,
             PRIVACY_URL: process.env.EXPO_PUBLIC_PRIVACY_URL || ENV.production.PRIVACY_URL,
+            SUPPORT_EMAIL: process.env.EXPO_PUBLIC_SUPPORT_EMAIL || ENV.production.SUPPORT_EMAIL,
+            ACCOUNT_DELETION_URL:
+                process.env.EXPO_PUBLIC_ACCOUNT_DELETION_URL || ENV.production.ACCOUNT_DELETION_URL,
             APP_STORE_SUBSCRIPTIONS_URL:
                 process.env.EXPO_PUBLIC_APP_STORE_SUBSCRIPTIONS_URL || ENV.production.APP_STORE_SUBSCRIPTIONS_URL,
             PLAY_STORE_SUBSCRIPTIONS_URL:
@@ -61,6 +68,8 @@ const getEnvConfig = () => {
         REVENUECAT_ANDROID_API_KEY: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || defaults.REVENUECAT_ANDROID_API_KEY,
         TERMS_URL: process.env.EXPO_PUBLIC_TERMS_URL || defaults.TERMS_URL,
         PRIVACY_URL: process.env.EXPO_PUBLIC_PRIVACY_URL || defaults.PRIVACY_URL,
+        SUPPORT_EMAIL: process.env.EXPO_PUBLIC_SUPPORT_EMAIL || defaults.SUPPORT_EMAIL,
+        ACCOUNT_DELETION_URL: process.env.EXPO_PUBLIC_ACCOUNT_DELETION_URL || defaults.ACCOUNT_DELETION_URL,
         APP_STORE_SUBSCRIPTIONS_URL:
             process.env.EXPO_PUBLIC_APP_STORE_SUBSCRIPTIONS_URL || defaults.APP_STORE_SUBSCRIPTIONS_URL,
         PLAY_STORE_SUBSCRIPTIONS_URL:

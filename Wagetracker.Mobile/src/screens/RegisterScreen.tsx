@@ -5,6 +5,7 @@ import {
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
+    Linking,
     ScrollView,
     TouchableOpacity,
     StatusBar,
@@ -16,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { AuthStackParamList } from '../types';
 import { useAuthStore } from '../stores';
+import { config } from '../config';
 import { colors, spacing, fontSizes, fontWeights, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
 
@@ -30,7 +32,7 @@ export const RegisterScreen: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [agreedToPolicies, setAgreedToPolicies] = useState(true);
+    const [agreedToPolicies, setAgreedToPolicies] = useState(false);
     const [fullNameError, setFullNameError] = useState('');
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
@@ -281,7 +283,15 @@ export const RegisterScreen: React.FC = () => {
                             {agreedToPolicies ? <MaterialIcons name="check" size={16} color={colors.onPrimary} /> : null}
                         </View>
                         <Text style={styles.policyText}>
-                            I agree to the <Text style={styles.policyLink}>Terms & Conditions</Text> and <Text style={styles.policyLink}>Privacy Policy</Text>.
+                            I agree to the{' '}
+                            <Text style={styles.policyLink} onPress={() => Linking.openURL(config.TERMS_URL)}>
+                                Terms & Conditions
+                            </Text>
+                            {' '}and{' '}
+                            <Text style={styles.policyLink} onPress={() => Linking.openURL(config.PRIVACY_URL)}>
+                                Privacy Policy
+                            </Text>
+                            .
                         </Text>
                     </TouchableOpacity>
 
@@ -293,28 +303,6 @@ export const RegisterScreen: React.FC = () => {
                     >
                         <Text style={styles.primaryButtonText}>{isLoading ? 'Creating...' : 'Create Account'}</Text>
                     </TouchableOpacity>
-
-                    <View style={styles.joinSection}>
-                        <View style={styles.divider} />
-                        <Text style={styles.joinLabel}>OR JOIN WITH</Text>
-                        <View style={styles.divider} />
-                    </View>
-
-                    <View style={styles.socialRow}>
-                        <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
-                            <View style={styles.socialIconWrap}>
-                                <Text style={styles.socialIconText}>G</Text>
-                            </View>
-                            <Text style={styles.socialButtonText}>Google</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.socialButton} activeOpacity={0.85}>
-                            <View style={styles.socialIconWrap}>
-                                <Text style={styles.socialIconText}>A</Text>
-                            </View>
-                            <Text style={styles.socialButtonText}>Apple</Text>
-                        </TouchableOpacity>
-                    </View>
 
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>Already have an account?</Text>
@@ -488,62 +476,12 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: fontWeights.extrabold,
     },
-    joinSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-        marginTop: spacing['4xl'],
-        marginBottom: spacing['2xl'],
-    },
-    divider: {
-        flex: 1,
-        height: 1,
-        backgroundColor: colors.surfaceContainerHigh,
-    },
-    joinLabel: {
-        color: colors.slate400,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-        letterSpacing: 1.2,
-    },
-    socialRow: {
-        flexDirection: 'row',
-        gap: spacing.md,
-        marginBottom: spacing['4xl'],
-    },
-    socialButton: {
-        flex: 1,
-        minHeight: 80,
-        borderRadius: 28,
-        backgroundColor: colors.surfaceContainerLow,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.sm,
-    },
-    socialIconWrap: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: colors.surfaceContainerLowest,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    socialIconText: {
-        color: colors.slate500,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.extrabold,
-    },
-    socialButtonText: {
-        color: colors.onSurface,
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.bold,
-    },
     footer: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: spacing.sm,
+        marginTop: spacing['4xl'],
         marginBottom: spacing.md,
     },
     footerText: {
