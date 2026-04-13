@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     StatusBar,
     useWindowDimensions,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -39,7 +40,7 @@ export const DashboardScreen: React.FC = () => {
     const { width } = useWindowDimensions();
     const navigation = useNavigation<any>();
     const { user } = useAuthStore();
-    const { summary, jobs, error, fetchDashboard } = useJobsStore();
+    const { summary, jobs, error, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedChartPoint, setSelectedChartPoint] = useState<string | null>(null);
@@ -60,8 +61,8 @@ export const DashboardScreen: React.FC = () => {
 
     useFocusEffect(
         useCallback(() => {
-            fetchDashboard();
-        }, [fetchDashboard])
+            fetchDashboard({ silent: hasLoadedDashboard });
+        }, [fetchDashboard, hasLoadedDashboard])
     );
 
     const onRefresh = useCallback(async () => {
@@ -78,6 +79,14 @@ export const DashboardScreen: React.FC = () => {
     const goalProgressPercent = summary?.weeklyGoal?.targetAmount != null
         ? Math.max(0, Math.min(summary?.weeklyGoal?.progressPercent ?? 0, 100))
         : 0;
+
+    if (isLoading && !hasLoadedDashboard) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -386,6 +395,12 @@ export const DashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
+        backgroundColor: '#fbf9f1',
+    },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: '#fbf9f1',
     },
     container: {

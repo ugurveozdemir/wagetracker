@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     StatusBar,
     useWindowDimensions,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -31,7 +32,7 @@ export const OverviewScreen: React.FC = () => {
     const { width } = useWindowDimensions();
     const navigation = useNavigation<any>();
     const { user } = useAuthStore();
-    const { summary, fetchDashboard } = useJobsStore();
+    const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const [refreshing, setRefreshing] = useState(false);
     const [showCreateJobModal, setShowCreateJobModal] = useState(false);
     const scale = Math.min(Math.max(width / 393, 0.84), 1);
@@ -41,8 +42,8 @@ export const OverviewScreen: React.FC = () => {
 
     useFocusEffect(
         useCallback(() => {
-            fetchDashboard();
-        }, [fetchDashboard])
+            fetchDashboard({ silent: hasLoadedDashboard });
+        }, [fetchDashboard, hasLoadedDashboard])
     );
 
     const onRefresh = useCallback(async () => {
@@ -65,6 +66,14 @@ export const OverviewScreen: React.FC = () => {
             })),
         [jobs]
     );
+
+    if (isLoading && !hasLoadedDashboard) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -202,6 +211,12 @@ export const OverviewScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
+        backgroundColor: '#fbf9f1',
+    },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: '#fbf9f1',
     },
     container: {

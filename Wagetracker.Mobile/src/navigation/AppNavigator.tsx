@@ -22,7 +22,7 @@ import {
     RootStackParamList,
     TabParamList,
 } from '../types';
-import { useAuthStore, useJobsStore, useSubscriptionStore } from '../stores';
+import { useAuthStore, useExpenseStore, useJobsStore, useSubscriptionStore } from '../stores';
 import { colors } from '../theme';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
@@ -197,7 +197,7 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
                             style={[
                                 tabStyles.tabItem,
                                 {
-                                    paddingHorizontal: compact ? 10 : 20,
+                                    paddingHorizontal: compact ? 0 : 2,
                                     paddingVertical: compact ? 6 : 8,
                                 },
                                 isFocused && tabStyles.tabItemActive,
@@ -215,8 +215,7 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
                                 style={[
                                     tabStyles.tabLabel,
                                     {
-                                        fontSize: compact ? 9 : 11,
-                                        letterSpacing: compact ? 0.5 : 0.8,
+                                        fontSize: compact ? 10 : 11,
                                     },
                                     isFocused && tabStyles.tabLabelActive,
                                 ]}
@@ -348,6 +347,10 @@ const MainNavigator: React.FC = () => {
 export const AppNavigator: React.FC = () => {
     const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
     const { bootstrap, clear, refreshSubscriptionStatus } = useSubscriptionStore();
+    const { fetchDashboard, clearData: clearJobsData } = useJobsStore();
+    const { fetchExpenses, fetchWeeklyGroups, clearData: clearExpenseData } = useExpenseStore();
+    const lastBootstrapKey = React.useRef<string | null>(null);
+    const lastBootstrapUserId = React.useRef<number | null>(null);
 
     useEffect(() => {
         checkAuth();
@@ -371,6 +374,35 @@ export const AppNavigator: React.FC = () => {
 
         return () => subscription.remove();
     }, [isAuthenticated, refreshSubscriptionStatus]);
+
+    useEffect(() => {
+        if (!isAuthenticated || !user) {
+            lastBootstrapKey.current = null;
+            lastBootstrapUserId.current = null;
+            clearJobsData();
+            clearExpenseData();
+            return;
+        }
+
+        const bootstrapKey = `${user.id}:${user.access.canUseExpenses}`;
+        if (lastBootstrapKey.current === bootstrapKey) {
+            return;
+        }
+
+        lastBootstrapKey.current = bootstrapKey;
+        if (lastBootstrapUserId.current !== null && lastBootstrapUserId.current !== user.id) {
+            clearJobsData();
+            clearExpenseData();
+        }
+        lastBootstrapUserId.current = user.id;
+
+        const tasks = [fetchDashboard()];
+        if (user.access.canUseExpenses) {
+            tasks.push(fetchExpenses(), fetchWeeklyGroups());
+        }
+
+        Promise.all(tasks).catch(console.error);
+    }, [clearExpenseData, clearJobsData, fetchDashboard, fetchExpenses, fetchWeeklyGroups, isAuthenticated, user]);
 
     if (isLoading) {
         return (
@@ -422,7 +454,7 @@ const tabStyles = StyleSheet.create({
     },
     footer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
         paddingTop: 16,
@@ -439,11 +471,12 @@ const tabStyles = StyleSheet.create({
     tabItem: {
         flex: 1,
         minWidth: 0,
+        minHeight: 56,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: 2,
         paddingVertical: 8,
-        borderRadius: 9999,
+        borderRadius: 18,
     },
     tabItemActive: {
         backgroundColor: 'rgba(0,109,68,0.05)',
@@ -452,9 +485,11 @@ const tabStyles = StyleSheet.create({
         marginTop: 4,
         fontSize: 11,
         fontWeight: '600',
-        letterSpacing: 0.8,
-        textTransform: 'uppercase',
+        letterSpacing: 0,
+        textTransform: 'none',
         color: '#94a3b8',
+        textAlign: 'center',
+        maxWidth: '100%',
     },
     tabLabelActive: {
         color: '#006D44',

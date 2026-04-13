@@ -10,6 +10,7 @@ import {
     useWindowDimensions,
     Alert,
     Animated,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -27,7 +28,7 @@ type ExpensesNavigationProp = NativeStackNavigationProp<ExpenseStackParamList, '
 export const ExpensesScreen: React.FC = () => {
     const { width } = useWindowDimensions();
     const navigation = useNavigation<ExpensesNavigationProp>();
-    const { expenses, fetchExpenses, deleteExpense } = useExpenseStore();
+    const { expenses, fetchExpenses, deleteExpense, isLoadingExpenses, hasLoadedExpenses } = useExpenseStore();
     const [refreshing, setRefreshing] = useState(false);
     const compact = width < 380;
     const scale = Math.min(Math.max(width / 393, 0.84), 1);
@@ -35,8 +36,8 @@ export const ExpensesScreen: React.FC = () => {
 
     useFocusEffect(
         useCallback(() => {
-            fetchExpenses();
-        }, [fetchExpenses])
+            fetchExpenses({ silent: hasLoadedExpenses });
+        }, [fetchExpenses, hasLoadedExpenses])
     );
 
     const onRefresh = useCallback(async () => {
@@ -178,6 +179,14 @@ export const ExpensesScreen: React.FC = () => {
         );
     };
 
+    if (isLoadingExpenses && !hasLoadedExpenses) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <StatusBar barStyle="dark-content" backgroundColor="#fbf9f1" />
@@ -218,34 +227,41 @@ export const ExpensesScreen: React.FC = () => {
                 </View>
 
                 <View style={[styles.breakdownGrid, { gap: 14 * scale }]}>
-                    {breakdownCards.map((card) => (
-                        <View
-                            key={card.label}
-                            style={[
-                                styles.breakdownCard,
-                                card.wide && styles.breakdownCardWide,
-                                {
-                                    borderRadius: 30 * scale,
-                                    padding: 24 * scale,
-                                },
-                            ]}
-                        >
-                            <View style={[styles.breakdownIcon, { backgroundColor: card.tint }]}>
-                                <MaterialIcons name={card.icon} size={24} color={card.tone} />
-                            </View>
-                            <View style={card.wide ? styles.breakdownWideRow : undefined}>
-                                <View>
-                                    <Text style={styles.breakdownLabel}>{card.label}</Text>
-                                    <Text style={[styles.breakdownValue, { color: card.tone }]}>{formatCurrency(card.amount)}</Text>
-                                </View>
-                                {card.wide ? (
-                                    <View style={styles.breakdownProgressTrack}>
-                                        <View style={styles.breakdownProgressFill} />
-                                    </View>
-                                ) : null}
-                            </View>
+                    {breakdownCards.length === 0 ? (
+                        <View style={[styles.emptyState, { borderRadius: 30 * scale, padding: 24 * scale }]}>
+                            <Text style={styles.emptyTitle}>No expenses yet</Text>
+                            <Text style={styles.emptyText}>Use the add button to log your first expense.</Text>
                         </View>
-                    ))}
+                    ) : (
+                        breakdownCards.map((card) => (
+                            <View
+                                key={card.label}
+                                style={[
+                                    styles.breakdownCard,
+                                    card.wide && styles.breakdownCardWide,
+                                    {
+                                        borderRadius: 30 * scale,
+                                        padding: 24 * scale,
+                                    },
+                                ]}
+                            >
+                                <View style={[styles.breakdownIcon, { backgroundColor: card.tint }]}>
+                                    <MaterialIcons name={card.icon} size={24} color={card.tone} />
+                                </View>
+                                <View style={card.wide ? styles.breakdownWideRow : undefined}>
+                                    <View>
+                                        <Text style={styles.breakdownLabel}>{card.label}</Text>
+                                        <Text style={[styles.breakdownValue, { color: card.tone }]}>{formatCurrency(card.amount)}</Text>
+                                    </View>
+                                    {card.wide ? (
+                                        <View style={styles.breakdownProgressTrack}>
+                                            <View style={styles.breakdownProgressFill} />
+                                        </View>
+                                    ) : null}
+                                </View>
+                            </View>
+                        ))
+                    )}
                 </View>
 
                 <View style={[styles.recentPanel, { borderRadius: 40 * scale, padding: 28 * scale }]}>
@@ -376,6 +392,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fbf9f1',
     },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fbf9f1',
+    },
     container: {
         flex: 1,
     },
@@ -454,6 +476,24 @@ const styles = StyleSheet.create({
     },
     breakdownCardWide: {
         backgroundColor: '#e4e3da',
+    },
+    emptyState: {
+        backgroundColor: '#f5f4eb',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 132,
+    },
+    emptyTitle: {
+        color: '#181d19',
+        fontSize: 18,
+        fontWeight: '800',
+        marginBottom: 6,
+    },
+    emptyText: {
+        color: '#6f7a71',
+        fontSize: 13,
+        fontWeight: '600',
+        textAlign: 'center',
     },
     breakdownIcon: {
         width: 48,

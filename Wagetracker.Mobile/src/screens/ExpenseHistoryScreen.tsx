@@ -37,12 +37,12 @@ const categoryIconMap: Record<number, string> = {
 
 export const ExpenseHistoryScreen: React.FC = () => {
     const navigation = useNavigation<ExpenseHistoryNavigationProp>();
-    const { weeklyGroups, fetchWeeklyGroups, isLoading, deleteExpense } = useExpenseStore();
+    const { weeklyGroups, fetchWeeklyGroups, isLoadingWeeklyGroups, hasLoadedWeeklyGroups, deleteExpense } = useExpenseStore();
 
     useFocusEffect(
         useCallback(() => {
-            fetchWeeklyGroups();
-        }, [fetchWeeklyGroups])
+            fetchWeeklyGroups({ silent: hasLoadedWeeklyGroups });
+        }, [fetchWeeklyGroups, hasLoadedWeeklyGroups])
     );
 
     const formatCurrency = (amount: number) =>
@@ -89,7 +89,7 @@ export const ExpenseHistoryScreen: React.FC = () => {
         );
     };
 
-    if (isLoading && weeklyGroups.length === 0) {
+    if (isLoadingWeeklyGroups && !hasLoadedWeeklyGroups) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -112,7 +112,7 @@ export const ExpenseHistoryScreen: React.FC = () => {
             <ScrollView
                 style={styles.container}
                 contentContainerStyle={styles.contentContainer}
-                refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchWeeklyGroups} />}
+                refreshControl={<RefreshControl refreshing={isLoadingWeeklyGroups} onRefresh={fetchWeeklyGroups} />}
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.heroCard}>

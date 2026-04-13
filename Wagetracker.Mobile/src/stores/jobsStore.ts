@@ -11,15 +11,17 @@ interface JobsState {
     isLoading: boolean;
     isCreating: boolean;
     isUpdating: boolean;
+    hasLoadedDashboard: boolean;
     error: string | null;
 
     // Actions
-    fetchDashboard: () => Promise<void>;
-    fetchJobs: () => Promise<void>;
+    fetchDashboard: (options?: { silent?: boolean }) => Promise<void>;
+    fetchJobs: (options?: { silent?: boolean }) => Promise<void>;
     createJob: (data: CreateJobRequest) => Promise<JobResponse>;
     updateJob: (id: number, data: UpdateJobRequest) => Promise<JobResponse>;
     deleteJob: (id: number) => Promise<void>;
     clearError: () => void;
+    clearData: () => void;
 }
 
 export const useJobsStore = create<JobsState>((set, get) => ({
@@ -28,15 +30,22 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     isLoading: false,
     isCreating: false,
     isUpdating: false,
+    hasLoadedDashboard: false,
     error: null,
 
-    fetchDashboard: async () => {
-        set({ isLoading: true, error: null });
+    fetchDashboard: async (options) => {
+        if (!options?.silent) {
+            set({ isLoading: true, error: null });
+        } else {
+            set({ error: null });
+        }
+
         try {
             const summary = await dashboardApi.getSummary();
             set({
                 summary,
                 jobs: summary.jobs,
+                hasLoadedDashboard: true,
                 isLoading: false
             });
         } catch (error) {
@@ -47,8 +56,13 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         }
     },
 
-    fetchJobs: async () => {
-        set({ isLoading: true, error: null });
+    fetchJobs: async (options) => {
+        if (!options?.silent) {
+            set({ isLoading: true, error: null });
+        } else {
+            set({ error: null });
+        }
+
         try {
             const jobs = await jobsApi.getAll();
             set({ jobs, isLoading: false });
@@ -131,5 +145,13 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     },
 
     clearError: () => set({ error: null }),
+    clearData: () => set({
+        summary: null,
+        jobs: [],
+        isLoading: false,
+        isCreating: false,
+        isUpdating: false,
+        hasLoadedDashboard: false,
+        error: null,
+    }),
 }));
-

@@ -6,6 +6,7 @@ import {
     ScrollView,
     TouchableOpacity,
     StatusBar,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -26,7 +27,7 @@ const formatCurrency = (amount: number) =>
     })}`;
 
 export const GoalScreen: React.FC = () => {
-    const { summary, fetchDashboard } = useJobsStore();
+    const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const [goalInput, setGoalInput] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
@@ -38,8 +39,8 @@ export const GoalScreen: React.FC = () => {
 
     useFocusEffect(
         useCallback(() => {
-            fetchDashboard();
-        }, [fetchDashboard])
+            fetchDashboard({ silent: hasLoadedDashboard });
+        }, [fetchDashboard, hasLoadedDashboard])
     );
 
     useEffect(() => {
@@ -83,6 +84,14 @@ export const GoalScreen: React.FC = () => {
             setIsSaving(false);
         }
     };
+
+    if (isLoading && !hasLoadedDashboard) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -186,6 +195,12 @@ export const GoalScreen: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
+        backgroundColor: colors.surfaceBright,
+    },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: colors.surfaceBright,
     },
     screenHeader: {
