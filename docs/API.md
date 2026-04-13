@@ -429,6 +429,7 @@ WeeklyExpenseGroupResponse {
 - Request body: `multipart/form-data` with field `receiptImage`
 - Supported image types: JPEG, PNG, WebP
 - Default size limit: 5 MB, controlled by `ReceiptScan:MaxImageBytes`
+- Mobile behavior: native clients resize receipt images to a maximum 1600 px longest side and upload JPEG at compressed quality before calling this endpoint.
 - Response shape: `ReceiptScanDraftResponse`
 - Visible status handling: `200 OK`; explicit `400 Bad Request` with `{ message: string }` for missing/invalid image input; explicit `403 Forbidden` for subscription access failures; explicit `503 Service Unavailable` when receipt scan provider config/call fails; explicit `504 Gateway Timeout` when provider scan times out.
 

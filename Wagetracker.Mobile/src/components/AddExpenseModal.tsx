@@ -15,6 +15,7 @@ import {
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { useExpenseStore } from '../stores';
 import { EXPENSE_CATEGORIES } from '../types';
 import Toast from 'react-native-toast-message';
@@ -24,6 +25,9 @@ interface AddExpenseModalProps {
     onClose: () => void;
     onCreated: () => void;
 }
+
+const MAX_RECEIPT_IMAGE_DIMENSION = 1600;
+const RECEIPT_IMAGE_QUALITY = 0.7;
 
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     visible,
@@ -69,15 +73,37 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         return new Date(`${datePart}T12:00:00`);
     };
 
-    const getImagePayload = (asset: ImagePicker.ImagePickerAsset) => {
-        const uriParts = asset.uri.split('.');
-        const extension = uriParts.length > 1 ? uriParts[uriParts.length - 1].toLowerCase() : 'jpg';
-        const type = asset.mimeType || (extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg');
+    const getResizeActions = (asset: ImagePicker.ImagePickerAsset): ImageManipulator.Action[] => {
+        if (!asset.width || !asset.height) {
+            return [];
+        }
+
+        const longestSide = Math.max(asset.width, asset.height);
+        if (longestSide <= MAX_RECEIPT_IMAGE_DIMENSION) {
+            return [];
+        }
+
+        if (asset.width >= asset.height) {
+            return [{ resize: { width: MAX_RECEIPT_IMAGE_DIMENSION } }];
+        }
+
+        return [{ resize: { height: MAX_RECEIPT_IMAGE_DIMENSION } }];
+    };
+
+    const getImagePayload = async (asset: ImagePicker.ImagePickerAsset) => {
+        const preparedImage = await ImageManipulator.manipulateAsync(
+            asset.uri,
+            getResizeActions(asset),
+            {
+                compress: RECEIPT_IMAGE_QUALITY,
+                format: ImageManipulator.SaveFormat.JPEG,
+            }
+        );
 
         return {
-            uri: asset.uri,
-            name: asset.fileName || `receipt.${extension}`,
-            type,
+            uri: preparedImage.uri,
+            name: 'receipt.jpg',
+            type: 'image/jpeg',
         };
     };
 
@@ -110,7 +136,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         setError(null);
 
         try {
-            const draft = await scanReceipt(getImagePayload(asset));
+            const draft = await scanReceipt(await getImagePayload(asset));
             applyReceiptDraft(draft);
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to scan receipt';

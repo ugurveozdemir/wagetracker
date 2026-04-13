@@ -35,6 +35,7 @@ const config: ExpoConfig = {
     },
     plugins: [
         'expo-dev-client',
+        'expo-image-manipulator',
         [
             'expo-image-picker',
             {
