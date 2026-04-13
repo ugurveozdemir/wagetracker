@@ -9,6 +9,7 @@ namespace WageTracker.API.Services
     {
         private readonly AppDbContext _context;
         private readonly ISubscriptionService _subscriptionService;
+        private readonly IReceiptScanService _receiptScanService;
 
         // Kategori isim mapping'i (enum int → string)
         private static readonly Dictionary<int, string> CategoryNames = new()
@@ -23,21 +24,18 @@ namespace WageTracker.API.Services
             { 7, "Other" }
         };
 
-        public ExpenseService(AppDbContext context, ISubscriptionService subscriptionService)
+        public ExpenseService(AppDbContext context, ISubscriptionService subscriptionService, IReceiptScanService receiptScanService)
         {
             _context = context;
             _subscriptionService = subscriptionService;
+            _receiptScanService = receiptScanService;
         }
 
         public async Task<ExpenseResponse> CreateAsync(int userId, CreateExpenseRequest request)
         {
             await _subscriptionService.EnsureExpensesAccessAsync(userId);
 
-            // Validate category
-            if (!Enum.IsDefined(typeof(ExpenseCategory), request.Category))
-            {
-                throw new ArgumentException("Invalid expense category");
-            }
+            ValidateCategory(request.Category);
 
             var expense = new Expense
             {
@@ -47,6 +45,35 @@ namespace WageTracker.API.Services
                 Date = request.Date,
                 Description = request.Description,
                 Source = ExpenseSource.Manual,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Expenses.Add(expense);
+            await _context.SaveChangesAsync();
+
+            return MapToResponse(expense);
+        }
+
+        public async Task<ReceiptScanDraftResponse> ScanReceiptAsync(int userId, IFormFile receiptImage, CancellationToken cancellationToken = default)
+        {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId, cancellationToken);
+            return await _receiptScanService.ScanAsync(receiptImage, cancellationToken);
+        }
+
+        public async Task<ExpenseResponse> ConfirmReceiptScanAsync(int userId, ConfirmReceiptScanExpenseRequest request)
+        {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId);
+            ValidateCategory(request.Category);
+
+            var expense = new Expense
+            {
+                UserId = userId,
+                Amount = request.Amount,
+                Category = (ExpenseCategory)request.Category,
+                Date = request.Date,
+                Description = request.Description,
+                Source = ExpenseSource.ReceiptScan,
+                ReceiptImageUrl = null,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -68,11 +95,7 @@ namespace WageTracker.API.Services
                 throw new UnauthorizedAccessException("Expense not found or access denied");
             }
 
-            // Validate category
-            if (!Enum.IsDefined(typeof(ExpenseCategory), request.Category))
-            {
-                throw new ArgumentException("Invalid expense category");
-            }
+            ValidateCategory(request.Category);
 
             expense.Amount = request.Amount;
             expense.Category = (ExpenseCategory)request.Category;
@@ -159,6 +182,14 @@ namespace WageTracker.API.Services
         public static string GetCategoryName(int category)
         {
             return CategoryNames.TryGetValue(category, out var name) ? name : "Other";
+        }
+
+        private static void ValidateCategory(int category)
+        {
+            if (!Enum.IsDefined(typeof(ExpenseCategory), category))
+            {
+                throw new ArgumentException("Invalid expense category");
+            }
         }
 
         private static DateTime GetWeekStartMonday(DateTime date)

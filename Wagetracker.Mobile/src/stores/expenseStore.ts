@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import { ExpenseResponse, CreateExpenseRequest, WeeklyExpenseGroupResponse } from '../types';
+import {
+    ConfirmReceiptScanExpenseRequest,
+    ExpenseResponse,
+    CreateExpenseRequest,
+    ReceiptScanDraftResponse,
+    WeeklyExpenseGroupResponse,
+} from '../types';
 import { expensesApi } from '../api/expenses';
 
 interface ExpenseStore {
@@ -11,6 +17,8 @@ interface ExpenseStore {
     fetchExpenses: () => Promise<void>;
     fetchWeeklyGroups: () => Promise<void>;
     createExpense: (data: CreateExpenseRequest) => Promise<void>;
+    scanReceipt: (image: { uri: string; name: string; type: string }) => Promise<ReceiptScanDraftResponse>;
+    confirmReceiptScan: (data: ConfirmReceiptScanExpenseRequest) => Promise<void>;
     deleteExpense: (id: number) => Promise<void>;
 }
 
@@ -50,6 +58,26 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
             await get().fetchWeeklyGroups();
         } catch (error: any) {
             const message = error.response?.data?.message || error.message || 'Failed to create expense';
+            throw new Error(message);
+        }
+    },
+
+    scanReceipt: async (image) => {
+        try {
+            return await expensesApi.scanReceipt(image);
+        } catch (error: any) {
+            const message = error.response?.data?.message || error.message || 'Failed to scan receipt';
+            throw new Error(message);
+        }
+    },
+
+    confirmReceiptScan: async (data: ConfirmReceiptScanExpenseRequest) => {
+        try {
+            await expensesApi.confirmReceiptScan(data);
+            await get().fetchExpenses();
+            await get().fetchWeeklyGroups();
+        } catch (error: any) {
+            const message = error.response?.data?.message || error.message || 'Failed to save scanned expense';
             throw new Error(message);
         }
     },

@@ -228,6 +228,32 @@ namespace WageTracker.API.Models.DTOs
         public string? Description { get; set; }
     }
 
+    public class ConfirmReceiptScanExpenseRequest
+    {
+        [Required(ErrorMessage = "Amount is required")]
+        [Range(0.01, 1000000, ErrorMessage = "Amount must be between $0.01 and $1,000,000")]
+        public decimal Amount { get; set; }
+
+        [Required(ErrorMessage = "Category is required")]
+        public int Category { get; set; }
+
+        [Required(ErrorMessage = "Date is required")]
+        public DateTime Date { get; set; }
+
+        [MaxLength(250, ErrorMessage = "Description cannot exceed 250 characters")]
+        public string? Description { get; set; }
+    }
+
+    public class ReceiptScanDraftResponse
+    {
+        public decimal? Amount { get; set; }
+        public DateTime? Date { get; set; }
+        public int Category { get; set; } = 7;
+        public string? Description { get; set; }
+        public decimal Confidence { get; set; }
+        public List<string> Warnings { get; set; } = new();
+    }
+
     public class ExpenseResponse
     {
         public int Id { get; set; }

@@ -5,7 +5,7 @@ const androidPackage = process.env.EXPO_PUBLIC_ANDROID_PACKAGE || 'com.wagetrack
 
 const config: ExpoConfig = {
     name: 'WageTracker',
-    slug: 'Wagetracker.Mobile',
+    slug: 'wagetracker',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
@@ -35,7 +35,19 @@ const config: ExpoConfig = {
     },
     plugins: [
         'expo-dev-client',
+        [
+            'expo-image-picker',
+            {
+                photosPermission: 'Allow WageTracker to choose receipt photos for expense scanning.',
+                cameraPermission: 'Allow WageTracker to take receipt photos for expense scanning.',
+            },
+        ],
     ],
+    extra: {
+        eas: {
+            projectId: 'aeadbd90-11c5-4c4d-835b-687e4c4089d7',
+        },
+    },
 };
 
 export default config;

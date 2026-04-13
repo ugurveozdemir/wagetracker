@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+    Alert,
     View,
     Text,
     StyleSheet,
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 import { useExpenseStore } from '../stores';
 import { EXPENSE_CATEGORIES } from '../types';
 import Toast from 'react-native-toast-message';
@@ -29,9 +31,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     onCreated,
 }) => {
     const { width } = useWindowDimensions();
-    const { createExpense, isLoading } = useExpenseStore();
+    const { createExpense, confirmReceiptScan, scanReceipt, isLoading } = useExpenseStore();
     const compact = width < 380;
     const scale = Math.min(Math.max(width / 393, 0.84), 1);
+    const canScanReceipt = Platform.OS !== 'web';
 
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState(7);
@@ -39,6 +42,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     const [description, setDescription] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+    const [isReceiptDraft, setIsReceiptDraft] = useState(false);
+    const [scanConfidence, setScanConfidence] = useState<number | null>(null);
+    const [scanWarnings, setScanWarnings] = useState<string[]>([]);
 
     useEffect(() => {
         if (visible) {
@@ -48,8 +55,116 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             setDescription('');
             setError(null);
             setShowDatePicker(false);
+            setIsScanning(false);
+            setIsReceiptDraft(false);
+            setScanConfidence(null);
+            setScanWarnings([]);
         }
     }, [visible]);
+
+    const formatDateForApi = (value: Date) => value.toISOString().split('T')[0];
+
+    const dateFromApiValue = (value: string) => {
+        const datePart = value.split('T')[0];
+        return new Date(`${datePart}T12:00:00`);
+    };
+
+    const getImagePayload = (asset: ImagePicker.ImagePickerAsset) => {
+        const uriParts = asset.uri.split('.');
+        const extension = uriParts.length > 1 ? uriParts[uriParts.length - 1].toLowerCase() : 'jpg';
+        const type = asset.mimeType || (extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg');
+
+        return {
+            uri: asset.uri,
+            name: asset.fileName || `receipt.${extension}`,
+            type,
+        };
+    };
+
+    const applyReceiptDraft = (draft: Awaited<ReturnType<typeof scanReceipt>>) => {
+        if (draft.amount && draft.amount > 0) {
+            setAmount(draft.amount.toFixed(2));
+        }
+
+        if (draft.date) {
+            setDate(dateFromApiValue(draft.date));
+        }
+
+        setCategory(draft.category);
+        setDescription(draft.description || '');
+        setIsReceiptDraft(true);
+        setScanConfidence(draft.confidence);
+        setScanWarnings(draft.warnings || []);
+        setError(null);
+
+        Toast.show({
+            type: draft.confidence >= 0.7 ? 'success' : 'info',
+            text1: draft.confidence >= 0.7 ? 'Receipt Scanned' : 'Review Needed',
+            text2: 'Check the fields before saving.',
+            visibilityTime: 2200,
+        });
+    };
+
+    const scanSelectedImage = async (asset: ImagePicker.ImagePickerAsset) => {
+        setIsScanning(true);
+        setError(null);
+
+        try {
+            const draft = await scanReceipt(getImagePayload(asset));
+            applyReceiptDraft(draft);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to scan receipt';
+            setError(message);
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
+    const chooseReceiptFromCamera = async () => {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permission.granted) {
+            setError('Camera permission is required to scan a receipt.');
+            return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+            await scanSelectedImage(result.assets[0]);
+        }
+    };
+
+    const chooseReceiptFromLibrary = async () => {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+            setError('Photo library permission is required to choose a receipt.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+            await scanSelectedImage(result.assets[0]);
+        }
+    };
+
+    const handleScanReceipt = () => {
+        if (!canScanReceipt || isScanning) {
+            return;
+        }
+
+        Alert.alert('Scan Receipt', 'Choose a receipt image.', [
+            { text: 'Take Photo', onPress: chooseReceiptFromCamera },
+            { text: 'Choose from Gallery', onPress: chooseReceiptFromLibrary },
+            { text: 'Cancel', style: 'cancel' },
+        ]);
+    };
 
     const handleSubmit = async () => {
         const parsedAmount = parseFloat(amount);
@@ -60,12 +175,18 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         }
 
         try {
-            await createExpense({
+            const payload = {
                 amount: parsedAmount,
                 category,
-                date: date.toISOString().split('T')[0],
+                date: formatDateForApi(date),
                 description: description.trim() || undefined,
-            });
+            };
+
+            if (isReceiptDraft) {
+                await confirmReceiptScan(payload);
+            } else {
+                await createExpense(payload);
+            }
 
             Toast.show({
                 type: 'success',
@@ -114,6 +235,33 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     {error ? (
                         <View style={styles.errorBanner}>
                             <Text style={styles.errorText}>{error}</Text>
+                        </View>
+                    ) : null}
+
+                    {canScanReceipt ? (
+                        <TouchableOpacity
+                            style={[styles.scanButton, isScanning && styles.scanButtonDisabled]}
+                            activeOpacity={0.88}
+                            onPress={handleScanReceipt}
+                            disabled={isScanning || isLoading}
+                        >
+                            <MaterialIcons name="document-scanner" size={20} color="#006D44" />
+                            <Text style={styles.scanButtonText}>{isScanning ? 'Scanning receipt...' : 'Scan Receipt'}</Text>
+                        </TouchableOpacity>
+                    ) : null}
+
+                    {isReceiptDraft ? (
+                        <View style={styles.scanSummary}>
+                            <View style={styles.scanSummaryHeader}>
+                                <MaterialIcons name="auto-awesome" size={18} color="#006D44" />
+                                <Text style={styles.scanSummaryTitle}>Review scanned receipt</Text>
+                            </View>
+                            {scanConfidence !== null ? (
+                                <Text style={styles.scanSummaryText}>Confidence: {Math.round(scanConfidence * 100)}%</Text>
+                            ) : null}
+                            {scanWarnings.map((warning) => (
+                                <Text key={warning} style={styles.scanWarningText}>{warning}</Text>
+                            ))}
                         </View>
                     ) : null}
 
@@ -199,7 +347,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                         style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
                         activeOpacity={0.9}
                         onPress={handleSubmit}
-                        disabled={isLoading}
+                        disabled={isLoading || isScanning}
                     >
                         <Text style={styles.submitButtonText}>{isLoading ? 'Saving...' : 'Save'}</Text>
                     </TouchableOpacity>
@@ -218,6 +366,14 @@ const styles = StyleSheet.create({
     heroSubtext: { color: 'rgba(65,33,0,0.80)', fontSize: 14, lineHeight: 22 },
     errorBanner: { backgroundColor: '#fff1ef', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24, marginBottom: 16 },
     errorText: { color: '#ba1a1a', fontSize: 14, fontWeight: '700' },
+    scanButton: { backgroundColor: '#ecf8f0', minHeight: 58, borderRadius: 24, marginBottom: 16, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+    scanButtonDisabled: { opacity: 0.7 },
+    scanButtonText: { color: '#006D44', fontSize: 16, fontWeight: '800' },
+    scanSummary: { backgroundColor: '#ecf8f0', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24, marginBottom: 16 },
+    scanSummaryHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+    scanSummaryTitle: { color: '#006D44', fontSize: 14, fontWeight: '800' },
+    scanSummaryText: { color: '#4f5a53', fontSize: 13, fontWeight: '700', marginBottom: 4 },
+    scanWarningText: { color: '#7a573d', fontSize: 13, lineHeight: 18, fontWeight: '600', marginTop: 2 },
     fieldCard: { backgroundColor: '#f5f4eb', padding: 20, marginBottom: 16 },
     fieldLabel: { color: '#181d19', fontSize: 16, fontWeight: '700', marginBottom: 12 },
     moneyField: { backgroundColor: '#ffffff', borderRadius: 999, minHeight: 62, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center' },

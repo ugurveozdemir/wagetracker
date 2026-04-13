@@ -165,6 +165,22 @@ export interface CreateExpenseRequest {
     description?: string;
 }
 
+export interface ReceiptScanDraftResponse {
+    amount: number | null;
+    date: string | null;
+    category: number;
+    description: string | null;
+    confidence: number;
+    warnings: string[];
+}
+
+export interface ConfirmReceiptScanExpenseRequest {
+    amount: number;
+    category: number;
+    date: string;
+    description?: string;
+}
+
 export interface UpdateExpenseRequest {
     amount: number;
     category: number;

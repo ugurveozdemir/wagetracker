@@ -97,6 +97,52 @@ namespace WageTracker.API.Controllers
             }
         }
 
+        [HttpPost("receipt-scan")]
+        public async Task<ActionResult<ReceiptScanDraftResponse>> ScanReceipt([FromForm] IFormFile receiptImage, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var userId = GetUserId();
+                var draft = await _expenseService.ScanReceiptAsync(userId, receiptImage, cancellationToken);
+                return Ok(draft);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = ex.Message });
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                return StatusCode(StatusCodes.Status504GatewayTimeout, new { message = "Receipt scan timed out." });
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
+            }
+        }
+
+        [HttpPost("receipt-scan/confirm")]
+        public async Task<ActionResult<ExpenseResponse>> ConfirmReceiptScan([FromBody] ConfirmReceiptScanExpenseRequest request)
+        {
+            try
+            {
+                var userId = GetUserId();
+                var expense = await _expenseService.ConfirmReceiptScanAsync(userId, request);
+                return CreatedAtAction(nameof(GetById), new { id = expense.Id }, expense);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
+            }
+        }
+
         [HttpPut("{id}")]
         public async Task<ActionResult<ExpenseResponse>> Update(int id, [FromBody] UpdateExpenseRequest request)
         {

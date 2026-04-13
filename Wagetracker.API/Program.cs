@@ -19,6 +19,7 @@ builder.Services.AddScoped<WageTracker.API.Services.IJobService, WageTracker.API
 builder.Services.AddScoped<WageTracker.API.Services.IDailyEntryService, WageTracker.API.Services.DailyEntryService>();
 builder.Services.AddScoped<WageTracker.API.Services.IDashboardService, WageTracker.API.Services.DashboardService>();
 builder.Services.AddScoped<WageTracker.API.Services.IExpenseService, WageTracker.API.Services.ExpenseService>();
+builder.Services.AddHttpClient<WageTracker.API.Services.IReceiptScanService, WageTracker.API.Services.ReceiptScanService>();
 builder.Services.AddScoped<WageTracker.API.Services.IProfileService, WageTracker.API.Services.ProfileService>();
 builder.Services.AddHttpClient<WageTracker.API.Services.ISubscriptionService, WageTracker.API.Services.SubscriptionService>();
 
