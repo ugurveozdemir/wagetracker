@@ -303,8 +303,8 @@ const WeekGroupComponent: React.FC<WeekGroupProps> = ({ week, onDeleteEntry, isL
             {week.overtimeHours > 0 ? (
                 <View style={styles.overtimeBanner}>
                     <View>
-                        <Text style={styles.overtimeLabel}>Overtime bonus</Text>
-                        <Text style={styles.overtimeMeta}>{week.overtimeHours.toFixed(1)}h extra</Text>
+                        <Text style={styles.overtimeLabel}>Overtime included</Text>
+                        <Text style={styles.overtimeMeta}>{week.overtimeHours.toFixed(1)}h at premium rate</Text>
                     </View>
                     <Text style={styles.overtimeValue}>{formatCurrency(week.overtimeBonus)}</Text>
                 </View>

@@ -61,22 +61,20 @@ namespace WageTracker.API.Utilities
         /// <summary>
         /// Recalculates all entries for a week to ensure overtime is correctly distributed
         /// </summary>
-        /// <param name="weekEntries">All entries for the week, sorted chronologically</param>
-        /// <param name="hourlyRate">Base hourly rate</param>
+        /// <param name="weekEntries">All entries for the week</param>
         /// <returns>List of entries with updated earnings</returns>
-        public static List<DailyEntry> RecalculateWeekEntries(List<DailyEntry> weekEntries, decimal hourlyRate)
+        public static List<DailyEntry> RecalculateWeekEntries(List<DailyEntry> weekEntries)
         {
-            // Sort entries by date (oldest first) to calculate accumulation correctly
-            var sortedEntries = weekEntries.OrderBy(e => e.Date).ToList();
-            
+            var sortedEntries = SortChronologically(weekEntries);
+
             decimal accumulatedHours = 0;
 
             foreach (var entry in sortedEntries)
             {
-                var (totalEarnings, regularHours, overtimeHours) = CalculateEntryEarnings(
+                var (totalEarnings, _, _) = CalculateEntryEarnings(
                     entry.TotalHours,
                     accumulatedHours,
-                    hourlyRate,
+                    entry.HourlyRateSnapshot,
                     entry.Tip
                 );
 
@@ -93,15 +91,46 @@ namespace WageTracker.API.Utilities
         /// Calculates weekly summary statistics
         /// </summary>
         public static (decimal totalHours, decimal regularHours, decimal overtimeHours, decimal totalEarnings, decimal overtimeBonus) 
-            CalculateWeeklySummary(List<DailyEntry> weekEntries, decimal hourlyRate)
+            CalculateWeeklySummary(List<DailyEntry> weekEntries)
         {
             var totalHours = weekEntries.Sum(e => e.TotalHours);
             var regularHours = Math.Min(totalHours, OVERTIME_THRESHOLD);
             var overtimeHours = Math.Max(totalHours - OVERTIME_THRESHOLD, 0);
             var totalEarnings = weekEntries.Sum(e => e.TotalEarnings);
-            var overtimeBonus = CalculateOvertimeBonus(overtimeHours, hourlyRate);
+            var overtimeBonus = CalculateWeeklyOvertimeBonus(weekEntries);
 
             return (totalHours, regularHours, overtimeHours, totalEarnings, overtimeBonus);
+        }
+
+        private static decimal CalculateWeeklyOvertimeBonus(List<DailyEntry> weekEntries)
+        {
+            var sortedEntries = SortChronologically(weekEntries);
+            decimal accumulatedHours = 0;
+            decimal overtimeBonus = 0;
+
+            foreach (var entry in sortedEntries)
+            {
+                var (_, _, overtimeHours) = CalculateEntryEarnings(
+                    entry.TotalHours,
+                    accumulatedHours,
+                    entry.HourlyRateSnapshot,
+                    entry.Tip
+                );
+
+                overtimeBonus += CalculateOvertimeBonus(overtimeHours, entry.HourlyRateSnapshot);
+                accumulatedHours += entry.TotalHours;
+            }
+
+            return overtimeBonus;
+        }
+
+        private static List<DailyEntry> SortChronologically(List<DailyEntry> entries)
+        {
+            return entries
+                .OrderBy(e => e.Date)
+                .ThenBy(e => e.CreatedAt)
+                .ThenBy(e => e.Id)
+                .ToList();
         }
     }
 }

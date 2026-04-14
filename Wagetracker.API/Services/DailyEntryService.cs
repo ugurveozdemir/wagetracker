@@ -30,28 +30,7 @@ namespace WageTracker.API.Services
 
             await _subscriptionService.EnsureJobUnlockedAsync(userId, job.Id);
 
-            // Calculate TotalHours if StartTime and EndTime are provided
-            decimal totalHours;
-            if (request.StartTime.HasValue && request.EndTime.HasValue)
-            {
-                var duration = request.EndTime.Value - request.StartTime.Value;
-                
-                // Handle overnight shifts
-                if (duration.TotalHours < 0)
-                {
-                    duration = duration.Add(TimeSpan.FromDays(1));
-                }
-                
-                totalHours = (decimal)duration.TotalHours;
-            }
-            else if (request.TotalHours.HasValue)
-            {
-                totalHours = request.TotalHours.Value;
-            }
-            else
-            {
-                throw new InvalidOperationException("Either TotalHours or both StartTime and EndTime must be provided");
-            }
+            var totalHours = ResolveTotalHours(request.StartTime, request.EndTime, request.TotalHours);
 
             // Create entry
             var entry = new DailyEntry
@@ -97,25 +76,7 @@ namespace WageTracker.API.Services
 
             var oldDate = entry.Date;
 
-            // Calculate TotalHours
-            decimal totalHours;
-            if (request.StartTime.HasValue && request.EndTime.HasValue)
-            {
-                var duration = request.EndTime.Value - request.StartTime.Value;
-                if (duration.TotalHours < 0)
-                {
-                    duration = duration.Add(TimeSpan.FromDays(1));
-                }
-                totalHours = (decimal)duration.TotalHours;
-            }
-            else if (request.TotalHours.HasValue)
-            {
-                totalHours = request.TotalHours.Value;
-            }
-            else
-            {
-                throw new InvalidOperationException("Either TotalHours or both StartTime and EndTime must be provided");
-            }
+            var totalHours = ResolveTotalHours(request.StartTime, request.EndTime, request.TotalHours);
 
             // Update entry
             entry.Date = request.Date.Date;
@@ -212,7 +173,7 @@ namespace WageTracker.API.Services
                     var (weekStart, weekEnd) = WeekCalculator.GetWeekRange(firstEntry.Date, job.FirstDayOfWeek);
 
                     var (totalHours, regularHours, overtimeHours, totalEarnings, overtimeBonus) =
-                        OvertimeCalculator.CalculateWeeklySummary(weekEntries, job.HourlyRate);
+                        OvertimeCalculator.CalculateWeeklySummary(weekEntries);
 
                     return new WeeklyGroupResponse
                     {
@@ -259,14 +220,47 @@ namespace WageTracker.API.Services
             var weekEntries = await _context.DailyEntries
                 .Where(e => e.JobId == job.Id && e.Date >= weekStart && e.Date <= weekEnd)
                 .OrderBy(e => e.Date)
+                .ThenBy(e => e.CreatedAt)
+                .ThenBy(e => e.Id)
                 .ToListAsync();
 
             if (weekEntries.Count == 0) return;
 
             // Recalculate earnings with overtime
-            var recalculated = OvertimeCalculator.RecalculateWeekEntries(weekEntries, job.HourlyRate);
+            OvertimeCalculator.RecalculateWeekEntries(weekEntries);
 
             await _context.SaveChangesAsync();
+        }
+
+        internal static decimal ResolveTotalHours(TimeSpan? startTime, TimeSpan? endTime, decimal? totalHours)
+        {
+            decimal resolvedHours;
+
+            if (startTime.HasValue && endTime.HasValue)
+            {
+                var duration = endTime.Value - startTime.Value;
+                if (duration.TotalHours < 0)
+                {
+                    duration = duration.Add(TimeSpan.FromDays(1));
+                }
+
+                resolvedHours = (decimal)duration.TotalHours;
+            }
+            else if (totalHours.HasValue)
+            {
+                resolvedHours = totalHours.Value;
+            }
+            else
+            {
+                throw new InvalidOperationException("Either TotalHours or both StartTime and EndTime must be provided");
+            }
+
+            if (resolvedHours <= 0 || resolvedHours > 24)
+            {
+                throw new InvalidOperationException("Total hours must be between 0.01 and 24");
+            }
+
+            return resolvedHours;
         }
 
         private static EntryResponse MapToEntryResponse(DailyEntry entry)
