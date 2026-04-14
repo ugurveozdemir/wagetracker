@@ -242,6 +242,24 @@ namespace WageTracker.API.Models.DTOs
 
         [MaxLength(250, ErrorMessage = "Description cannot exceed 250 characters")]
         public string? Description { get; set; }
+
+        [MaxLength(160, ErrorMessage = "Merchant name cannot exceed 160 characters")]
+        public string? MerchantName { get; set; }
+
+        [Range(0, 1000000, ErrorMessage = "Subtotal must be between $0 and $1,000,000")]
+        public decimal? SubtotalAmount { get; set; }
+
+        [Range(0, 1000000, ErrorMessage = "Tax must be between $0 and $1,000,000")]
+        public decimal? TaxAmount { get; set; }
+
+        [Range(0, 1000000, ErrorMessage = "Discount must be between $0 and $1,000,000")]
+        public decimal? DiscountAmount { get; set; }
+
+        [Range(0, 1, ErrorMessage = "Confidence must be between 0 and 1")]
+        public decimal? ReceiptScanConfidence { get; set; }
+
+        public List<string> Warnings { get; set; } = new();
+        public List<ReceiptScanItemDraft> Items { get; set; } = new();
     }
 
     public class ReceiptScanDraftResponse
@@ -250,8 +268,42 @@ namespace WageTracker.API.Models.DTOs
         public DateTime? Date { get; set; }
         public int Category { get; set; } = 7;
         public string? Description { get; set; }
+        public string? MerchantName { get; set; }
+        public decimal? SubtotalAmount { get; set; }
+        public decimal? TaxAmount { get; set; }
+        public decimal? DiscountAmount { get; set; }
+        public decimal ItemTotalAmount { get; set; }
+        public decimal? ReconciliationDifference { get; set; }
         public decimal Confidence { get; set; }
         public List<string> Warnings { get; set; } = new();
+        public List<ReceiptScanItemDraft> Items { get; set; } = new();
+    }
+
+    public class ReceiptScanItemDraft
+    {
+        [Required(ErrorMessage = "Item name is required")]
+        [MaxLength(160, ErrorMessage = "Item name cannot exceed 160 characters")]
+        public string Name { get; set; } = string.Empty;
+
+        [Range(-1000000, 1000000, ErrorMessage = "Item amount must be between -$1,000,000 and $1,000,000")]
+        public decimal TotalAmount { get; set; }
+
+        [Range(0, 1000000, ErrorMessage = "Quantity must be between 0 and 1,000,000")]
+        public decimal? Quantity { get; set; }
+
+        [Range(0, 1000000, ErrorMessage = "Unit price must be between $0 and $1,000,000")]
+        public decimal? UnitPrice { get; set; }
+
+        public int Category { get; set; } = 7;
+
+        [MaxLength(40, ErrorMessage = "Tag cannot exceed 40 characters")]
+        public string Tag { get; set; } = "other";
+
+        [MaxLength(20, ErrorMessage = "Kind cannot exceed 20 characters")]
+        public string Kind { get; set; } = "Product";
+
+        [Range(0, 1, ErrorMessage = "Confidence must be between 0 and 1")]
+        public decimal? Confidence { get; set; }
     }
 
     public class ExpenseResponse
@@ -263,8 +315,32 @@ namespace WageTracker.API.Models.DTOs
         public DateTime Date { get; set; }
         public string? Description { get; set; }
         public string Source { get; set; } = "Manual";
+        public string PurchaseType { get; set; } = "Single";
+        public string? MerchantName { get; set; }
+        public decimal? SubtotalAmount { get; set; }
+        public decimal? TaxAmount { get; set; }
+        public decimal? DiscountAmount { get; set; }
+        public decimal? ReceiptScanConfidence { get; set; }
+        public List<string> ReceiptWarnings { get; set; } = new();
+        public int ItemCount { get; set; }
+        public List<ExpenseItemResponse> Items { get; set; } = new();
         public string? ReceiptImageUrl { get; set; }
         public DateTime CreatedAt { get; set; }
+    }
+
+    public class ExpenseItemResponse
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public decimal TotalAmount { get; set; }
+        public decimal? Quantity { get; set; }
+        public decimal? UnitPrice { get; set; }
+        public int Category { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public string Tag { get; set; } = "other";
+        public string Kind { get; set; } = "Product";
+        public decimal? Confidence { get; set; }
+        public int SortOrder { get; set; }
     }
 
     public class WeeklyExpenseGroupResponse

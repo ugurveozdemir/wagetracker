@@ -430,7 +430,8 @@ WeeklyExpenseGroupResponse {
 - Supported image types: JPEG, PNG, WebP
 - Default size limit: 5 MB, controlled by `ReceiptScan:MaxImageBytes`
 - Mobile behavior: native clients resize receipt images to a maximum 1600 px longest side and upload JPEG at compressed quality before calling this endpoint.
-- Response shape: `ReceiptScanDraftResponse`
+- Response shape: `ReceiptScanDraftResponse`, including parent expense fields plus optional `merchantName`, receipt subtotal/tax/discount values, `items`, `itemTotalAmount`, and `reconciliationDifference`.
+- Item behavior: product, tax, discount, fee, and adjustment rows are draft sub-buyings. The final parent `amount` remains the source of truth if item totals do not reconcile.
 - Visible status handling: `200 OK`; explicit `400 Bad Request` with `{ message: string }` for missing/invalid image input; explicit `403 Forbidden` for subscription access failures; explicit `503 Service Unavailable` when receipt scan provider config/call fails; explicit `504 Gateway Timeout` when provider scan times out.
 
 ### POST `/api/expenses/receipt-scan/confirm`
@@ -441,7 +442,8 @@ WeeklyExpenseGroupResponse {
 - Auth: JWT bearer required
 - Request body: `ConfirmReceiptScanExpenseRequest`
 - Response shape: `ExpenseResponse`
-- Creation behavior: saves `Source = ReceiptScan` and `ReceiptImageUrl = null`.
+- Creation behavior: saves `Source = ReceiptScan` and `ReceiptImageUrl = null`; when reviewed `items` are supplied, saves one parent expense with `PurchaseType = MultiItem` and child `ExpenseItems`.
+- Counting behavior: expense totals and weekly totals count only parent `Expense.Amount`; child item rows are details/analytics and are not separate expenses.
 - Visible status handling: `201 Created`; explicit `400 Bad Request` with `{ message: string }` for invalid category input; explicit `403 Forbidden` for subscription access failures.
 
 ### PUT `/api/expenses/{id}`

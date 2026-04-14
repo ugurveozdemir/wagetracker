@@ -30,8 +30,9 @@
 
 - Expense tracking
   - Users can create manual expenses with `amount`, `category`, `date`, and optional `description`.
-  - Premium users can scan a receipt image on native mobile, review the AI-filled expense draft, and save it as a receipt-scan expense.
-  - Mobile app shows total spending, recent expenses, and a separate weekly grouped expense history screen.
+  - Premium users can scan a receipt image on native mobile, review the AI-filled expense draft, and save it as a receipt-scan expense with optional item-level sub-buyings.
+  - Multi-item receipt expenses count as one parent expense for totals, while extracted items can be expanded in expense lists and used for category/tag breakdowns.
+  - Mobile app shows total spending, recent expenses, collapsible multi-item purchases, and a separate weekly grouped expense history screen.
   - API supports listing all expenses and grouped weekly expense history.
 
 - Weekly goal tracking

@@ -161,6 +161,7 @@ namespace WageTracker.API.Services
 
             var allExpenses = await _context.Expenses
                 .Where(e => e.UserId == userId)
+                .Include(e => e.Items)
                 .ToListAsync();
 
             var access = await _subscriptionService.GetFeatureAccessSnapshotAsync(userId);
@@ -218,18 +219,7 @@ namespace WageTracker.API.Services
                     .OrderByDescending(e => e.Date)
                     .ThenByDescending(e => e.CreatedAt)
                     .Take(5)
-                    .Select(e => new ExpenseResponse
-                    {
-                        Id = e.Id,
-                        Amount = e.Amount,
-                        Category = (int)e.Category,
-                        CategoryName = ExpenseService.GetCategoryName((int)e.Category),
-                        Date = e.Date,
-                        Description = e.Description,
-                        Source = e.Source.ToString(),
-                        ReceiptImageUrl = e.ReceiptImageUrl,
-                        CreatedAt = e.CreatedAt
-                    })
+                    .Select(ExpenseService.MapToResponse)
                     .ToList()
                 : new List<ExpenseResponse>();
 

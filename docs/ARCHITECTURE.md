@@ -64,7 +64,8 @@
 - Entries: `AddEntryModal` -> `useEntriesStore.createEntry()` -> `EntriesController` -> `DailyEntryService`. The service verifies job ownership, derives `TotalHours`, creates the row, then recalculates the affected week with `WeekCalculator` and `OvertimeCalculator` before the mobile app refreshes job details and dashboard data.
 - Dashboard / overview: `useJobsStore.fetchDashboard()` calls `/api/dashboard/summary`. `DashboardService` loads the user's jobs, entries, expenses, and weekly goal, then computes totals and chart data on demand.
 - Expenses: `AddExpenseModal` / expense screens -> `useExpenseStore` -> `ExpensesController` -> `ExpenseService` -> `Expenses` table. Weekly expense history is grouped on read.
-- Receipt scan: `AddExpenseModal` uses `expo-image-picker` on native platforms to collect a receipt image, normalizes it to a compressed JPEG with `expo-image-manipulator`, posts it to `/api/expenses/receipt-scan`, receives an editable draft, then confirms the reviewed fields through `/api/expenses/receipt-scan/confirm`.
+- Multi-item expenses: receipt-scan confirmation can save child `ExpenseItems` under one parent `Expense`. Parent `Amount` remains the only value counted in dashboard and weekly totals; item rows power expandable purchase details and item/category breakdowns.
+- Receipt scan: `AddExpenseModal` uses `expo-image-picker` on native platforms to collect a receipt image, normalizes it to a compressed JPEG with `expo-image-manipulator`, posts it to `/api/expenses/receipt-scan`, receives an editable parent/item draft, then confirms the reviewed fields through `/api/expenses/receipt-scan/confirm`.
 - Weekly goal: `GoalScreen` calls `profileApi.updateWeeklyGoal()` directly, not through a Zustand profile store. `ProfileService` updates `User.WeeklyGoalAmount`, and the screen then refetches dashboard data.
 
 ## Core Dependencies And Integrations

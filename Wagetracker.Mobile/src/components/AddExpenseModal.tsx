@@ -17,7 +17,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useExpenseStore } from '../stores';
-import { EXPENSE_CATEGORIES } from '../types';
+import { EXPENSE_CATEGORIES, ReceiptScanItemDraft } from '../types';
 import Toast from 'react-native-toast-message';
 
 interface AddExpenseModalProps {
@@ -28,6 +28,7 @@ interface AddExpenseModalProps {
 
 const MAX_RECEIPT_IMAGE_DIMENSION = 1600;
 const RECEIPT_IMAGE_QUALITY = 0.7;
+const ITEM_TAGS = ['groceries', 'snacks', 'ready_meal', 'household', 'personal_care', 'clothing', 'school', 'medicine', 'electronics', 'transport', 'tax_fee', 'discount', 'adjustment', 'other'] as const;
 
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     visible,
@@ -44,6 +45,12 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     const [category, setCategory] = useState(7);
     const [date, setDate] = useState(new Date());
     const [description, setDescription] = useState('');
+    const [purchaseMode, setPurchaseMode] = useState<'single' | 'multi'>('single');
+    const [merchantName, setMerchantName] = useState('');
+    const [subtotalAmount, setSubtotalAmount] = useState<number | null>(null);
+    const [taxAmount, setTaxAmount] = useState<number | null>(null);
+    const [discountAmount, setDiscountAmount] = useState<number | null>(null);
+    const [receiptItems, setReceiptItems] = useState<ReceiptScanItemDraft[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
@@ -57,6 +64,12 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             setCategory(7);
             setDate(new Date());
             setDescription('');
+            setPurchaseMode('single');
+            setMerchantName('');
+            setSubtotalAmount(null);
+            setTaxAmount(null);
+            setDiscountAmount(null);
+            setReceiptItems([]);
             setError(null);
             setShowDatePicker(false);
             setIsScanning(false);
@@ -118,6 +131,12 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
         setCategory(draft.category);
         setDescription(draft.description || '');
+        setMerchantName(draft.merchantName || '');
+        setSubtotalAmount(draft.subtotalAmount);
+        setTaxAmount(draft.taxAmount);
+        setDiscountAmount(draft.discountAmount);
+        setReceiptItems(draft.items || []);
+        setPurchaseMode((draft.items || []).length > 0 ? 'multi' : 'single');
         setIsReceiptDraft(true);
         setScanConfidence(draft.confidence);
         setScanWarnings(draft.warnings || []);
@@ -192,6 +211,36 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         ]);
     };
 
+    const itemTotal = receiptItems.reduce((sum, item) => sum + (Number(item.totalAmount) || 0), 0);
+    const parsedParentAmount = parseFloat(amount);
+    const itemDifference = !Number.isNaN(parsedParentAmount) && receiptItems.length > 0
+        ? parsedParentAmount - itemTotal
+        : 0;
+
+    const updateReceiptItem = (index: number, updates: Partial<ReceiptScanItemDraft>) => {
+        setReceiptItems((items) => items.map((item, itemIndex) => (itemIndex === index ? { ...item, ...updates } : item)));
+    };
+
+    const addReceiptItem = () => {
+        setReceiptItems((items) => [
+            ...items,
+            {
+                name: '',
+                totalAmount: 0,
+                quantity: null,
+                unitPrice: null,
+                category: 7,
+                tag: 'other',
+                kind: 'Product',
+                confidence: null,
+            },
+        ]);
+    };
+
+    const removeReceiptItem = (index: number) => {
+        setReceiptItems((items) => items.filter((_, itemIndex) => itemIndex !== index));
+    };
+
     const handleSubmit = async () => {
         const parsedAmount = parseFloat(amount);
 
@@ -208,8 +257,23 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                 description: description.trim() || undefined,
             };
 
-            if (isReceiptDraft) {
-                await confirmReceiptScan(payload);
+            if (isReceiptDraft || (purchaseMode === 'multi' && receiptItems.some((item) => item.name.trim() && Number(item.totalAmount) !== 0))) {
+                await confirmReceiptScan({
+                    ...payload,
+                    merchantName: merchantName.trim() || undefined,
+                    subtotalAmount,
+                    taxAmount,
+                    discountAmount,
+                    receiptScanConfidence: scanConfidence,
+                    warnings: scanWarnings,
+                    items: receiptItems
+                        .filter((item) => item.name.trim() && Number(item.totalAmount) !== 0)
+                        .map((item) => ({
+                            ...item,
+                            name: item.name.trim(),
+                            totalAmount: Number(item.totalAmount) || 0,
+                        })),
+                });
             } else {
                 await createExpense(payload);
             }
@@ -255,7 +319,24 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     <View style={[styles.heroCard, { borderRadius: 40 * scale, padding: 28 * scale }]}> 
                         <Text style={styles.heroLabel}>NEW EXPENSE</Text>
                         <Text style={[styles.heroValue, { fontSize: compact ? 42 : 50 }]}>${amount || '0.00'}</Text>
-                        <Text style={styles.heroSubtext}>Record the amount, category, date and an optional description.</Text>
+                        <Text style={styles.heroSubtext}>{purchaseMode === 'multi' ? 'Review the receipt total and item-level sub-buyings.' : 'Record the amount, category, date and an optional description.'}</Text>
+                    </View>
+
+                    <View style={styles.modeSwitch}>
+                        <TouchableOpacity
+                            style={[styles.modeButton, purchaseMode === 'single' && styles.modeButtonActive]}
+                            activeOpacity={0.88}
+                            onPress={() => setPurchaseMode('single')}
+                        >
+                            <Text style={[styles.modeButtonText, purchaseMode === 'single' && styles.modeButtonTextActive]}>Single purchase</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.modeButton, purchaseMode === 'multi' && styles.modeButtonActive]}
+                            activeOpacity={0.88}
+                            onPress={() => setPurchaseMode('multi')}
+                        >
+                            <Text style={[styles.modeButtonText, purchaseMode === 'multi' && styles.modeButtonTextActive]}>Receipt items</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {error ? (
@@ -288,6 +369,24 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                             {scanWarnings.map((warning) => (
                                 <Text key={warning} style={styles.scanWarningText}>{warning}</Text>
                             ))}
+                            {purchaseMode === 'multi' && receiptItems.length > 0 ? (
+                                <Text style={styles.scanSummaryText}>
+                                    {receiptItems.length} items detected. Item total: ${itemTotal.toFixed(2)}
+                                </Text>
+                            ) : null}
+                        </View>
+                    ) : null}
+
+                    {purchaseMode === 'multi' ? (
+                        <View style={[styles.fieldCard, { borderRadius: 28 * scale }]}>
+                            <Text style={styles.fieldLabel}>Receipt</Text>
+                            <TextInput
+                                style={styles.standardInput}
+                                placeholder="Merchant name"
+                                placeholderTextColor="#bec9bf"
+                                value={merchantName}
+                                onChangeText={setMerchantName}
+                            />
                         </View>
                     ) : null}
 
@@ -369,6 +468,67 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                         />
                     </View>
 
+                    {purchaseMode === 'multi' ? (
+                        <View style={[styles.fieldCard, { borderRadius: 28 * scale }]}>
+                            <View style={styles.itemsHeader}>
+                                <Text style={styles.fieldLabel}>Sub-buyings</Text>
+                                <TouchableOpacity onPress={addReceiptItem} activeOpacity={0.8}>
+                                    <Text style={styles.addItemText}>Add item</Text>
+                                </TouchableOpacity>
+                            </View>
+                            {receiptItems.length === 0 ? (
+                                <Text style={styles.emptyItemsText}>Scan a receipt or add items to break down this purchase.</Text>
+                            ) : (
+                                receiptItems.map((item, index) => (
+                                    <View key={`${index}-${item.name}`} style={styles.receiptItemRow}>
+                                        <View style={styles.receiptItemTopRow}>
+                                            <TextInput
+                                                style={[styles.itemNameInput, { borderRadius: 16 * scale }]}
+                                                placeholder="Item name"
+                                                placeholderTextColor="#bec9bf"
+                                                value={item.name}
+                                                onChangeText={(value) => updateReceiptItem(index, { name: value })}
+                                            />
+                                            <TextInput
+                                                style={[styles.itemAmountInput, { borderRadius: 16 * scale }]}
+                                                placeholder="0.00"
+                                                placeholderTextColor="#bec9bf"
+                                                value={String(item.totalAmount || '')}
+                                                onChangeText={(value) => updateReceiptItem(index, { totalAmount: parseFloat(value) || 0 })}
+                                                keyboardType="decimal-pad"
+                                            />
+                                            <TouchableOpacity style={styles.removeItemButton} onPress={() => removeReceiptItem(index)} activeOpacity={0.8}>
+                                                <MaterialIcons name="close" size={16} color="#7a573d" />
+                                            </TouchableOpacity>
+                                        </View>
+                                        <View style={styles.itemChipWrap}>
+                                            {ITEM_TAGS.slice(0, 7).map((tag) => (
+                                                <TouchableOpacity
+                                                    key={tag}
+                                                    style={[styles.itemTagChip, item.tag === tag && styles.itemTagChipActive]}
+                                                    onPress={() => updateReceiptItem(index, { tag })}
+                                                    activeOpacity={0.82}
+                                                >
+                                                    <Text style={[styles.itemTagText, item.tag === tag && styles.itemTagTextActive]}>
+                                                        {tag.replace('_', ' ')}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </View>
+                                ))
+                            )}
+                            {receiptItems.length > 0 ? (
+                                <View style={styles.reconcileRow}>
+                                    <Text style={styles.reconcileText}>Items ${itemTotal.toFixed(2)}</Text>
+                                    <Text style={Math.abs(itemDifference) > 0.01 ? styles.reconcileWarning : styles.reconcileText}>
+                                        Difference ${itemDifference.toFixed(2)}
+                                    </Text>
+                                </View>
+                            ) : null}
+                        </View>
+                    ) : null}
+
                     <TouchableOpacity
                         style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
                         activeOpacity={0.9}
@@ -390,6 +550,11 @@ const styles = StyleSheet.create({
     heroLabel: { color: 'rgba(65,33,0,0.80)', fontSize: 12, fontWeight: '700', letterSpacing: 1.7, marginBottom: 8 },
     heroValue: { color: '#412100', fontWeight: '800', letterSpacing: -1, marginBottom: 8 },
     heroSubtext: { color: 'rgba(65,33,0,0.80)', fontSize: 14, lineHeight: 22 },
+    modeSwitch: { backgroundColor: '#f5f4eb', borderRadius: 24, padding: 6, marginBottom: 16, flexDirection: 'row', gap: 6 },
+    modeButton: { flex: 1, minHeight: 46, borderRadius: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+    modeButtonActive: { backgroundColor: '#ffffff' },
+    modeButtonText: { color: '#6f7a71', fontSize: 13, fontWeight: '800' },
+    modeButtonTextActive: { color: '#006D44' },
     errorBanner: { backgroundColor: '#fff1ef', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24, marginBottom: 16 },
     errorText: { color: '#ba1a1a', fontSize: 14, fontWeight: '700' },
     scanButton: { backgroundColor: '#ecf8f0', minHeight: 58, borderRadius: 24, marginBottom: 16, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
@@ -402,6 +567,7 @@ const styles = StyleSheet.create({
     scanWarningText: { color: '#7a573d', fontSize: 13, lineHeight: 18, fontWeight: '600', marginTop: 2 },
     fieldCard: { backgroundColor: '#f5f4eb', padding: 20, marginBottom: 16 },
     fieldLabel: { color: '#181d19', fontSize: 16, fontWeight: '700', marginBottom: 12 },
+    standardInput: { backgroundColor: '#ffffff', borderRadius: 24, minHeight: 56, paddingHorizontal: 18, color: '#181d19', fontSize: 16, fontWeight: '700' },
     moneyField: { backgroundColor: '#ffffff', borderRadius: 999, minHeight: 62, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center' },
     moneyPrefix: { color: '#6f7a71', fontSize: 18, fontWeight: '700', marginRight: 8, lineHeight: 22 },
     moneyInput: { flex: 1, color: '#181d19', fontSize: 24, fontWeight: '700', paddingTop: 8, paddingBottom: 0, textAlignVertical: 'center' },
@@ -413,6 +579,22 @@ const styles = StyleSheet.create({
     dateButton: { backgroundColor: '#ffffff', borderRadius: 999, minHeight: 58, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     dateText: { color: '#181d19', fontSize: 18, fontWeight: '700' },
     descriptionInput: { backgroundColor: '#ffffff', paddingHorizontal: 18, paddingVertical: 16, color: '#181d19', fontSize: 16, lineHeight: 24 },
+    itemsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+    addItemText: { color: '#006D44', fontSize: 13, fontWeight: '800' },
+    emptyItemsText: { color: '#6f7a71', fontSize: 13, fontWeight: '600', lineHeight: 20 },
+    receiptItemRow: { backgroundColor: '#ffffff', borderRadius: 22, padding: 12, marginBottom: 10 },
+    receiptItemTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    itemNameInput: { flex: 1, backgroundColor: '#f5f4eb', minHeight: 46, paddingHorizontal: 12, color: '#181d19', fontSize: 14, fontWeight: '700' },
+    itemAmountInput: { width: 86, backgroundColor: '#f5f4eb', minHeight: 46, paddingHorizontal: 10, color: '#181d19', fontSize: 14, fontWeight: '800', textAlign: 'right' },
+    removeItemButton: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#fff1e8', alignItems: 'center', justifyContent: 'center' },
+    itemChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+    itemTagChip: { backgroundColor: '#f5f4eb', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6 },
+    itemTagChipActive: { backgroundColor: '#ecf8f0' },
+    itemTagText: { color: '#6f7a71', fontSize: 11, fontWeight: '700' },
+    itemTagTextActive: { color: '#006D44' },
+    reconcileRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+    reconcileText: { color: '#4f5a53', fontSize: 13, fontWeight: '700' },
+    reconcileWarning: { color: '#7a573d', fontSize: 13, fontWeight: '800' },
     submitButton: { marginTop: 8, backgroundColor: '#ff8a00', minHeight: 64, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
     submitButtonDisabled: { opacity: 0.7 },
     submitButtonText: { color: '#412100', fontSize: 20, fontWeight: '800' },

@@ -21,6 +21,21 @@ namespace WageTracker.API.Models.Entities
         ReceiptScan = 1          // AI fiş taramasından geldi (gelecek feature)
     }
 
+    public enum PurchaseType
+    {
+        Single = 0,
+        MultiItem = 1
+    }
+
+    public enum ExpenseItemKind
+    {
+        Product = 0,
+        Tax = 1,
+        Discount = 2,
+        Fee = 3,
+        Adjustment = 4
+    }
+
     public class Expense
     {
         [Key]
@@ -49,8 +64,73 @@ namespace WageTracker.API.Models.Entities
         // AI Receipt Scanning uyumu (gelecek feature için hazır)
         public ExpenseSource Source { get; set; } = ExpenseSource.Manual;
 
+        public PurchaseType PurchaseType { get; set; } = PurchaseType.Single;
+
+        [MaxLength(160)]
+        public string? MerchantName { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? SubtotalAmount { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? TaxAmount { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? DiscountAmount { get; set; }
+
+        [Column(TypeName = "decimal(5,4)")]
+        public decimal? ReceiptScanConfidence { get; set; }
+
+        public string? ReceiptWarningsJson { get; set; }
+
         [MaxLength(500)]
         public string? ReceiptImageUrl { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public List<ExpenseItem> Items { get; set; } = new();
+    }
+
+    public class ExpenseItem
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public int ExpenseId { get; set; }
+
+        [ForeignKey("ExpenseId")]
+        public Expense? Expense { get; set; }
+
+        [Required]
+        [MaxLength(160)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalAmount { get; set; }
+
+        [Column(TypeName = "decimal(18,3)")]
+        public decimal? Quantity { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? UnitPrice { get; set; }
+
+        [Required]
+        public ExpenseCategory Category { get; set; } = ExpenseCategory.Other;
+
+        [Required]
+        [MaxLength(40)]
+        public string Tag { get; set; } = "other";
+
+        [Required]
+        public ExpenseItemKind Kind { get; set; } = ExpenseItemKind.Product;
+
+        [Column(TypeName = "decimal(5,4)")]
+        public decimal? Confidence { get; set; }
+
+        public int SortOrder { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

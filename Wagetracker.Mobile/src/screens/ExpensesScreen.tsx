@@ -18,7 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useExpenseStore } from '../stores';
-import { EXPENSE_CATEGORIES, ExpenseStackParamList } from '../types';
+import { EXPENSE_CATEGORIES, ExpenseResponse, ExpenseStackParamList } from '../types';
 import { colors } from '../theme';
 import Feather from 'react-native-vector-icons/Feather';
 import Toast from 'react-native-toast-message';
@@ -30,6 +30,7 @@ export const ExpensesScreen: React.FC = () => {
     const navigation = useNavigation<ExpensesNavigationProp>();
     const { expenses, fetchExpenses, deleteExpense, isLoadingExpenses, hasLoadedExpenses } = useExpenseStore();
     const [refreshing, setRefreshing] = useState(false);
+    const [expandedExpenseIds, setExpandedExpenseIds] = useState<Record<number, boolean>>({});
     const compact = width < 380;
     const scale = Math.min(Math.max(width / 393, 0.84), 1);
     const horizontalPadding = compact ? 18 : 24;
@@ -57,6 +58,13 @@ export const ExpensesScreen: React.FC = () => {
     const categoryTotals = useMemo(() => {
         const totals = new Map<number, number>();
         expenses.forEach((expense) => {
+            if (expense.purchaseType === 'MultiItem' && expense.items?.length) {
+                expense.items.forEach((item) => {
+                    totals.set(item.category, (totals.get(item.category) ?? 0) + item.totalAmount);
+                });
+                return;
+            }
+
             totals.set(expense.category, (totals.get(expense.category) ?? 0) + expense.amount);
         });
         return totals;
@@ -142,10 +150,18 @@ export const ExpensesScreen: React.FC = () => {
                     icon: iconMap[index] ?? 'shopping-bag',
                     iconBg: bgMap[index] ?? 'rgba(255,220,196,0.30)',
                     iconColor: iconColorMap[index] ?? '#ab3600',
+                    expense,
                 };
             }),
         [expenses]
     );
+
+    const toggleExpenseExpanded = (expenseId: number) => {
+        setExpandedExpenseIds((state) => ({
+            ...state,
+            [expenseId]: !state[expenseId],
+        }));
+    };
 
     const handleDeleteExpense = (expenseId: number, title: string) => {
         Alert.alert(
@@ -275,6 +291,9 @@ export const ExpensesScreen: React.FC = () => {
                                 compact={compact}
                                 scale={scale}
                                 onDelete={() => handleDeleteExpense(item.id, item.title)}
+                                expanded={!!expandedExpenseIds[item.id]}
+                                onToggleExpanded={() => toggleExpenseExpanded(item.id)}
+                                formatCurrency={formatCurrency}
                             />
                         ))}
                     </View>
@@ -294,13 +313,19 @@ interface RecentExpenseItemProps {
         icon: string;
         iconBg: string;
         iconColor: string;
+        expense: ExpenseResponse;
     };
     compact: boolean;
     scale: number;
     onDelete: () => void;
+    expanded: boolean;
+    onToggleExpanded: () => void;
+    formatCurrency: (amount: number) => string;
 }
 
-const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, scale, onDelete }) => {
+const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, scale, onDelete, expanded, onToggleExpanded, formatCurrency }) => {
+    const hasItems = item.expense.purchaseType === 'MultiItem' && item.expense.items?.length > 0;
+
     const renderRightActions = (
         _progress: Animated.AnimatedInterpolation<number>,
         dragX: Animated.AnimatedInterpolation<number>
@@ -380,9 +405,28 @@ const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, sc
                 </View>
 
                 <View style={styles.recentAmountWrap}>
+                    {hasItems ? (
+                        <TouchableOpacity style={styles.itemCountPill} onPress={onToggleExpanded} activeOpacity={0.82}>
+                            <Text style={styles.itemCountText}>{item.expense.itemCount} items</Text>
+                            <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={15} color="#006D44" />
+                        </TouchableOpacity>
+                    ) : null}
                     <Text style={[styles.recentAmount, { fontSize: compact ? 15 : 16 }]}>{item.amount}</Text>
                 </View>
             </View>
+            {hasItems && expanded ? (
+                <View style={styles.expandedItems}>
+                    {item.expense.items.map((expenseItem) => (
+                        <View key={expenseItem.id} style={styles.expandedItemRow}>
+                            <View style={styles.expandedItemCopy}>
+                                <Text numberOfLines={1} style={styles.expandedItemName}>{expenseItem.name}</Text>
+                                <Text style={styles.expandedItemTag}>{expenseItem.tag.replace('_', ' ')}</Text>
+                            </View>
+                            <Text style={styles.expandedItemAmount}>{formatCurrency(expenseItem.totalAmount)}</Text>
+                        </View>
+                    ))}
+                </View>
+            ) : null}
         </Swipeable>
     );
 };
@@ -567,10 +611,25 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     recentAmountWrap: {
-        width: 76,
+        width: 96,
         alignItems: 'flex-end',
         justifyContent: 'center',
         marginLeft: 8,
+        gap: 5,
+    },
+    itemCountPill: {
+        backgroundColor: '#ecf8f0',
+        borderRadius: 999,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    itemCountText: {
+        color: '#006D44',
+        fontSize: 10,
+        fontWeight: '800',
     },
     recentIconWrap: {
         width: 48,
@@ -606,6 +665,43 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         letterSpacing: -0.2,
         textAlign: 'right',
+    },
+    expandedItems: {
+        backgroundColor: '#ffffff',
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+        paddingHorizontal: 20,
+        paddingBottom: 14,
+        gap: 8,
+    },
+    expandedItemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#f1f5ef',
+        paddingTop: 8,
+    },
+    expandedItemCopy: {
+        flex: 1,
+        minWidth: 0,
+    },
+    expandedItemName: {
+        color: '#181d19',
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    expandedItemTag: {
+        color: '#6f7a71',
+        fontSize: 11,
+        fontWeight: '600',
+        marginTop: 2,
+    },
+    expandedItemAmount: {
+        color: '#4f5a53',
+        fontSize: 13,
+        fontWeight: '800',
     },
     swipeDeleteContainer: {
         width: 112,

@@ -18,6 +18,7 @@ namespace WageTracker.API.Data
         public DbSet<Job> Jobs { get; set; }
         public DbSet<DailyEntry> DailyEntries { get; set; }
         public DbSet<Expense> Expenses { get; set; }
+        public DbSet<ExpenseItem> ExpenseItems { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<RevenueCatWebhookEvent> RevenueCatWebhookEvents { get; set; }
 
@@ -105,6 +106,12 @@ namespace WageTracker.API.Data
                 entity.Property(e => e.Date).IsRequired();
                 entity.Property(e => e.Description).HasMaxLength(250);
                 entity.Property(e => e.Source).IsRequired();
+                entity.Property(e => e.PurchaseType).IsRequired();
+                entity.Property(e => e.MerchantName).HasMaxLength(160);
+                entity.Property(e => e.SubtotalAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.TaxAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.DiscountAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.ReceiptScanConfidence).HasColumnType("decimal(5,4)");
                 entity.Property(e => e.ReceiptImageUrl).HasMaxLength(500);
                 entity.Property(e => e.CreatedAt).IsRequired();
 
@@ -112,6 +119,29 @@ namespace WageTracker.API.Data
                 entity.HasOne(e => e.User)
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ExpenseItem>(entity =>
+            {
+                entity.ToTable("ExpenseItems");
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.ExpenseId);
+                entity.HasIndex(e => new { e.ExpenseId, e.SortOrder });
+
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(160);
+                entity.Property(e => e.TotalAmount).IsRequired().HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Quantity).HasColumnType("decimal(18,3)");
+                entity.Property(e => e.UnitPrice).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Category).IsRequired();
+                entity.Property(e => e.Tag).IsRequired().HasMaxLength(40);
+                entity.Property(e => e.Kind).IsRequired();
+                entity.Property(e => e.Confidence).HasColumnType("decimal(5,4)");
+                entity.Property(e => e.CreatedAt).IsRequired();
+
+                entity.HasOne(e => e.Expense)
+                    .WithMany(e => e.Items)
+                    .HasForeignKey(e => e.ExpenseId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

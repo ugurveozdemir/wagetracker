@@ -147,8 +147,31 @@ export interface ExpenseResponse {
     date: string;
     description: string | null;
     source: string;
+    purchaseType: 'Single' | 'MultiItem' | string;
+    merchantName: string | null;
+    subtotalAmount: number | null;
+    taxAmount: number | null;
+    discountAmount: number | null;
+    receiptScanConfidence: number | null;
+    receiptWarnings: string[];
+    itemCount: number;
+    items: ExpenseItemResponse[];
     receiptImageUrl: string | null;
     createdAt: string;
+}
+
+export interface ExpenseItemResponse {
+    id: number;
+    name: string;
+    totalAmount: number;
+    quantity: number | null;
+    unitPrice: number | null;
+    category: number;
+    categoryName: string;
+    tag: ExpenseItemTag;
+    kind: ExpenseItemKind;
+    confidence: number | null;
+    sortOrder: number;
 }
 
 export interface WeeklyExpenseGroupResponse {
@@ -165,13 +188,50 @@ export interface CreateExpenseRequest {
     description?: string;
 }
 
+export type ExpenseItemKind = 'Product' | 'Tax' | 'Discount' | 'Fee' | 'Adjustment' | string;
+
+export type ExpenseItemTag =
+    | 'groceries'
+    | 'snacks'
+    | 'ready_meal'
+    | 'household'
+    | 'personal_care'
+    | 'clothing'
+    | 'school'
+    | 'medicine'
+    | 'electronics'
+    | 'transport'
+    | 'tax_fee'
+    | 'discount'
+    | 'adjustment'
+    | 'other'
+    | string;
+
+export interface ReceiptScanItemDraft {
+    name: string;
+    totalAmount: number;
+    quantity?: number | null;
+    unitPrice?: number | null;
+    category: number;
+    tag: ExpenseItemTag;
+    kind: ExpenseItemKind;
+    confidence?: number | null;
+}
+
 export interface ReceiptScanDraftResponse {
     amount: number | null;
     date: string | null;
     category: number;
     description: string | null;
+    merchantName: string | null;
+    subtotalAmount: number | null;
+    taxAmount: number | null;
+    discountAmount: number | null;
+    itemTotalAmount: number;
+    reconciliationDifference: number | null;
     confidence: number;
     warnings: string[];
+    items: ReceiptScanItemDraft[];
 }
 
 export interface ConfirmReceiptScanExpenseRequest {
@@ -179,6 +239,13 @@ export interface ConfirmReceiptScanExpenseRequest {
     category: number;
     date: string;
     description?: string;
+    merchantName?: string;
+    subtotalAmount?: number | null;
+    taxAmount?: number | null;
+    discountAmount?: number | null;
+    receiptScanConfidence?: number | null;
+    warnings: string[];
+    items: ReceiptScanItemDraft[];
 }
 
 export interface UpdateExpenseRequest {
