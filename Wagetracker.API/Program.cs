@@ -243,6 +243,11 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Health check endpoint — placed before all middleware so platform
+// health probes and Docker HEALTHCHECK always get a fast 200.
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
+   .ExcludeFromDescription(); // hide from Swagger
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -255,19 +260,16 @@ app.UseCors("AllowAll");
 
 app.UseRateLimiter();
 
-// Skip HTTPS redirect in development
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
+// NOTE: Do NOT use UseHttpsRedirection() here.
+// DigitalOcean App Platform terminates TLS at its load balancer and
+// forwards plain HTTP to the container.  Adding HTTPS redirection
+// causes an infinite redirect loop (container keeps redirecting to
+// https:// which the LB downgrades back to http://).
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// Health check endpoint for container orchestration
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 
 app.MapGet("/account-deletion", (IConfiguration configuration) =>
 {
