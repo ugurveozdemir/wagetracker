@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -46,6 +47,8 @@ namespace WageTracker.API.Services
             "adjustment",
             "other"
         };
+
+        private static readonly Regex BarcodeLikeNamePattern = new(@"^[\d\s\-\*#]{6,}$", RegexOptions.Compiled);
 
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
@@ -172,7 +175,11 @@ namespace WageTracker.API.Services
                                 - merchantName should be the store or restaurant name if visible.
                                 - description should be short and user-friendly. Prefer merchant name plus useful receipt context.
                                 - Extract visible line items. Do not invent products, prices, tax, or discounts.
+                                - Item name must be the human-readable product or service description, not a barcode, UPC, SKU, PLU, item number, reference code, or long numeric identifier.
+                                - If a line has both a numeric code and a readable description, use the readable description as name and ignore the code.
+                                - If a readable description appears on the line immediately above or below a barcode/SKU, use that nearby description as the item name.
                                 - Preserve abbreviated receipt item names when uncertain; normalize only obvious names.
+                                - Do not return names that are only numbers or mostly numbers such as "004900000445", "4011", "#12345678", or "000123-45". If no readable product name is visible, use "Unknown item" and add a warning.
                                 - Product item amounts must be positive.
                                 - Tax, fees, deposits, bag fees, bottle deposits, coupons, and discounts should be item rows when visible.
                                 - Discount rows should use kind Discount and a negative totalAmount.
@@ -378,6 +385,12 @@ namespace WageTracker.API.Services
                     continue;
                 }
 
+                if (IsBarcodeLikeName(name))
+                {
+                    warnings.Add($"Item name looked like a barcode or SKU and was replaced: {name}.");
+                    name = "Unknown item";
+                }
+
                 var kind = NormalizeKind(item.Kind);
                 var totalAmount = Math.Round(item.TotalAmount, 2);
                 if (kind != "Discount" && totalAmount < 0)
@@ -417,6 +430,18 @@ namespace WageTracker.API.Services
                 "adjustment" => "Adjustment",
                 _ => "Product"
             };
+        }
+
+        private static bool IsBarcodeLikeName(string value)
+        {
+            var compact = value.Trim();
+            if (!BarcodeLikeNamePattern.IsMatch(compact))
+            {
+                return false;
+            }
+
+            var digitCount = compact.Count(char.IsDigit);
+            return digitCount >= 6 && digitCount >= compact.Length * 0.75;
         }
 
         private static string NormalizeTag(string? value, string kind)
