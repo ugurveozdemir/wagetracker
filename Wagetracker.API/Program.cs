@@ -82,8 +82,12 @@ builder.Services.AddCors(options =>
     else
     {
         // Production: Only allow specific origins
-        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
-            ?? Array.Empty<string>();
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? new[]
+            {
+                "https://wagetracker.xyz",
+                "https://www.wagetracker.xyz"
+            };
         
         // Log allowed origins for debugging
         Console.WriteLine($"[CORS] Allowed origins: {string.Join(", ", allowedOrigins)}");
@@ -100,7 +104,7 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            throw new InvalidOperationException("Cors:AllowedOrigins must be configured in production.");
+            throw new InvalidOperationException("Cors:AllowedOrigins resolved to an empty list in production.");
         }
     }
 });
