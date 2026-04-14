@@ -20,6 +20,9 @@ const config: ExpoConfig = {
     ios: {
         supportsTablet: true,
         bundleIdentifier: iosBundleIdentifier,
+        infoPlist: {
+            ITSAppUsesNonExemptEncryption: false,
+        },
     },
     android: {
         package: androidPackage,

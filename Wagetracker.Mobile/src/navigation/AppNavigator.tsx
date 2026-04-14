@@ -139,7 +139,11 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
     const { user } = useAuthStore();
     const { width } = useWindowDimensions();
     const activeRouteName = state.routes[state.index]?.name;
-    const showFab = activeRouteName === 'OverviewTab' || (activeRouteName === 'ExpensesTab' && user?.access.canUseExpenses);
+    const activeRoute = state.routes[state.index];
+    const nestedState = activeRoute?.state;
+    const nestedRoute = nestedState?.routes?.[nestedState.index ?? 0];
+    const isDashboardJobDetails = activeRouteName === 'HomeTab' && nestedRoute?.name === 'JobDetails';
+    const showFab = isDashboardJobDetails || activeRouteName === 'OverviewTab' || (activeRouteName === 'ExpensesTab' && user?.access.canUseExpenses);
     const compact = width < 380;
     const tabScale = Math.min(Math.max(width / 393, 0.84), 1);
 

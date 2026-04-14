@@ -87,11 +87,31 @@ export const DashboardScreen: React.FC = () => {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })}`;
+    const formatShortDate = (value: string) => {
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return value;
+        }
+
+        return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    };
     const goalProgressPercent = summary?.weeklyGoal?.targetAmount != null
         ? Math.max(0, Math.min(summary?.weeklyGoal?.progressPercent ?? 0, 100))
         : 0;
+    const canUseExpenses = Boolean(user?.access.canUseExpenses);
+    const recentExpensesPreview = (summary?.recentExpenses ?? []).slice(0, 3);
+    const weeklyNet = summary?.weeklyNet ?? 0;
+    const weeklyNetLabel = `${weeklyNet >= 0 ? '+' : '-'}${formatCurrency(Math.abs(weeklyNet))}`;
     const openPremiumPaywall = (target: PaywallTarget) => {
         navigation.navigate('Paywall', target);
+    };
+    const openExpensesDetails = () => {
+        if (canUseExpenses) {
+            navigation.navigate('ExpensesTab');
+            return;
+        }
+
+        openPremiumPaywall({ source: 'dashboard', feature: 'expenses' });
     };
     const openGoalsPaywall = () => openPremiumPaywall({ source: 'goals', feature: 'goals' });
     const openJobLimitPaywall = () => {
@@ -227,20 +247,8 @@ export const DashboardScreen: React.FC = () => {
                     </View>
                 </View>
 
-                <View style={[styles.spendingCard, { borderRadius: 28 * scale, padding: 24 * scale }]}>
-                    <View style={styles.spendingCardHeader}>
-                    <Text style={styles.spendingLabel}>Total Spending Since Monday</Text>
-                        <View style={styles.spendingIconWrap}>
-                            <MaterialIcons name={user?.access.canUseExpenses ? 'receipt-long' : 'lock'} size={18} color="#ffffff" />
-                        </View>
-                    </View>
-                    <Text style={[styles.spendingValue, { fontSize: isCompact ? 28 : 32 }]}>
-                        {user?.access.canUseExpenses ? formatCurrency(summary?.weeklyExpenses ?? 0) : 'Premium'}
-                    </Text>
-                </View>
-
                 <View style={styles.sectionHeader}>
-                    <Text style={[styles.sectionTitle, { fontSize: sectionTitleSize }]}>Active Gigs</Text>
+                    <Text style={[styles.sectionTitle, { fontSize: sectionTitleSize }]}>Active Jobs</Text>
                     <Text style={styles.sectionMeta}>{jobs.length} Active</Text>
                 </View>
 
@@ -333,9 +341,79 @@ export const DashboardScreen: React.FC = () => {
                         }}
                     >
                         <MaterialIcons name="add-circle" size={Math.round(28 * scale)} color={colors.outline} />
-                        <Text style={styles.addGigText}>{!user?.subscription.isPremium && jobs.length >= 2 ? 'Upgrade' : 'Add Gig'}</Text>
+                        <Text style={styles.addGigText}>{!user?.subscription.isPremium && jobs.length >= 2 ? 'Upgrade' : 'Add Job'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
+
+                {canUseExpenses ? (
+                    <TouchableOpacity
+                        style={[
+                            styles.spendingCard,
+                            {
+                                borderRadius: 28 * scale,
+                                padding: 24 * scale,
+                                minHeight: 236 * scale,
+                                marginTop: 20 * scale,
+                            },
+                        ]}
+                        activeOpacity={0.9}
+                        onPress={openExpensesDetails}
+                    >
+                        <View style={styles.spendingCardHeader}>
+                            <Text style={styles.spendingLabel}>Total Spending Since Monday</Text>
+                            <View style={styles.spendingIconWrap}>
+                                <MaterialIcons name="receipt-long" size={18} color="#ffffff" />
+                            </View>
+                        </View>
+                        <View style={styles.spendingHeadlineRow}>
+                            <Text style={[styles.spendingValue, { fontSize: isCompact ? 34 : 40 }]}>
+                                {formatCurrency(summary?.weeklyExpenses ?? 0)}
+                            </Text>
+                            <View style={[
+                                styles.spendingNetBadge,
+                                weeklyNet >= 0 ? styles.spendingNetBadgePositive : styles.spendingNetBadgeNegative,
+                            ]}
+                            >
+                                <Text style={styles.spendingNetLabel}>Weekly Net</Text>
+                                <Text style={styles.spendingNetValue}>{weeklyNetLabel}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.spendingRecentPanel}>
+                            <Text style={styles.spendingRecentTitle}>Recent Expenses</Text>
+                            {recentExpensesPreview.length ? (
+                                recentExpensesPreview.map((expense) => (
+                                    <View key={expense.id} style={styles.spendingRecentRow}>
+                                        <View style={styles.spendingRecentRowText}>
+                                            <Text numberOfLines={1} style={styles.spendingRecentName}>
+                                                {expense.description?.trim() || expense.categoryName}
+                                            </Text>
+                                            <Text style={styles.spendingRecentDate}>
+                                                {formatShortDate(expense.date)}
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.spendingRecentAmount}>
+                                            {formatCurrency(expense.amount)}
+                                        </Text>
+                                    </View>
+                                ))
+                            ) : (
+                                <View style={styles.spendingRecentEmpty}>
+                                    <Text style={styles.spendingRecentEmptyText}>No expenses yet. Tap to add your first expense.</Text>
+                                </View>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                ) : (
+                    <LockedFeatureCard
+                        feature="expenses"
+                        compact
+                        scale={scale}
+                        onUnlock={openExpensesDetails}
+                        previewVariant="weeklyLedger"
+                        style={{ marginTop: 20 * scale, marginBottom: 28, padding: 18 * scale, backgroundColor: '#ff8a00' }}
+                    />
+                )}
 
                 {user?.access.canUseGoals ? (
                     <TouchableOpacity
@@ -540,6 +618,7 @@ const styles = StyleSheet.create({
     spendingCard: {
         backgroundColor: '#ff8a00',
         marginBottom: 28,
+        justifyContent: 'space-between',
     },
     spendingCardHeader: {
         flexDirection: 'row',
@@ -566,6 +645,90 @@ const styles = StyleSheet.create({
         color: '#412100',
         fontWeight: '800',
         letterSpacing: -0.8,
+    },
+    spendingHeadlineRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        gap: 10,
+        marginBottom: 18,
+    },
+    spendingNetBadge: {
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        minWidth: 110,
+        alignItems: 'flex-end',
+    },
+    spendingNetBadgePositive: {
+        backgroundColor: 'rgba(0, 82, 50, 0.16)',
+    },
+    spendingNetBadgeNegative: {
+        backgroundColor: 'rgba(186, 26, 26, 0.18)',
+    },
+    spendingNetLabel: {
+        color: 'rgba(65,33,0,0.76)',
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+    },
+    spendingNetValue: {
+        color: '#412100',
+        fontSize: 13,
+        fontWeight: '800',
+        marginTop: 2,
+    },
+    spendingRecentPanel: {
+        backgroundColor: 'rgba(255, 241, 232, 0.88)',
+        borderRadius: 18,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        gap: 8,
+    },
+    spendingRecentTitle: {
+        color: 'rgba(65,33,0,0.72)',
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+    },
+    spendingRecentRow: {
+        minHeight: 42,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        paddingVertical: 4,
+    },
+    spendingRecentRowText: {
+        flex: 1,
+        minWidth: 0,
+    },
+    spendingRecentName: {
+        color: '#412100',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    spendingRecentDate: {
+        color: 'rgba(65,33,0,0.62)',
+        fontSize: 12,
+        fontWeight: '500',
+        marginTop: 2,
+    },
+    spendingRecentAmount: {
+        color: '#412100',
+        fontSize: 14,
+        fontWeight: '800',
+    },
+    spendingRecentEmpty: {
+        minHeight: 42,
+        justifyContent: 'center',
+    },
+    spendingRecentEmptyText: {
+        color: 'rgba(65,33,0,0.68)',
+        fontSize: 13,
+        fontWeight: '500',
     },
     sectionHeader: {
         flexDirection: 'row',

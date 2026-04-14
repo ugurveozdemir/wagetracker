@@ -16,6 +16,7 @@ export const PremiumFeatureScreen: React.FC<PremiumFeatureScreenProps> = ({ feat
     return (
         <LockedFeatureScreen
             feature={feature}
+            previewVariant={feature === 'expenses' ? 'weeklyLedger' : 'metrics'}
             onUnlock={() => navigation.navigate('Paywall', { source: feature, feature })}
         />
     );

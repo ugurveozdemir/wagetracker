@@ -40,7 +40,7 @@ const featureCopy: Record<PaywallFeature, { eyebrow: string; title: string; body
     expenses: {
         eyebrow: 'Premium Expenses',
         title: 'Track spending with the rest of your ledger.',
-        body: 'Upgrade to log expenses, view weekly history, and compare income against spending.',
+        body: 'Upgrade to log expenses, scan receipts, view weekly history, and compare income against spending.',
     },
     jobs: {
         eyebrow: 'Premium Jobs',
@@ -168,7 +168,7 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                         </View>
                         <View style={styles.bulletRow}>
                             <MaterialIcons name="check-circle" size={18} color={colors.primarySoft} />
-                            <Text style={styles.bulletText}>Expenses and weekly history</Text>
+                            <Text style={styles.bulletText}>Receipt scan, expenses, and weekly history</Text>
                         </View>
                         <View style={styles.bulletRow}>
                             <MaterialIcons name="check-circle" size={18} color={colors.primarySoft} />

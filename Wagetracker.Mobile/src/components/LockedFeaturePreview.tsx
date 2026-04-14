@@ -3,10 +3,12 @@ import {
     Modal,
     Pressable,
     ScrollView,
+    StyleProp,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
+    ViewStyle,
     useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +16,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors } from '../theme';
 
 export type LockedFeature = 'goals' | 'expenses' | 'jobs';
+export type LockedPreviewVariant = 'metrics' | 'weeklyLedger';
 
 interface LockedFeatureCopy {
     eyebrow: string;
@@ -30,11 +33,13 @@ interface LockedFeatureCopy {
 interface LockedFeatureBaseProps {
     feature: LockedFeature;
     onUnlock: () => void;
+    previewVariant?: LockedPreviewVariant;
 }
 
 interface LockedFeatureCardProps extends LockedFeatureBaseProps {
     compact?: boolean;
     scale?: number;
+    style?: StyleProp<ViewStyle>;
 }
 
 interface LockedFeatureModalProps extends LockedFeatureBaseProps {
@@ -58,14 +63,14 @@ const featureCopy: Record<LockedFeature, LockedFeatureCopy> = {
     expenses: {
         eyebrow: 'Premium Expenses',
         title: 'See where the week is going.',
-        body: 'Preview spending totals and weekly history beside your income, then unlock the full ledger.',
+        body: 'Preview spending totals, receipt scans, and weekly history beside your income, then unlock the full ledger.',
         icon: 'receipt-long',
         metrics: [
             { label: 'Food', value: '$84' },
             { label: 'Fuel', value: '$46' },
             { label: 'Other', value: '$32' },
         ],
-        notes: ['Weekly spend preview', 'History by category', 'Income vs spending'],
+        notes: ['Receipt scan logging', 'Weekly spend preview', 'Income vs spending'],
     },
     jobs: {
         eyebrow: 'Premium Jobs',
@@ -80,6 +85,33 @@ const featureCopy: Record<LockedFeature, LockedFeatureCopy> = {
         notes: ['Unlimited job cards', 'No older roles locked', 'One earnings workspace'],
     },
 };
+
+const expenseLedgerPreviewRows = [
+    {
+        category: 'Food & Drinks',
+        date: 'Mon, Apr 8',
+        description: 'Lunch and coffee',
+        amount: '$84.00',
+        color: '#f97316',
+        icon: 'restaurant',
+    },
+    {
+        category: 'Transport',
+        date: 'Wed, Apr 10',
+        description: 'Fuel and rides',
+        amount: '$46.00',
+        color: '#3b82f6',
+        icon: 'directions-car',
+    },
+    {
+        category: 'Bills & Utilities',
+        date: 'Fri, Apr 12',
+        description: 'Phone and utilities',
+        amount: '$32.00',
+        color: '#eab308',
+        icon: 'lightbulb',
+    },
+] as const;
 
 const PreviewMetrics: React.FC<{ feature: LockedFeature; compact?: boolean }> = ({ feature, compact = false }) => {
     const copy = featureCopy[feature];
@@ -97,7 +129,7 @@ const PreviewMetrics: React.FC<{ feature: LockedFeature; compact?: boolean }> = 
     );
 };
 
-const PreviewPanel: React.FC<{ feature: LockedFeature; compact?: boolean }> = ({ feature, compact = false }) => {
+const MetricPreviewPanel: React.FC<{ feature: LockedFeature; compact?: boolean }> = ({ feature, compact = false }) => {
     const copy = featureCopy[feature];
 
     return (
@@ -118,6 +150,63 @@ const PreviewPanel: React.FC<{ feature: LockedFeature; compact?: boolean }> = ({
             </View>
         </View>
     );
+};
+
+const ExpenseWeeklyLedgerPreview: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
+    return (
+        <View style={[styles.ledgerPreviewPanel, compact && styles.ledgerPreviewPanelCompact]}>
+            <View style={styles.ledgerPreviewTopRow}>
+                <View style={styles.ledgerPreviewIcon}>
+                    <MaterialIcons name="receipt-long" size={compact ? 18 : 22} color={colors.white} />
+                </View>
+                <View style={styles.ledgerPreviewPill}>
+                    <Text style={styles.ledgerPreviewPillText}>Sample preview</Text>
+                </View>
+            </View>
+
+            <View style={styles.ledgerWeekHeader}>
+                <View style={styles.ledgerWeekCopy}>
+                    <Text style={styles.ledgerWeekTitle}>This Week</Text>
+                    <Text style={styles.ledgerWeekMeta}>Monday through Sunday</Text>
+                </View>
+                <Text style={styles.ledgerWeekAmount}>$162.00</Text>
+            </View>
+
+            <View style={styles.ledgerRows}>
+                {expenseLedgerPreviewRows.map((expense) => (
+                    <View key={expense.category} style={[styles.ledgerExpenseRow, compact && styles.ledgerExpenseRowCompact]}>
+                        <View style={[styles.ledgerExpenseIconWrap, { backgroundColor: `${expense.color}22` }]}>
+                            <MaterialIcons name={expense.icon} size={compact ? 14 : 16} color={expense.color} />
+                        </View>
+                        <View style={styles.ledgerExpenseCopy}>
+                            <Text numberOfLines={1} style={styles.ledgerExpenseTitle}>{expense.category}</Text>
+                            <Text numberOfLines={1} style={styles.ledgerExpenseMeta}>{expense.date}</Text>
+                            {compact ? null : (
+                                <Text numberOfLines={1} style={styles.ledgerExpenseDescription}>{expense.description}</Text>
+                            )}
+                        </View>
+                        <Text style={styles.ledgerExpenseAmount}>-{expense.amount}</Text>
+                    </View>
+                ))}
+            </View>
+
+            <View style={styles.ledgerPreviewTrack}>
+                <View style={styles.ledgerPreviewFill} />
+            </View>
+        </View>
+    );
+};
+
+const PreviewPanel: React.FC<{
+    feature: LockedFeature;
+    compact?: boolean;
+    variant?: LockedPreviewVariant;
+}> = ({ feature, compact = false, variant = 'metrics' }) => {
+    if (feature === 'expenses' && variant === 'weeklyLedger') {
+        return <ExpenseWeeklyLedgerPreview compact={compact} />;
+    }
+
+    return <MetricPreviewPanel feature={feature} compact={compact} />;
 };
 
 const UnlockButton: React.FC<{ onPress?: () => void; asView?: boolean }> = ({ onPress, asView = false }) => {
@@ -144,6 +233,8 @@ export const LockedFeatureCard: React.FC<LockedFeatureCardProps> = ({
     onUnlock,
     compact = false,
     scale = 1,
+    previewVariant = 'metrics',
+    style,
 }) => {
     const copy = featureCopy[feature];
 
@@ -156,6 +247,7 @@ export const LockedFeatureCard: React.FC<LockedFeatureCardProps> = ({
                     padding: 22 * scale,
                     marginTop: 18 * scale,
                 },
+                style,
             ]}
             activeOpacity={0.9}
             onPress={onUnlock}
@@ -171,7 +263,7 @@ export const LockedFeatureCard: React.FC<LockedFeatureCardProps> = ({
                 </View>
             </View>
 
-            <PreviewPanel feature={feature} compact={compact} />
+            <PreviewPanel feature={feature} compact={compact} variant={previewVariant} />
 
             <Text style={styles.cardBody}>{copy.body}</Text>
             <UnlockButton asView />
@@ -179,7 +271,7 @@ export const LockedFeatureCard: React.FC<LockedFeatureCardProps> = ({
     );
 };
 
-export const LockedFeatureScreen: React.FC<LockedFeatureBaseProps> = ({ feature, onUnlock }) => {
+export const LockedFeatureScreen: React.FC<LockedFeatureBaseProps> = ({ feature, onUnlock, previewVariant = 'metrics' }) => {
     const { width } = useWindowDimensions();
     const compact = width < 380;
     const copy = featureCopy[feature];
@@ -204,7 +296,7 @@ export const LockedFeatureScreen: React.FC<LockedFeatureBaseProps> = ({ feature,
                     <Text style={styles.screenEyebrow}>{copy.eyebrow}</Text>
                     <Text style={[styles.screenTitle, { fontSize: compact ? 30 : 36 }]}>{copy.title}</Text>
                     <Text style={styles.screenBody}>{copy.body}</Text>
-                    <PreviewPanel feature={feature} compact={compact} />
+                    <PreviewPanel feature={feature} compact={compact} variant={previewVariant} />
                     <View style={styles.notesStack}>
                         {copy.notes.map((note) => (
                             <View key={note} style={styles.noteRow}>
@@ -225,6 +317,7 @@ export const LockedFeatureModal: React.FC<LockedFeatureModalProps> = ({
     feature,
     onClose,
     onUnlock,
+    previewVariant = 'metrics',
 }) => {
     const copy = featureCopy[feature];
 
@@ -242,7 +335,11 @@ export const LockedFeatureModal: React.FC<LockedFeatureModalProps> = ({
                     <Text style={styles.modalEyebrow}>{copy.eyebrow}</Text>
                     <Text style={styles.modalTitle}>{copy.title}</Text>
                     <Text style={styles.modalBody}>{copy.body}</Text>
-                    <PreviewMetrics feature={feature} compact />
+                    {feature === 'expenses' && previewVariant === 'weeklyLedger' ? (
+                        <PreviewPanel feature={feature} compact variant={previewVariant} />
+                    ) : (
+                        <PreviewMetrics feature={feature} compact />
+                    )}
                     <UnlockButton onPress={onUnlock} />
                 </Pressable>
             </Pressable>
@@ -387,6 +484,130 @@ const styles = StyleSheet.create({
         height: 6,
         borderRadius: 999,
         backgroundColor: colors.surfaceContainerHigh,
+    },
+    ledgerPreviewPanel: {
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.35)',
+        backgroundColor: 'rgba(255,255,255,0.92)',
+        borderRadius: 24,
+        padding: 14,
+    },
+    ledgerPreviewPanelCompact: {
+        borderRadius: 20,
+        padding: 12,
+    },
+    ledgerPreviewTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    ledgerPreviewIcon: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: colors.secondaryContainer,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    ledgerPreviewPill: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        backgroundColor: colors.orangeBg,
+    },
+    ledgerPreviewPillText: {
+        color: colors.secondary,
+        fontSize: 10,
+        fontWeight: '800',
+    },
+    ledgerWeekHeader: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 10,
+        marginBottom: 10,
+    },
+    ledgerWeekCopy: {
+        flex: 1,
+        minWidth: 0,
+    },
+    ledgerWeekTitle: {
+        color: colors.onSurface,
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    ledgerWeekMeta: {
+        color: colors.outline,
+        fontSize: 10,
+        fontWeight: '700',
+        marginTop: 2,
+    },
+    ledgerWeekAmount: {
+        color: colors.secondary,
+        fontSize: 16,
+        fontWeight: '900',
+    },
+    ledgerRows: {
+        gap: 8,
+    },
+    ledgerExpenseRow: {
+        minHeight: 54,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: colors.surfaceContainerHigh,
+    },
+    ledgerExpenseRowCompact: {
+        minHeight: 44,
+        gap: 8,
+    },
+    ledgerExpenseIconWrap: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    ledgerExpenseCopy: {
+        flex: 1,
+        minWidth: 0,
+    },
+    ledgerExpenseTitle: {
+        color: colors.onSurface,
+        fontSize: 12,
+        fontWeight: '800',
+    },
+    ledgerExpenseMeta: {
+        color: colors.outline,
+        fontSize: 10,
+        fontWeight: '700',
+        marginTop: 1,
+    },
+    ledgerExpenseDescription: {
+        color: colors.onSurfaceVariant,
+        fontSize: 10,
+        marginTop: 1,
+    },
+    ledgerExpenseAmount: {
+        color: colors.onSurface,
+        fontSize: 12,
+        fontWeight: '900',
+    },
+    ledgerPreviewTrack: {
+        height: 8,
+        borderRadius: 999,
+        backgroundColor: colors.orangeBg,
+        overflow: 'hidden',
+        marginTop: 12,
+    },
+    ledgerPreviewFill: {
+        width: '54%',
+        height: '100%',
+        borderRadius: 999,
+        backgroundColor: colors.secondaryContainer,
     },
     previewTrack: {
         height: 10,
