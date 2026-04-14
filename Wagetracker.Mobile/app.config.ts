@@ -1,17 +1,17 @@
 import type { ExpoConfig } from 'expo/config';
 
-const iosBundleIdentifier = process.env.EXPO_PUBLIC_IOS_BUNDLE_ID || 'com.wagetracker.app';
-const androidPackage = process.env.EXPO_PUBLIC_ANDROID_PACKAGE || 'com.wagetracker.app';
+const iosBundleIdentifier = process.env.EXPO_PUBLIC_IOS_BUNDLE_ID || 'com.chickaree.app';
+const androidPackage = process.env.EXPO_PUBLIC_ANDROID_PACKAGE || 'com.chickaree.app';
 
 const config: ExpoConfig = {
-    name: 'WageTracker',
-    slug: 'wagetracker',
+    name: 'Chickaree',
+    slug: 'chickaree',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
-    scheme: 'wagetracker',
+    scheme: 'chickaree',
     splash: {
         image: './assets/splash-icon.png',
         resizeMode: 'contain',
@@ -26,6 +26,7 @@ const config: ExpoConfig = {
     },
     android: {
         package: androidPackage,
+        permissions: ['com.android.vending.BILLING'],
         adaptiveIcon: {
             foregroundImage: './assets/adaptive-icon.png',
             backgroundColor: '#ffffff',
@@ -41,8 +42,8 @@ const config: ExpoConfig = {
         [
             'expo-image-picker',
             {
-                photosPermission: 'Allow WageTracker to choose receipt photos for expense scanning.',
-                cameraPermission: 'Allow WageTracker to take receipt photos for expense scanning.',
+                photosPermission: 'Allow Chickaree to choose receipt photos for expense scanning.',
+                cameraPermission: 'Allow Chickaree to take receipt photos for expense scanning.',
             },
         ],
     ],

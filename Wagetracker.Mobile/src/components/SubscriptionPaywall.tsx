@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-toast-message';
+import { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { useAuthStore, useSubscriptionStore } from '../stores';
 import { config } from '../config';
 import { colors } from '../theme';
@@ -28,7 +29,7 @@ interface SubscriptionPaywallProps {
 
 const featureCopy: Record<PaywallFeature, { eyebrow: string; title: string; body: string }> = {
     premium: {
-        eyebrow: 'WageTracker Premium',
+        eyebrow: 'Chickaree Premium',
         title: 'Unlock your full money workspace.',
         body: 'Premium unlocks goals, expenses, and unlimited jobs across the app.',
     },
@@ -76,6 +77,8 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
         isLoading,
         isPurchasing,
         error,
+        presentRevenueCatPaywall,
+        presentCustomerCenter,
         purchaseSelectedPackage,
         restorePurchases,
         refreshSubscriptionStatus,
@@ -103,6 +106,58 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                 text1: 'Purchase Failed',
                 text2: purchaseError instanceof Error ? purchaseError.message : 'Please try again.',
                 visibilityTime: 2800,
+            });
+        }
+    };
+
+    const handleRevenueCatPaywall = async () => {
+        try {
+            const result = await presentRevenueCatPaywall();
+
+            if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
+                Toast.show({
+                    type: 'success',
+                    text1: result === PAYWALL_RESULT.PURCHASED ? 'Premium Unlocked' : 'Purchases Restored',
+                    text2: 'Your subscription access is active.',
+                    visibilityTime: 2200,
+                });
+                onSuccess?.();
+                return;
+            }
+
+            if (result === PAYWALL_RESULT.NOT_PRESENTED) {
+                Toast.show({
+                    type: 'info',
+                    text1: 'Premium Active',
+                    text2: 'Your Pro entitlement is already active.',
+                    visibilityTime: 2200,
+                });
+                onSuccess?.();
+                return;
+            }
+
+            if (result === PAYWALL_RESULT.CANCELLED) {
+                Toast.show({
+                    type: 'info',
+                    text1: 'Paywall Closed',
+                    text2: 'No purchase was made.',
+                    visibilityTime: 2200,
+                });
+                return;
+            }
+
+            Toast.show({
+                type: 'error',
+                text1: 'Paywall Error',
+                text2: 'Please try again.',
+                visibilityTime: 2800,
+            });
+        } catch (paywallError) {
+            Toast.show({
+                type: 'error',
+                text1: 'Paywall Unavailable',
+                text2: paywallError instanceof Error ? paywallError.message : 'Please try again.',
+                visibilityTime: 3200,
             });
         }
     };
@@ -136,6 +191,20 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
             ? config.APP_STORE_SUBSCRIPTIONS_URL
             : config.PLAY_STORE_SUBSCRIPTIONS_URL;
         await Linking.openURL(url);
+    };
+
+    const handleCustomerCenter = async () => {
+        try {
+            await presentCustomerCenter();
+        } catch (customerCenterError) {
+            Toast.show({
+                type: 'info',
+                text1: 'Opening Store Settings',
+                text2: customerCenterError instanceof Error ? customerCenterError.message : 'Manage your subscription in the store.',
+                visibilityTime: 2800,
+            });
+            await openManageUrl();
+        }
     };
 
     return (
@@ -176,6 +245,15 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                         </View>
                     </View>
                 </View>
+
+                <TouchableOpacity
+                    style={[styles.primaryButton, isPurchasing && styles.primaryButtonDisabled]}
+                    activeOpacity={0.88}
+                    disabled={isPurchasing}
+                    onPress={handleRevenueCatPaywall}
+                >
+                    <Text style={styles.primaryButtonText}>See Pro Plans</Text>
+                </TouchableOpacity>
 
                 {user?.subscription.isPremium ? (
                     <View style={styles.activeCard}>
@@ -232,8 +310,8 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                     <Text style={styles.secondaryButtonText}>Restore Purchases</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.86} onPress={openManageUrl}>
-                    <Text style={styles.secondaryButtonText}>Manage Subscription</Text>
+                <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.86} onPress={handleCustomerCenter}>
+                    <Text style={styles.secondaryButtonText}>Customer Center</Text>
                 </TouchableOpacity>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -375,6 +453,22 @@ const styles = StyleSheet.create({
     planStack: {
         gap: 14,
         marginBottom: 18,
+    },
+    primaryButton: {
+        minHeight: 62,
+        borderRadius: 999,
+        backgroundColor: '#ff8a00',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 18,
+    },
+    primaryButtonDisabled: {
+        opacity: 0.72,
+    },
+    primaryButtonText: {
+        color: '#412100',
+        fontSize: 17,
+        fontWeight: '800',
     },
     planCard: {
         backgroundColor: colors.surfaceContainerLowest,

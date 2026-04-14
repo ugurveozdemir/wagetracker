@@ -1,12 +1,13 @@
 {
   "expo": {
-    "name": "WageTracker",
-    "slug": "wagetracker",
+    "name": "Chickaree",
+    "slug": "chickaree",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "chickaree",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -16,6 +17,9 @@
       "supportsTablet": true
     },
     "android": {
+      "permissions": [
+        "com.android.vending.BILLING"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -31,8 +35,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow WageTracker to choose receipt photos for expense scanning.",
-          "cameraPermission": "Allow WageTracker to take receipt photos for expense scanning."
+          "photosPermission": "Allow Chickaree to choose receipt photos for expense scanning.",
+          "cameraPermission": "Allow Chickaree to take receipt photos for expense scanning."
         }
       ]
     ],

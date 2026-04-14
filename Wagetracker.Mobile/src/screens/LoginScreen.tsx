@@ -137,7 +137,7 @@ export const LoginScreen: React.FC = () => {
                         <View style={[styles.brandBadge, { width: rs(54), height: rs(54), borderRadius: rs(27) }]}> 
                             <MaterialIcons name="eco" size={rs(26)} color={colors.onPrimary} />
                         </View>
-                        <Text style={[styles.brandText, { fontSize: isCompact ? 22 : 25 }]}>WageTracker</Text>
+                        <Text style={[styles.brandText, { fontSize: isCompact ? 22 : 25 }]}>Chickaree</Text>
                     </View>
 
                     <View style={styles.heroSection}>

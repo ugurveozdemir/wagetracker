@@ -147,7 +147,7 @@ export const DashboardScreen: React.FC = () => {
                         activeOpacity={0.85}
                         onPress={() => navigation.navigate('ProfileTab')}
                     >
-                        <Text style={styles.brandText}>WageTracker</Text>
+                        <Text style={styles.brandText}>Chickaree</Text>
                     </TouchableOpacity>
                 </View>
 

@@ -1,4 +1,4 @@
-# WageTracker API
+# Chickaree API
 
 A comprehensive backend API for tracking work hours, calculating earnings, and managing overtime for freelancers and hourly workers.
 

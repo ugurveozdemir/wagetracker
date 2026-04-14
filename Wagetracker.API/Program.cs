@@ -220,13 +220,13 @@ app.MapGet("/account-deletion", (IConfiguration configuration) =>
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Delete Your WageTracker Account</title>
+            <title>Delete Your Chickaree Account</title>
         </head>
         <body>
             <main style="font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; max-width: 680px; margin: 40px auto; padding: 0 20px; line-height: 1.6;">
-                <h1>Delete Your WageTracker Account</h1>
-                <p>You can delete your account inside the WageTracker app from Profile &gt; Help &amp; Support &gt; Delete account in app.</p>
-                <p>Deleting your account removes your profile, jobs, wage entries, expenses, weekly goals, and subscription access snapshot from WageTracker.</p>
+                <h1>Delete Your Chickaree Account</h1>
+                <p>You can delete your account inside the Chickaree app from Profile &gt; Help &amp; Support &gt; Delete account in app.</p>
+                <p>Deleting your account removes your profile, jobs, wage entries, expenses, weekly goals, and subscription access snapshot from Chickaree.</p>
                 <p>If you cannot access the app, email <a href="mailto:{supportEmail}">{supportEmail}</a> from the email address on your account and ask us to delete it.</p>
             </main>
         </body>

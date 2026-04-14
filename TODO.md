@@ -1,4 +1,4 @@
-# WageTracker - Yapılacaklar Listesi
+# Chickaree - Yapılacaklar Listesi
 
 ---
 

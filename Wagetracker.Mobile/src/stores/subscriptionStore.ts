@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
 import Purchases, { CustomerInfo, LOG_LEVEL, PurchasesOfferings, PurchasesPackage } from 'react-native-purchases';
+import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { subscriptionsApi } from '../api';
 import { config } from '../config';
 import { UserDto } from '../types';
@@ -16,11 +17,17 @@ interface SubscriptionState {
     error: string | null;
     lastCustomerInfo: CustomerInfo | null;
     bootstrap: (user: UserDto | null) => Promise<void>;
+    getCustomerInfo: () => Promise<CustomerInfo | null>;
+    hasActiveEntitlement: (customerInfo?: CustomerInfo | null) => boolean;
     refreshSubscriptionStatus: () => Promise<UserDto | null>;
+    presentRevenueCatPaywall: () => Promise<PAYWALL_RESULT>;
+    presentCustomerCenter: () => Promise<void>;
     purchaseSelectedPackage: (selectedPackage: PurchasesPackage) => Promise<UserDto | null>;
     restorePurchases: () => Promise<UserDto | null>;
     clear: () => Promise<void>;
 }
+
+let customerInfoListenerRegistered = false;
 
 const getRevenueCatApiKey = () => {
     if (Platform.OS === 'ios') {
@@ -40,6 +47,28 @@ const loadOfferings = async () => {
         offerings,
         availablePackages: offerings.current?.availablePackages ?? [],
     };
+};
+
+const isPurchaseCancelled = (error: unknown) => {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        ('code' in error || 'userCancelled' in error) &&
+        ((error as { code?: string }).code === Purchases.PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR ||
+            (error as { userCancelled?: boolean | null }).userCancelled === true)
+    );
+};
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+    if (isPurchaseCancelled(error)) {
+        return 'Purchase cancelled.';
+    }
+
+    return error instanceof Error ? error.message : fallback;
+};
+
+const paywallCompletedAccessChange = (result: PAYWALL_RESULT) => {
+    return result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED || result === PAYWALL_RESULT.NOT_PRESENTED;
 };
 
 export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
@@ -78,6 +107,14 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
                     apiKey,
                     appUserID: user.billingCustomerId,
                 });
+                if (!customerInfoListenerRegistered) {
+                    Purchases.addCustomerInfoUpdateListener((customerInfo) => {
+                        if (useSubscriptionStore.getState().isConfigured) {
+                            useSubscriptionStore.setState({ lastCustomerInfo: customerInfo });
+                        }
+                    });
+                    customerInfoListenerRegistered = true;
+                }
             } else if (get().configuredCustomerId !== user.billingCustomerId) {
                 await Purchases.logIn(user.billingCustomerId);
             }
@@ -97,10 +134,30 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
             });
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Failed to configure subscriptions.',
+                error: getErrorMessage(error, 'Failed to configure subscriptions.'),
                 isLoading: false,
             });
         }
+    },
+
+    getCustomerInfo: async () => {
+        if (Platform.OS === 'web' || !get().isConfigured) {
+            return null;
+        }
+
+        try {
+            const customerInfo = await Purchases.getCustomerInfo();
+            set({ lastCustomerInfo: customerInfo, error: null });
+            return customerInfo;
+        } catch (error) {
+            set({ error: getErrorMessage(error, 'Failed to retrieve customer info.') });
+            return null;
+        }
+    },
+
+    hasActiveEntitlement: (customerInfo) => {
+        const info = customerInfo ?? get().lastCustomerInfo;
+        return Boolean(info?.entitlements.active[config.REVENUECAT_ENTITLEMENT_ID]);
     },
 
     refreshSubscriptionStatus: async () => {
@@ -114,7 +171,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
                 const customerInfo = await Purchases.getCustomerInfo();
                 set({ lastCustomerInfo: customerInfo });
             } catch (error) {
-                set({ error: error instanceof Error ? error.message : 'Failed to refresh customer info.' });
+                set({ error: getErrorMessage(error, 'Failed to refresh customer info.') });
             }
         }
 
@@ -123,8 +180,75 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
             useAuthStore.getState().setUser(updatedUser);
             return updatedUser;
         } catch (error) {
-            set({ error: error instanceof Error ? error.message : 'Failed to refresh subscription status.' });
+            set({ error: getErrorMessage(error, 'Failed to refresh subscription status.') });
             return null;
+        }
+    },
+
+    presentRevenueCatPaywall: async () => {
+        if (Platform.OS === 'web') {
+            throw new Error('RevenueCat Paywalls require an iOS or Android build.');
+        }
+
+        if (!get().isConfigured) {
+            throw new Error('RevenueCat is not configured yet.');
+        }
+
+        set({ isPurchasing: true, error: null });
+        try {
+            const result = await RevenueCatUI.presentPaywallIfNeeded({
+                requiredEntitlementIdentifier: config.REVENUECAT_ENTITLEMENT_ID,
+                offering: get().offerings?.current ?? undefined,
+                displayCloseButton: true,
+            });
+
+            const customerInfo = await get().getCustomerInfo();
+            if (paywallCompletedAccessChange(result) || get().hasActiveEntitlement(customerInfo)) {
+                await get().refreshSubscriptionStatus();
+            }
+
+            set({ isPurchasing: false });
+            return result;
+        } catch (error) {
+            set({
+                isPurchasing: false,
+                error: getErrorMessage(error, 'Failed to present RevenueCat Paywall.'),
+            });
+            throw error;
+        }
+    },
+
+    presentCustomerCenter: async () => {
+        if (Platform.OS === 'web') {
+            throw new Error('RevenueCat Customer Center requires an iOS or Android build.');
+        }
+
+        if (!get().isConfigured) {
+            throw new Error('RevenueCat is not configured yet.');
+        }
+
+        set({ isPurchasing: true, error: null });
+        try {
+            await RevenueCatUI.presentCustomerCenter({
+                callbacks: {
+                    onRestoreCompleted: ({ customerInfo }) => {
+                        set({ lastCustomerInfo: customerInfo });
+                    },
+                    onRestoreFailed: ({ error }) => {
+                        set({ error: error.message });
+                    },
+                },
+            });
+
+            await get().getCustomerInfo();
+            await get().refreshSubscriptionStatus();
+            set({ isPurchasing: false });
+        } catch (error) {
+            set({
+                isPurchasing: false,
+                error: getErrorMessage(error, 'Failed to open Customer Center.'),
+            });
+            throw error;
         }
     },
 
@@ -137,10 +261,14 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
             set({ isPurchasing: false });
             return updatedUser;
         } catch (error) {
+            const message = getErrorMessage(error, 'Purchase failed.');
             set({
                 isPurchasing: false,
-                error: error instanceof Error ? error.message : 'Purchase failed.',
+                error: message,
             });
+            if (isPurchaseCancelled(error)) {
+                return null;
+            }
             throw error;
         }
     },
@@ -156,7 +284,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         } catch (error) {
             set({
                 isPurchasing: false,
-                error: error instanceof Error ? error.message : 'Restore failed.',
+                error: getErrorMessage(error, 'Restore failed.'),
             });
             throw error;
         }

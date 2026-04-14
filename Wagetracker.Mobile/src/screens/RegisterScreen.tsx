@@ -111,7 +111,7 @@ export const RegisterScreen: React.FC = () => {
             Toast.show({
                 type: 'success',
                 text1: 'Account Created',
-                text2: 'Welcome to WageTracker',
+                text2: 'Welcome to Chickaree',
                 visibilityTime: 2000,
             });
         } catch (err) {
@@ -182,7 +182,7 @@ export const RegisterScreen: React.FC = () => {
                         <View style={[styles.brandBadge, { width: rs(54), height: rs(54), borderRadius: rs(27) }]}>
                             <MaterialIcons name="eco" size={rs(26)} color={colors.onPrimary} />
                         </View>
-                        <Text style={[styles.brandText, { fontSize: isCompact ? 22 : 25 }]}>WageTracker</Text>
+                        <Text style={[styles.brandText, { fontSize: isCompact ? 22 : 25 }]}>Chickaree</Text>
                     </View>
 
                     <View style={styles.heroSection}>

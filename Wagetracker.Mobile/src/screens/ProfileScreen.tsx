@@ -32,7 +32,7 @@ export const ProfileScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { user, logout, deleteAccount } = useAuthStore();
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
-    const { restorePurchases } = useSubscriptionStore();
+    const { restorePurchases, presentCustomerCenter } = useSubscriptionStore();
     const { isCompact, horizontalPadding, rs } = useResponsiveLayout();
     const [refreshing, setRefreshing] = React.useState(false);
     const [expandedSection, setExpandedSection] = React.useState<ProfileMenuKey | null>('personal');
@@ -84,12 +84,22 @@ export const ProfileScreen: React.FC = () => {
         const url = Platform.OS === 'ios'
             ? config.APP_STORE_SUBSCRIPTIONS_URL
             : config.PLAY_STORE_SUBSCRIPTIONS_URL;
-        await Linking.openURL(url);
+        try {
+            await presentCustomerCenter();
+        } catch (error) {
+            Toast.show({
+                type: 'info',
+                text1: 'Opening Store Settings',
+                text2: error instanceof Error ? error.message : 'Manage your subscription in the store.',
+                visibilityTime: 2600,
+            });
+            await Linking.openURL(url);
+        }
     };
 
     const handleSupportEmail = async () => {
         try {
-            await Linking.openURL(`mailto:${config.SUPPORT_EMAIL}?subject=${encodeURIComponent('WageTracker support')}`);
+            await Linking.openURL(`mailto:${config.SUPPORT_EMAIL}?subject=${encodeURIComponent('Chickaree support')}`);
         } catch (error) {
             Toast.show({
                 type: 'error',
@@ -116,7 +126,7 @@ export const ProfileScreen: React.FC = () => {
     const handleDeleteAccount = () => {
         Alert.alert(
             'Delete Account',
-            'This permanently deletes your WageTracker account, jobs, entries, expenses, and profile data. This cannot be undone.',
+            'This permanently deletes your Chickaree account, jobs, entries, expenses, and profile data. This cannot be undone.',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -128,7 +138,7 @@ export const ProfileScreen: React.FC = () => {
                             Toast.show({
                                 type: 'success',
                                 text1: 'Account Deleted',
-                                text2: 'Your WageTracker account has been removed.',
+                                text2: 'Your Chickaree account has been removed.',
                                 visibilityTime: 2400,
                             });
                         } catch (error) {
@@ -410,19 +420,6 @@ export const ProfileScreen: React.FC = () => {
                     <Text style={[styles.logoutText, { fontSize: isCompact ? 18 : 20 }]}>Log Out</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.deleteAccountCard, { borderRadius: rs(30), paddingHorizontal: rs(24), paddingVertical: rs(22) }]}
-                    onPress={handleDeleteAccount}
-                    activeOpacity={0.86}
-                >
-                    <View style={[styles.deleteAccountIconBubble, { width: rs(48), height: rs(48), borderRadius: rs(24) }]}>
-                        <Feather name="trash-2" size={20} color={colors.danger} />
-                    </View>
-                    <View style={styles.deleteAccountTextBlock}>
-                        <Text style={[styles.deleteAccountTitle, { fontSize: isCompact ? 18 : 20 }]}>Delete Account</Text>
-                        <Text style={styles.deleteAccountCopy}>Permanently remove your account and tracked data.</Text>
-                    </View>
-                </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     );
@@ -728,31 +725,5 @@ const styles = StyleSheet.create({
         color: colors.danger,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
-    },
-    deleteAccountCard: {
-        marginTop: spacing.lg,
-        backgroundColor: colors.dangerBg,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-    },
-    deleteAccountIconBubble: {
-        backgroundColor: colors.surfaceContainerLowest,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    deleteAccountTextBlock: {
-        flex: 1,
-    },
-    deleteAccountTitle: {
-        color: colors.danger,
-        fontWeight: fontWeights.extrabold,
-        marginBottom: spacing.xs,
-    },
-    deleteAccountCopy: {
-        color: colors.danger,
-        fontSize: fontSizes.sm,
-        lineHeight: 20,
-        fontWeight: fontWeights.medium,
     },
 });

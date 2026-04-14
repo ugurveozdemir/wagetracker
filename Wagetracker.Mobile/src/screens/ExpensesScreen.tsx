@@ -202,7 +202,7 @@ export const ExpensesScreen: React.FC = () => {
             >
                 <View style={styles.topBar}>
                     <View style={styles.brandRow}>
-                        <Text style={styles.brandText}>WageTracker</Text>
+                        <Text style={styles.brandText}>Chickaree</Text>
                     </View>
                 </View>
 
