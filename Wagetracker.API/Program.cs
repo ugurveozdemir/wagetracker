@@ -140,10 +140,15 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var schemaLogger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("StartupSchemaCompatibility");
 
-    // Temporary compatibility patch for environments where the Users table
-    // already exists but the weekly goal column has not been added yet.
-    await dbContext.Database.ExecuteSqlRawAsync(@"
+    try
+    {
+        // Temporary compatibility patch for environments where SQL migrations
+        // may lag behind deployed application code.
+        await dbContext.Database.ExecuteSqlRawAsync(@"
         ALTER TABLE ""Users""
         ADD COLUMN IF NOT EXISTS ""WeeklyGoalAmount"" numeric(18,2) NULL;
 
@@ -225,6 +230,11 @@ using (var scope = app.Services.CreateScope())
         CREATE INDEX IF NOT EXISTS ""IX_ExpenseItems_ExpenseId_SortOrder""
         ON ""ExpenseItems"" (""ExpenseId"", ""SortOrder"");
     ");
+    }
+    catch (Exception ex)
+    {
+        schemaLogger.LogWarning(ex, "Startup schema compatibility patch failed; continuing API startup.");
+    }
 }
 
 // Configure the HTTP request pipeline.
