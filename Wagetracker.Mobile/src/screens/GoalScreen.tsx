@@ -29,9 +29,11 @@ const formatCurrency = (amount: number) =>
 export const GoalScreen: React.FC = () => {
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const [goalInput, setGoalInput] = useState('');
+    const [motivationQuoteInput, setMotivationQuoteInput] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
     const targetAmount = summary?.weeklyGoal?.targetAmount ?? null;
+    const motivationQuote = summary?.weeklyGoal?.motivationQuote ?? null;
     const currentAmount = summary?.weeklyGoal?.currentAmount ?? 0;
     const progressPercent = Math.max(0, Math.min(summary?.weeklyGoal?.progressPercent ?? 0, 100));
     const remainingAmount = summary?.weeklyGoal?.remainingAmount ?? 0;
@@ -45,7 +47,8 @@ export const GoalScreen: React.FC = () => {
 
     useEffect(() => {
         setGoalInput(targetAmount != null ? String(targetAmount) : '');
-    }, [targetAmount]);
+        setMotivationQuoteInput(motivationQuote ?? '');
+    }, [targetAmount, motivationQuote]);
 
     const ringSegments = useMemo(
         () => Array.from({ length: RING_SEGMENTS }, (_, index) => index),
@@ -54,6 +57,7 @@ export const GoalScreen: React.FC = () => {
 
     const handleSave = async () => {
         const trimmedValue = goalInput.trim();
+        const trimmedQuote = motivationQuoteInput.trim();
         const parsedGoal = trimmedValue.length === 0 ? null : Number(trimmedValue);
 
         if (parsedGoal != null && (!Number.isFinite(parsedGoal) || parsedGoal < 0)) {
@@ -67,12 +71,15 @@ export const GoalScreen: React.FC = () => {
 
         try {
             setIsSaving(true);
-            await profileApi.updateWeeklyGoal({ targetAmount: parsedGoal });
+            await profileApi.updateWeeklyGoal({
+                targetAmount: parsedGoal,
+                motivationQuote: trimmedQuote.length ? trimmedQuote : null,
+            });
             await fetchDashboard();
             Toast.show({
                 type: 'success',
-                text1: parsedGoal == null ? 'Goal Cleared' : 'Goal Updated',
-                text2: parsedGoal == null ? 'This week no longer has a target.' : 'Your weekly target was saved.',
+                text1: 'Goal Updated',
+                text2: 'Your weekly target and motivation quote were saved.',
             });
         } catch (error) {
             Toast.show({
@@ -185,6 +192,23 @@ export const GoalScreen: React.FC = () => {
                         <Text style={styles.targetSummaryValue}>
                             {targetAmount != null ? formatCurrency(targetAmount) : 'No goal set'}
                         </Text>
+                    </View>
+                </View>
+
+                <View style={styles.quoteCard}>
+                    <Text style={styles.quoteTitle}>Motivation Quote</Text>
+                    <Text style={styles.quoteCopy}>Add a short line that keeps you focused this week.</Text>
+                    <Input
+                        label="Your Quote"
+                        value={motivationQuoteInput}
+                        onChangeText={setMotivationQuoteInput}
+                        placeholder="Small steps every day build big results."
+                        multiline
+                        maxLength={220}
+                        style={styles.quoteInput}
+                    />
+                    <View style={styles.quoteFooter}>
+                        <Text style={styles.quoteCountText}>{motivationQuoteInput.length}/220</Text>
                     </View>
                 </View>
             </ScrollView>
@@ -395,5 +419,45 @@ const styles = StyleSheet.create({
         color: colors.onSurface,
         fontSize: 22,
         fontWeight: '800',
+    },
+    quoteCard: {
+        backgroundColor: colors.surfaceContainerLowest,
+        borderRadius: 28,
+        padding: 24,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.04,
+        shadowRadius: 20,
+        elevation: 4,
+    },
+    quoteTitle: {
+        color: colors.onSurface,
+        fontSize: 24,
+        fontWeight: '800',
+        letterSpacing: -0.6,
+        marginBottom: 8,
+    },
+    quoteCopy: {
+        color: colors.outline,
+        fontSize: 14,
+        lineHeight: 22,
+        marginBottom: 20,
+    },
+    quoteInput: {
+        minHeight: 84,
+        textAlignVertical: 'top',
+        fontSize: 16,
+        lineHeight: 22,
+        fontWeight: '600',
+        paddingVertical: 14,
+    },
+    quoteFooter: {
+        marginTop: -10,
+        alignItems: 'flex-end',
+    },
+    quoteCountText: {
+        color: colors.outline,
+        fontSize: 12,
+        fontWeight: '600',
     },
 });

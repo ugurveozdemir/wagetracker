@@ -37,6 +37,9 @@ namespace WageTracker.API.Services
             }
 
             user.WeeklyGoalAmount = request.TargetAmount;
+            user.WeeklyGoalMotivationQuote = string.IsNullOrWhiteSpace(request.MotivationQuote)
+                ? null
+                : request.MotivationQuote.Trim();
             await _context.SaveChangesAsync();
 
             return await _subscriptionService.BuildUserDtoAsync(user);

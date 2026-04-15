@@ -40,6 +40,7 @@ export interface UserDto {
     email: string;
     fullName: string;
     weeklyGoalAmount?: number | null;
+    weeklyGoalMotivationQuote?: string | null;
     billingCustomerId: string;
     subscription: SubscriptionSummary;
     access: FeatureAccess;
@@ -47,6 +48,7 @@ export interface UserDto {
 
 export interface UpdateWeeklyGoalRequest {
     targetAmount: number | null;
+    motivationQuote?: string | null;
 }
 
 // ==================== JOB TYPES ====================
@@ -297,6 +299,7 @@ export interface DashboardSummaryResponse {
 
 export interface WeeklyGoalStatusResponse {
     targetAmount: number | null;
+    motivationQuote: string | null;
     currentAmount: number;
     remainingAmount: number;
     progressPercent: number;

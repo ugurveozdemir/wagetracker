@@ -98,6 +98,7 @@ export const DashboardScreen: React.FC = () => {
     const goalProgressPercent = summary?.weeklyGoal?.targetAmount != null
         ? Math.max(0, Math.min(summary?.weeklyGoal?.progressPercent ?? 0, 100))
         : 0;
+    const goalMotivationQuote = summary?.weeklyGoal?.motivationQuote?.trim() ?? '';
     const canUseExpenses = Boolean(user?.access.canUseExpenses);
     const recentExpensesPreview = (summary?.recentExpenses ?? []).slice(0, 3);
     const weeklyNet = summary?.weeklyNet ?? 0;
@@ -464,6 +465,15 @@ export const DashboardScreen: React.FC = () => {
                                 <MaterialIcons name="arrow-forward" size={16} color={colors.white} />
                             </View>
                         </View>
+
+                        {goalMotivationQuote.length ? (
+                            <View style={styles.goalQuoteWrap}>
+                                <Text style={styles.goalQuoteLabel}>Motivation</Text>
+                                <Text style={styles.goalQuoteText} numberOfLines={3}>
+                                    "{goalMotivationQuote}"
+                                </Text>
+                            </View>
+                        ) : null}
                     </TouchableOpacity>
                 ) : (
                     <LockedFeatureCard
@@ -923,6 +933,26 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginLeft: 'auto',
+    },
+    goalQuoteWrap: {
+        marginTop: 16,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.20)',
+    },
+    goalQuoteLabel: {
+        color: 'rgba(255,255,255,0.64)',
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+        marginBottom: 8,
+    },
+    goalQuoteText: {
+        color: colors.white,
+        fontSize: 16,
+        fontWeight: '600',
+        lineHeight: 23,
     },
     errorText: {
         marginTop: 16,

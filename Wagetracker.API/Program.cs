@@ -159,6 +159,9 @@ using (var scope = app.Services.CreateScope())
         ADD COLUMN IF NOT EXISTS ""WeeklyGoalAmount"" numeric(18,2) NULL;
 
         ALTER TABLE ""Users""
+        ADD COLUMN IF NOT EXISTS ""WeeklyGoalMotivationQuote"" character varying(220) NULL;
+
+        ALTER TABLE ""Users""
         ADD COLUMN IF NOT EXISTS ""BillingCustomerId"" character varying(100) NULL;
 
         CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Users_BillingCustomerId""

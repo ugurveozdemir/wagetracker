@@ -40,6 +40,7 @@ namespace WageTracker.API.Models.DTOs
         public string Email { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public decimal? WeeklyGoalAmount { get; set; }
+        public string? WeeklyGoalMotivationQuote { get; set; }
         public string BillingCustomerId { get; set; } = string.Empty;
         public SubscriptionSummaryDto Subscription { get; set; } = new();
         public FeatureAccessDto Access { get; set; } = new();
@@ -70,6 +71,9 @@ namespace WageTracker.API.Models.DTOs
     {
         [Range(0, 1000000, ErrorMessage = "Weekly goal must be between $0 and $1,000,000")]
         public decimal? TargetAmount { get; set; }
+
+        [MaxLength(220, ErrorMessage = "Motivation quote cannot exceed 220 characters")]
+        public string? MotivationQuote { get; set; }
     }
 
     // ==================== JOB DTOs ====================
@@ -384,6 +388,7 @@ namespace WageTracker.API.Models.DTOs
     public class WeeklyGoalStatusResponse
     {
         public decimal? TargetAmount { get; set; }
+        public string? MotivationQuote { get; set; }
         public decimal CurrentAmount { get; set; }
         public decimal RemainingAmount { get; set; }
         public decimal ProgressPercent { get; set; }

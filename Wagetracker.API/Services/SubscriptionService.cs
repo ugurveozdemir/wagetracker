@@ -64,6 +64,7 @@ namespace WageTracker.API.Services
                 Email = user.Email,
                 FullName = user.FullName,
                 WeeklyGoalAmount = user.WeeklyGoalAmount,
+                WeeklyGoalMotivationQuote = user.WeeklyGoalMotivationQuote,
                 BillingCustomerId = user.BillingCustomerId ?? string.Empty,
                 Subscription = MapSubscription(subscription),
                 Access = MapAccess(access)

@@ -36,6 +36,7 @@ namespace WageTracker.API.Data
                 entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(255);
                 entity.Property(e => e.FullName).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.WeeklyGoalAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.WeeklyGoalMotivationQuote).HasMaxLength(220);
                 entity.Property(e => e.BillingCustomerId).HasMaxLength(100);
                 entity.HasIndex(e => e.BillingCustomerId).IsUnique();
                 entity.Property(e => e.CreatedAt).IsRequired();

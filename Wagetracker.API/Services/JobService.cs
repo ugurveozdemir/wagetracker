@@ -151,7 +151,8 @@ namespace WageTracker.API.Services
                 .Where(u => u.Id == userId)
                 .Select(u => new
                 {
-                    u.WeeklyGoalAmount
+                    u.WeeklyGoalAmount,
+                    u.WeeklyGoalMotivationQuote
                 })
                 .FirstAsync();
 
@@ -263,6 +264,7 @@ namespace WageTracker.API.Services
                     ? new WeeklyGoalStatusResponse
                     {
                         TargetAmount = weeklyGoalTarget,
+                        MotivationQuote = user.WeeklyGoalMotivationQuote,
                         CurrentAmount = weeklyEarnings,
                         RemainingAmount = weeklyGoalRemaining,
                         ProgressPercent = weeklyGoalProgress,
