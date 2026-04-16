@@ -7,6 +7,7 @@ interface AuthState {
     user: UserDto | null;
     isAuthenticated: boolean;
     isLoading: boolean;
+    isSubmittingSurvey: boolean;
     shouldShowRegistrationSurvey: boolean;
     error: string | null;
 
@@ -26,6 +27,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     user: null,
     isAuthenticated: false,
     isLoading: true, // Start with loading to check existing token
+    isSubmittingSurvey: false,
     shouldShowRegistrationSurvey: false,
     error: null,
 
@@ -121,19 +123,19 @@ export const useAuthStore = create<AuthState>((set) => ({
     },
 
     submitRegistrationSurvey: async (data: SubmitRegistrationSurveyRequest) => {
-        set({ isLoading: true, error: null });
+        set({ isSubmittingSurvey: true, error: null });
         try {
             const user = await surveyApi.submitRegistrationSurvey(data);
             set({
                 user,
                 isAuthenticated: true,
-                isLoading: false,
+                isSubmittingSurvey: false,
                 shouldShowRegistrationSurvey: false
             });
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : 'Survey submission failed',
-                isLoading: false
+                isSubmittingSurvey: false
             });
             throw error;
         }
@@ -151,10 +153,9 @@ export const useAuthStore = create<AuthState>((set) => ({
             });
         } catch (error) {
             set({
-                error: error instanceof Error ? error.message : 'Survey reset failed',
-                isLoading: false
+                isLoading: false,
+                shouldShowRegistrationSurvey: true
             });
-            throw error;
         }
     },
 

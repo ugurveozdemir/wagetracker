@@ -21,6 +21,7 @@ namespace WageTracker.API.Data
         public DbSet<ExpenseItem> ExpenseItems { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<RevenueCatWebhookEvent> RevenueCatWebhookEvents { get; set; }
+        public DbSet<UserRegistrationSurvey> UserRegistrationSurveys { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -176,6 +177,23 @@ namespace WageTracker.API.Data
                 entity.Property(e => e.AppUserId).HasMaxLength(100);
                 entity.Property(e => e.Payload).IsRequired();
                 entity.Property(e => e.ReceivedAt).IsRequired();
+            });
+
+            modelBuilder.Entity<UserRegistrationSurvey>(entity =>
+            {
+                entity.ToTable("UserRegistrationSurveys");
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.UserId).IsUnique();
+                entity.Property(e => e.PrimaryGoal).IsRequired().HasMaxLength(60);
+                entity.Property(e => e.PlannedJobCount).IsRequired().HasMaxLength(60);
+                entity.Property(e => e.SpendingHabit).IsRequired().HasMaxLength(60);
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.UpdatedAt).IsRequired();
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

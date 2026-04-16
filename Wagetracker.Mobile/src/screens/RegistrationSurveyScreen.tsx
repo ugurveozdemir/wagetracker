@@ -149,7 +149,7 @@ const stepMeta = [
 ] as const;
 
 export const RegistrationSurveyScreen: React.FC = () => {
-    const { submitRegistrationSurvey, isLoading } = useAuthStore();
+    const { submitRegistrationSurvey, isSubmittingSurvey } = useAuthStore();
     const { horizontalPadding, isCompact, rs } = useResponsiveLayout();
     const [step, setStep] = useState<SurveyStep>(0);
     const [primaryGoal, setPrimaryGoal] = useState<SurveyPrimaryGoal | null>(null);
@@ -239,7 +239,7 @@ export const RegistrationSurveyScreen: React.FC = () => {
                     style={[styles.headerButton, { opacity: step === 0 ? 0.35 : 1 }]}
                     activeOpacity={0.8}
                     onPress={handleBack}
-                    disabled={step === 0 || isLoading}
+                    disabled={step === 0 || isSubmittingSurvey}
                 >
                     <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
                 </TouchableOpacity>
@@ -284,7 +284,7 @@ export const RegistrationSurveyScreen: React.FC = () => {
                                 ]}
                                 activeOpacity={0.86}
                                 onPress={() => handleSelect(option.value)}
-                                disabled={isLoading}
+                            disabled={isSubmittingSurvey}
                             >
                                 <View style={[styles.optionIcon, styles[`${option.tone}Icon`]]}>
                                     <MaterialIcons
@@ -323,9 +323,9 @@ export const RegistrationSurveyScreen: React.FC = () => {
                     style={[styles.primaryButton, !activeValue && styles.primaryButtonDisabled]}
                     activeOpacity={0.88}
                     onPress={handleContinue}
-                    disabled={isLoading}
+                    disabled={isSubmittingSurvey}
                 >
-                    {isLoading ? (
+                    {isSubmittingSurvey ? (
                         <ActivityIndicator color={colors.white} />
                     ) : (
                         <>

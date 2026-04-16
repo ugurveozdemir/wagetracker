@@ -440,7 +440,7 @@ export const AppNavigator: React.FC = () => {
             <RootStack.Navigator screenOptions={{ headerShown: false }}>
                 {!hasCompletedOnboarding ? (
                     <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
-                ) : isAuthenticated && shouldShowRegistrationSurvey && !user?.hasCompletedRegistrationSurvey ? (
+                ) : isAuthenticated && shouldShowRegistrationSurvey ? (
                     <RootStack.Screen name="RegistrationSurvey" component={RegistrationSurveyScreen} />
                 ) : isAuthenticated ? (
                     <>

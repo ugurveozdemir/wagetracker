@@ -44,6 +44,22 @@ namespace WageTracker.API.Models.DTOs
         public string BillingCustomerId { get; set; } = string.Empty;
         public SubscriptionSummaryDto Subscription { get; set; } = new();
         public FeatureAccessDto Access { get; set; } = new();
+        public bool HasCompletedRegistrationSurvey { get; set; }
+    }
+
+    public class SubmitRegistrationSurveyRequest
+    {
+        [Required]
+        [MaxLength(60)]
+        public string PrimaryGoal { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(60)]
+        public string PlannedJobCount { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(60)]
+        public string SpendingHabit { get; set; } = string.Empty;
     }
 
     public class SubscriptionSummaryDto

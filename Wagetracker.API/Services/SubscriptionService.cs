@@ -57,6 +57,9 @@ namespace WageTracker.API.Services
             var subscription = await _context.UserSubscriptions
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.UserId == user.Id, cancellationToken);
+            var hasCompletedRegistrationSurvey = await _context.UserRegistrationSurveys
+                .AsNoTracking()
+                .AnyAsync(s => s.UserId == user.Id, cancellationToken);
 
             return new UserDto
             {
@@ -67,7 +70,8 @@ namespace WageTracker.API.Services
                 WeeklyGoalMotivationQuote = user.WeeklyGoalMotivationQuote,
                 BillingCustomerId = user.BillingCustomerId ?? string.Empty,
                 Subscription = MapSubscription(subscription),
-                Access = MapAccess(access)
+                Access = MapAccess(access),
+                HasCompletedRegistrationSurvey = hasCompletedRegistrationSurvey
             };
         }
 
