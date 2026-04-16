@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
+    Image,
     ImageBackground,
     NativeScrollEvent,
     NativeSyntheticEvent,
@@ -16,16 +17,18 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useOnboardingStore } from '../stores';
 import { colors, fontSizes, fontWeights, spacing, useResponsiveLayout } from '../theme';
 
+const brandLogo = require('../../assets/logo.png');
+
 const onboardingSlides = [
     {
         key: 'earnings',
         imageUri:
             'https://lh3.googleusercontent.com/aida-public/AB6AXuAhpVkLjxsEeQK0EzhKE7egEiHtKZAB_N4JvtyLRD-P-pJ9PZ6UoJvFAQjhOCy6V8fTZmHurS6GcMbMyz9Iwk-67x0TzOa91DjdE_lmY3-lrJanuwpQps1QlvpMh1zt3iNQ5MWGTnDXaEmVXCRpa4_Omj0zIJRYw2ORdcoENsLc4nfa7P2sOl83ckv0veA6EPHR8O5svne0wTyuW_fQPxy-_FtlWpQXNPxVvUtf4ABHIkWgbBiNtjIPBv4zN_2O5ELeGDA92AvcAdo9',
-        titleStart: 'Kazançlarını',
-        titleAccent: 'Kolayca',
-        titleEnd: 'Takip Et',
-        description: 'Birden fazla işte çalışsan bile saatlik ücretlerini ve kazançlarını tek bir yerden yönet.',
-        badgeLabel: 'GÜNCEL DURUM',
+        titleStart: 'Track Your',
+        titleAccent: 'Earnings',
+        titleEnd: 'With Ease',
+        description: 'Manage your hourly pay and earnings in one place, even if you work multiple jobs.',
+        badgeLabel: 'CURRENT STATUS',
         badgeValue: '+ $1,250.00',
         badgeIcon: 'payments',
         imageMode: 'card',
@@ -38,10 +41,10 @@ const onboardingSlides = [
         key: 'goals',
         imageUri:
             'https://lh3.googleusercontent.com/aida-public/AB6AXuBOx7MbGlaOeQnpGHOjamdf6EznSi04LuJUoG_Yvzsvhdt9Gz9B8lWtrLArgGFiGH3n1dBsIECRKz-nWlhq6zesdkBQP4Sa1TVC9KMeKQDb1DeOLAC8BO1fP0ak-hSoscqObNcLzbJIY1o5dTf5X6X4aq_7gdECb3RuSvg5nNmotsSGz91t4nevYBD-p6QtXXt9iesCZsy1fC7MNEY53MMNE8TaDZuSTeVyQkQm-3zdT-1Vw43xJcZuMjjvFIqteM-JaJ5mYWKu02MH',
-        titleStart: 'Hayallerindeki',
+        titleStart: 'Get Ready',
         titleAccent: '',
-        titleEnd: 'Yolculuğa Hazırlan',
-        description: 'Hedeflerini belirle, birikimlerini takip et ve bir sonraki macerana ne kadar yaklaştığını gör.',
+        titleEnd: 'For Your Dream Trip',
+        description: 'Set your goals, track your savings, and see how close you are to your next adventure.',
         badgeLabel: 'TARGET REACHED',
         badgeValue: '85%',
         badgeIcon: 'flight-takeoff',
@@ -55,16 +58,16 @@ const onboardingSlides = [
         key: 'expenses',
         imageUri:
             'https://lh3.googleusercontent.com/aida-public/AB6AXuAmC9BGTC4CfQ7u7e8gbkDrHMDxPFrDYpjqV9yc_vZjBk-LQOj-wOxZRToA5UOyyL6qrJM0VRXjcpRhTpcl_2ZZQ4X6wA8RGwh3qrQ7CSaPIJcL4imqNOy9vh25EYhPZ2PtW_jCP0VZfhgWyRHtItcUbaWzV0kaPFZyoL1o-PsBFmd_annoVyhA_rV3gr30CJelVrZfQyJDS25zlJ_7puSWyWUi9PHhMvr6r8mTpf0V_o8ev6hUUl4Vw2_s8MFkQ1FlQijwcz-LdXYf',
-        titleStart: 'Giderlerini Akıllıca',
+        titleStart: 'Manage Your',
         titleAccent: '',
-        titleEnd: 'Yönet',
-        description: 'AI destekli tarama ile fişlerini saniyeler içinde ekle, nereye ne harcadığını detaylıca gör.',
+        titleEnd: 'Expenses Smarter',
+        description: 'Add receipts in seconds with AI-powered scanning and see exactly where your money goes.',
         badgeLabel: '',
         badgeValue: '$24.50',
         badgeIcon: 'receipt-long',
         imageMode: 'card',
         activeDotIndex: 2,
-        cta: 'Hemen Başla',
+        cta: 'Get Started',
         showSkip: false,
         showBrand: false,
     },
@@ -145,7 +148,7 @@ export const OnboardingScreen: React.FC = () => {
                             <View style={[styles.brandSlot, { height: slide.showBrand ? rs(46) : 0 }]}>
                                 {slide.showBrand ? (
                                     <View style={styles.brandRow}>
-                                        <MaterialIcons name="account-balance-wallet" size={rs(30)} color={colors.primary} />
+                                        <Image source={brandLogo} style={{ width: rs(42), height: rs(42) }} resizeMode="contain" />
                                         <Text style={[styles.brandText, { fontSize: isCompact ? 25 : 29 }]}>Chickaree</Text>
                                     </View>
                                 ) : null}
@@ -204,7 +207,7 @@ export const OnboardingScreen: React.FC = () => {
 
                                     {slide.key === 'expenses' ? (
                                         <View style={styles.aiBadge}>
-                                            <Text style={styles.aiBadgeText}>AI Destekli</Text>
+                                            <Text style={styles.aiBadgeText}>AI Powered</Text>
                                         </View>
                                     ) : null}
                                 </ImageBackground>
@@ -266,13 +269,13 @@ export const OnboardingScreen: React.FC = () => {
 
                 <TouchableOpacity
                     accessibilityRole="button"
-                    accessibilityLabel={isLastSlide ? 'Hemen Başla' : 'Next'}
+                    accessibilityLabel={isLastSlide ? 'Get Started' : 'Next'}
                     activeOpacity={0.88}
                     disabled={isCompleting}
                     onPress={handlePrimaryPress}
                     style={[styles.primaryButton, isCompleting && styles.disabledButton]}
                 >
-                    <Text style={styles.primaryButtonText}>{isCompleting ? 'Başlatılıyor...' : onboardingSlides[activeIndex].cta}</Text>
+                    <Text style={styles.primaryButtonText}>{isCompleting ? 'Starting...' : onboardingSlides[activeIndex].cta}</Text>
                     {!isLastSlide ? <MaterialIcons name="arrow-forward" size={28} color={colors.white} /> : null}
                 </TouchableOpacity>
 
@@ -312,12 +315,13 @@ const styles = StyleSheet.create({
     },
     brandSlot: {
         justifyContent: 'center',
+        alignItems: 'center',
     },
     brandRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: spacing.md,
+        gap: 0.01,
     },
     brandText: {
         color: colors.primary,

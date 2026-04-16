@@ -256,7 +256,7 @@ const ExpenseHistoryItem: React.FC<ExpenseHistoryItemProps> = ({ expense, color,
                     {hasItems ? (
                         <TouchableOpacity style={styles.itemCountPill} onPress={onToggleExpanded} activeOpacity={0.82}>
                             <Text style={styles.itemCountText}>{expense.itemCount} items</Text>
-                            <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={15} color="#006D44" />
+                            <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={15} color="#005232" />
                         </TouchableOpacity>
                     ) : null}
                     <Text style={styles.expenseAmount}>-{formatCurrency(expense.amount)}</Text>
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
     },
     heroTitle: {
-        color: '#006D44',
+        color: '#005232',
         fontSize: 30,
         fontWeight: '800',
         letterSpacing: -0.8,
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
         gap: 2,
     },
     itemCountText: {
-        color: '#006D44',
+        color: '#005232',
         fontSize: 10,
         fontWeight: '800',
     },

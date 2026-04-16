@@ -34,29 +34,29 @@ interface SurveyOption<T extends SurveyAnswer> {
 const primaryGoalOptions: SurveyOption<SurveyPrimaryGoal>[] = [
     {
         value: 'travel_savings',
-        title: 'Seyahat Biriktirmek',
-        description: 'Yaz sonunda hayalindeki rotayı keşfetmek için bütçe planla.',
+        title: 'Save for Travel',
+        description: 'Plan your budget for the route you want to explore at the end of summer.',
         icon: 'explore',
         tone: 'tertiary',
     },
     {
         value: 'new_experiences',
-        title: 'Yeni Deneyimler Kazanmak',
-        description: 'Konserler, festivaller ve sosyal aktivitelerle yazı dolu yaşa.',
+        title: 'Enjoy New Experiences',
+        description: 'Make room for concerts, festivals, and social plans throughout the summer.',
         icon: 'celebration',
         tone: 'primary',
     },
     {
         value: 'education_costs',
-        title: 'Eğitim Masraflarını Karşılamak',
-        description: 'Yeni dönem hazırlıkları için birikimini akıllıca yönet.',
+        title: 'Cover Education Costs',
+        description: 'Manage your savings wisely for the next school term.',
         icon: 'school',
         tone: 'secondary',
     },
     {
         value: 'save_money',
-        title: 'Sadece Para Biriktirmek',
-        description: 'Gelecek için sağlam bir finansal temel oluşturmaya odaklan.',
+        title: 'Just Save Money',
+        description: 'Focus on building a stronger financial foundation for the future.',
         icon: 'account-balance-wallet',
         tone: 'neutral',
     },
@@ -65,29 +65,29 @@ const primaryGoalOptions: SurveyOption<SurveyPrimaryGoal>[] = [
 const plannedJobOptions: SurveyOption<SurveyPlannedJobCount>[] = [
     {
         value: 'one_job',
-        title: 'Sadece 1 İş',
-        description: 'Tek bir işverene odaklanıp boş zamanın tadını çıkar.',
+        title: 'Just 1 Job',
+        description: 'Focus on one employer and enjoy your free time.',
         icon: 'looks-one',
         tone: 'neutral',
     },
     {
         value: 'two_jobs',
-        title: '2 İş (Ana + Ek İş)',
-        description: 'Popüler seçim. Daha fazla kazanç için ek mesai.',
+        title: '2 Jobs (Main + Side Job)',
+        description: 'A popular choice. Extra shifts for more income.',
         icon: 'looks-two',
         tone: 'primary',
     },
     {
         value: 'three_or_more',
-        title: '3 veya Daha Fazla',
-        description: 'Maksimum birikim için yoğun çalışma temposu.',
+        title: '3 or More',
+        description: 'A busy schedule for maximum savings.',
         icon: 'filter-3',
         tone: 'secondary',
     },
     {
         value: 'undecided',
-        title: 'Henüz Karar Vermedim',
-        description: 'Seçenekleri sonra değerlendir.',
+        title: 'Not Sure Yet',
+        description: 'Decide after you compare your options.',
         icon: 'question-mark',
         tone: 'neutral',
     },
@@ -96,29 +96,29 @@ const plannedJobOptions: SurveyOption<SurveyPlannedJobCount>[] = [
 const spendingHabitOptions: SurveyOption<SurveySpendingHabit>[] = [
     {
         value: 'frugal',
-        title: 'Tasarruflu',
-        description: 'Sadece ihtiyaçlar. Gereksiz harcamadan kaçınırım.',
+        title: 'Frugal',
+        description: 'Only the essentials. I avoid unnecessary spending.',
         icon: 'potted-plant',
         tone: 'primary',
     },
     {
         value: 'balanced',
-        title: 'Dengeli',
-        description: 'Hem birikim hem keyif. Hayatı kaçırmadan tasarruf.',
+        title: 'Balanced',
+        description: 'Savings and enjoyment. I save without missing out.',
         icon: 'balance',
         tone: 'primary',
     },
     {
         value: 'experience_focused',
-        title: 'Biraz Savurgan',
-        description: 'Deneyim odaklı. Geziyorum, harcıyorum, yaşıyorum.',
+        title: 'Experience Focused',
+        description: 'I spend on travel, plans, and moments I care about.',
         icon: 'flight-takeoff',
         tone: 'tertiary',
     },
     {
         value: 'no_tracking',
-        title: 'Harcama Takibi Yok',
-        description: 'Takip yapmıyorum. Akışına bırakıyorum.',
+        title: 'No Expense Tracking',
+        description: 'I do not track spending. I go with the flow.',
         icon: 'visibility-off',
         tone: 'neutral',
     },
@@ -127,24 +127,24 @@ const spendingHabitOptions: SurveyOption<SurveySpendingHabit>[] = [
 const stepMeta = [
     {
         label: 'Step 1 of 3',
-        progress: '33% Tamamlandı',
-        eyebrow: 'Hedefini Belirle',
-        title: 'Bu Yaz İçin Ana Hedefin Nedir?',
-        subtitle: 'Sana özel gelecek güncellemeler hazırlayabilmemiz için en büyük motivasyonunu seç.',
+        progress: '33% Complete',
+        eyebrow: 'Set Your Goal',
+        title: 'What Is Your Main Goal This Summer?',
+        subtitle: 'Choose your biggest motivation so future updates can better fit your plans.',
     },
     {
         label: 'Step 2 of 3',
-        progress: '66% Tamamlandı',
-        eyebrow: 'Planlama Aşaması',
-        title: 'Bu Yaz Kaç Farklı İşte Çalışmayı Planlıyorsun?',
-        subtitle: 'Work and Travel maceranda gelir hedeflerini daha iyi anlamamıza yardımcı ol.',
+        progress: '66% Complete',
+        eyebrow: 'Planning Stage',
+        title: 'How Many Different Jobs Do You Plan to Work This Summer?',
+        subtitle: 'Help us better understand your income goals for your Work and Travel season.',
     },
     {
         label: 'Step 3 of 3',
-        progress: 'Neredeyse Bitti',
-        eyebrow: 'Harcama Alışkanlığı',
-        title: 'Harcama Alışkanlıkların Nasıl?',
-        subtitle: 'Finansal hedeflerini gelecek güncellemelerde daha iyi şekillendirelim.',
+        progress: 'Almost Done',
+        eyebrow: 'Spending Habits',
+        title: 'What Are Your Spending Habits Like?',
+        subtitle: 'Help us shape future updates around your financial goals.',
     },
 ] as const;
 
@@ -308,11 +308,11 @@ export const RegistrationSurveyScreen: React.FC = () => {
                 <View style={styles.tipCard}>
                     <MaterialIcons name={step === 2 ? 'savings' : 'lightbulb'} size={30} color={colors.primarySoft} />
                     <View style={styles.tipCopy}>
-                        <Text style={styles.tipTitle}>{step === 2 ? 'Son adım' : 'Biliyor muydun?'}</Text>
+                        <Text style={styles.tipTitle}>{step === 2 ? 'Last step' : 'Did you know?'}</Text>
                         <Text style={styles.tipText}>
                             {step === 2
-                                ? 'Bu cevapları sadece gelecek ürün güncellemelerini daha iyi şekillendirmek için saklıyoruz.'
-                                : "Work and Travel öğrencilerinin çoğu yaz ortasında planını yeniden düzenliyor."}
+                                ? 'We only save these answers to shape future product updates more effectively.'
+                                : 'Most Work and Travel students adjust their plan again around mid-summer.'}
                         </Text>
                     </View>
                 </View>
@@ -329,7 +329,7 @@ export const RegistrationSurveyScreen: React.FC = () => {
                         <ActivityIndicator color={colors.white} />
                     ) : (
                         <>
-                            <Text style={styles.primaryButtonText}>{step === 2 ? 'Tamamla' : 'Devam Et'}</Text>
+                            <Text style={styles.primaryButtonText}>{step === 2 ? 'Finish' : 'Continue'}</Text>
                             <MaterialIcons name={step === 2 ? 'done-all' : 'arrow-forward'} size={24} color={colors.white} />
                         </>
                     )}

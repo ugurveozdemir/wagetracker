@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     screenTitle: {
-        color: '#006D44',
+        color: '#005232',
         fontSize: 38,
         fontWeight: '800',
         letterSpacing: -1,

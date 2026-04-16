@@ -352,7 +352,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                             onPress={handleScanReceipt}
                             disabled={isScanning || isLoading}
                         >
-                            <MaterialIcons name="document-scanner" size={20} color="#006D44" />
+                            <MaterialIcons name="document-scanner" size={20} color="#005232" />
                             <Text style={styles.scanButtonText}>{isScanning ? 'Scanning receipt...' : 'Scan Receipt'}</Text>
                         </TouchableOpacity>
                     ) : null}
@@ -360,7 +360,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     {isReceiptDraft ? (
                         <View style={styles.scanSummary}>
                             <View style={styles.scanSummaryHeader}>
-                                <MaterialIcons name="auto-awesome" size={18} color="#006D44" />
+                                <MaterialIcons name="auto-awesome" size={18} color="#005232" />
                                 <Text style={styles.scanSummaryTitle}>Review scanned receipt</Text>
                             </View>
                             {scanConfidence !== null ? (
@@ -554,15 +554,15 @@ const styles = StyleSheet.create({
     modeButton: { flex: 1, minHeight: 46, borderRadius: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
     modeButtonActive: { backgroundColor: '#ffffff' },
     modeButtonText: { color: '#6f7a71', fontSize: 13, fontWeight: '800' },
-    modeButtonTextActive: { color: '#006D44' },
+    modeButtonTextActive: { color: '#005232' },
     errorBanner: { backgroundColor: '#fff1ef', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24, marginBottom: 16 },
     errorText: { color: '#ba1a1a', fontSize: 14, fontWeight: '700' },
     scanButton: { backgroundColor: '#ecf8f0', minHeight: 58, borderRadius: 24, marginBottom: 16, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
     scanButtonDisabled: { opacity: 0.7 },
-    scanButtonText: { color: '#006D44', fontSize: 16, fontWeight: '800' },
+    scanButtonText: { color: '#005232', fontSize: 16, fontWeight: '800' },
     scanSummary: { backgroundColor: '#ecf8f0', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 24, marginBottom: 16 },
     scanSummaryHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-    scanSummaryTitle: { color: '#006D44', fontSize: 14, fontWeight: '800' },
+    scanSummaryTitle: { color: '#005232', fontSize: 14, fontWeight: '800' },
     scanSummaryText: { color: '#4f5a53', fontSize: 13, fontWeight: '700', marginBottom: 4 },
     scanWarningText: { color: '#7a573d', fontSize: 13, lineHeight: 18, fontWeight: '600', marginTop: 2 },
     fieldCard: { backgroundColor: '#f5f4eb', padding: 20, marginBottom: 16 },
@@ -575,12 +575,12 @@ const styles = StyleSheet.create({
     categoryChip: { backgroundColor: '#ffffff', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 999 },
     categoryChipActive: { backgroundColor: '#ecf8f0' },
     categoryChipText: { color: '#4f5a53', fontSize: 13, fontWeight: '700' },
-    categoryChipTextActive: { color: '#006D44' },
+    categoryChipTextActive: { color: '#005232' },
     dateButton: { backgroundColor: '#ffffff', borderRadius: 999, minHeight: 58, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     dateText: { color: '#181d19', fontSize: 18, fontWeight: '700' },
     descriptionInput: { backgroundColor: '#ffffff', paddingHorizontal: 18, paddingVertical: 16, color: '#181d19', fontSize: 16, lineHeight: 24 },
     itemsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-    addItemText: { color: '#006D44', fontSize: 13, fontWeight: '800' },
+    addItemText: { color: '#005232', fontSize: 13, fontWeight: '800' },
     emptyItemsText: { color: '#6f7a71', fontSize: 13, fontWeight: '600', lineHeight: 20 },
     receiptItemRow: { backgroundColor: '#ffffff', borderRadius: 22, padding: 12, marginBottom: 10 },
     receiptItemTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     itemTagChip: { backgroundColor: '#f5f4eb', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6 },
     itemTagChipActive: { backgroundColor: '#ecf8f0' },
     itemTagText: { color: '#6f7a71', fontSize: 11, fontWeight: '700' },
-    itemTagTextActive: { color: '#006D44' },
+    itemTagTextActive: { color: '#005232' },
     reconcileRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
     reconcileText: { color: '#4f5a53', fontSize: 13, fontWeight: '700' },
     reconcileWarning: { color: '#7a573d', fontSize: 13, fontWeight: '800' },

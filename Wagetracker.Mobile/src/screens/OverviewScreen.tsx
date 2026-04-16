@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     title: {
-        color: '#006D44',
+        color: '#005232',
         fontWeight: '800',
         letterSpacing: -1.2,
         marginBottom: 8,
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     jobCardPrimary: {
-        backgroundColor: '#006D44',
+        backgroundColor: '#005232',
     },
     jobCardSecondary: {
         backgroundColor: '#00429B',

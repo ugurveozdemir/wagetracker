@@ -12,7 +12,7 @@ interface JobCardProps {
 
 const paletteByVariant = {
     green: {
-        surface: '#006D44',
+        surface: '#005232',
         glow: 'rgba(255,255,255,0.10)',
         badge: 'rgba(255,255,255,0.20)',
         badgeText: colors.white,

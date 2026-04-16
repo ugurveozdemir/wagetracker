@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
+    Image,
     View,
     Text,
     StyleSheet,
@@ -38,6 +39,7 @@ const emptyChartPoints = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((
 }));
 
 const dayLabelsByIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+const brandLogo = require('../../assets/logo.png');
 
 const gigCardThemes = [
     { backgroundStyle: 'gigCardPrimary', icon: 'hotel' },
@@ -148,6 +150,7 @@ export const DashboardScreen: React.FC = () => {
                         activeOpacity={0.85}
                         onPress={() => navigation.navigate('ProfileTab')}
                     >
+                        <Image source={brandLogo} style={styles.brandLogo} resizeMode="contain" />
                         <Text style={styles.brandText}>Chickaree</Text>
                     </TouchableOpacity>
                 </View>
@@ -525,10 +528,17 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     brandBlock: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 0.01,
         flexShrink: 1,
     },
+    brandLogo: {
+        width: 32,
+        height: 32,
+    },
     brandText: {
-        color: '#006D44',
+        color: '#005232',
         fontSize: 20,
         fontWeight: '800',
         letterSpacing: -0.3,
@@ -564,7 +574,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     heroValue: {
-        color: '#006D44',
+        color: '#005232',
         fontWeight: '800',
         letterSpacing: -1.2,
         marginBottom: 24,
@@ -602,7 +612,7 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 9999,
     },
     chartTooltipText: {
-        color: '#006D44',
+        color: '#005232',
         fontSize: 10,
         fontWeight: '500',
         textAlign: 'center',
@@ -623,7 +633,7 @@ const styles = StyleSheet.create({
         letterSpacing: 1.2,
     },
     chartLabelActive: {
-        color: '#006D44',
+        color: '#005232',
     },
     spendingCard: {
         backgroundColor: '#ff8a00',
@@ -752,7 +762,7 @@ const styles = StyleSheet.create({
         letterSpacing: -0.4,
     },
     sectionMeta: {
-        color: '#006D44',
+        color: '#005232',
         fontSize: 14,
         fontWeight: '600',
     },
@@ -767,7 +777,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     gigCardPrimary: {
-        backgroundColor: '#006D44',
+        backgroundColor: '#005232',
     },
     gigCardTertiary: {
         backgroundColor: '#00429B',

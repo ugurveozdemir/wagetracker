@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+    Image,
     View,
     Text,
     StyleSheet,
@@ -22,6 +23,7 @@ import { colors, spacing, fontSizes, fontWeights, useResponsiveLayout } from '..
 import Toast from 'react-native-toast-message';
 
 type RegisterNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
+const brandLogo = require('../../assets/logo.png');
 
 export const RegisterScreen: React.FC = () => {
     const navigation = useNavigation<RegisterNavigationProp>();
@@ -180,7 +182,7 @@ export const RegisterScreen: React.FC = () => {
                 >
                     <View style={styles.brandRow}>
                         <View style={[styles.brandBadge, { width: rs(54), height: rs(54), borderRadius: rs(27) }]}>
-                            <MaterialIcons name="eco" size={rs(26)} color={colors.onPrimary} />
+                            <Image source={brandLogo} style={{ width: rs(46), height: rs(46) }} resizeMode="contain" />
                         </View>
                         <Text style={[styles.brandText, { fontSize: isCompact ? 22 : 25 }]}>Chickaree</Text>
                     </View>
@@ -331,13 +333,14 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'center',
-        gap: spacing.md,
+        gap: 0.01,
         marginBottom: spacing['4xl'],
     },
     brandBadge: {
-        backgroundColor: colors.primary,
+        backgroundColor: colors.surfaceContainerHigh,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
     },
     brandText: {
         color: colors.primary,

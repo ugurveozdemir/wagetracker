@@ -71,3 +71,6 @@ AGENTS.md
 .codex/skills/.system/**
 !.codex/prompts/
 !.codex/prompts/**
+
+
+reference-project/

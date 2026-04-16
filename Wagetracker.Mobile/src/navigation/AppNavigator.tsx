@@ -216,7 +216,7 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
                             <MaterialIcons
                                 name={tab.icon}
                                 size={compact ? 20 : 22}
-                                color={isFocused ? '#006D44' : '#94a3b8'}
+                                color={isFocused ? '#005232' : '#94a3b8'}
                             />
                             <Text
                                 numberOfLines={1}
@@ -519,7 +519,7 @@ const tabStyles = StyleSheet.create({
         maxWidth: '100%',
     },
     tabLabelActive: {
-        color: '#006D44',
+        color: '#005232',
     },
 });
 

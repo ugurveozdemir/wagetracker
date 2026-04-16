@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     heading: {
-        color: '#006D44',
+        color: '#005232',
         fontWeight: '800',
         letterSpacing: -1.2,
         marginBottom: 18,
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 6,
     },
     fieldLabel: {
-        color: '#006D44',
+        color: '#005232',
         fontSize: 13,
         fontWeight: '700',
         letterSpacing: 1.4,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     weekdayChipActive: {
-        backgroundColor: '#006D44',
+        backgroundColor: '#005232',
     },
     weekdayChipText: {
         color: '#6f7a71',
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     },
     submitButton: {
         marginTop: 8,
-        backgroundColor: '#006D44',
+        backgroundColor: '#005232',
         minHeight: 66,
         borderRadius: 999,
         flexDirection: 'row',

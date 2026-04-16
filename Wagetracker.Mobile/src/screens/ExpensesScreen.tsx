@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+    Image,
     View,
     Text,
     StyleSheet,
@@ -24,6 +25,7 @@ import Feather from 'react-native-vector-icons/Feather';
 import Toast from 'react-native-toast-message';
 
 type ExpensesNavigationProp = NativeStackNavigationProp<ExpenseStackParamList, 'Expenses'>;
+const brandLogo = require('../../assets/logo.png');
 
 export const ExpensesScreen: React.FC = () => {
     const { width } = useWindowDimensions();
@@ -136,7 +138,7 @@ export const ExpensesScreen: React.FC = () => {
                 const category = EXPENSE_CATEGORIES[expense.category] ?? EXPENSE_CATEGORIES[7];
                 const iconMap = ['shopping-bag', 'local-taxi', 'bolt', 'receipt-long'] as const;
                 const bgMap = ['rgba(255,220,196,0.30)', 'rgba(217,226,255,0.60)', 'rgba(156,245,193,0.30)', 'rgba(255,220,196,0.30)'];
-                const iconColorMap = ['#ab3600', '#00429B', '#006D44', '#ab3600'];
+                const iconColorMap = ['#ab3600', '#00429B', '#005232', '#ab3600'];
 
                 return {
                     id: expense.id,
@@ -218,6 +220,7 @@ export const ExpensesScreen: React.FC = () => {
             >
                 <View style={styles.topBar}>
                     <View style={styles.brandRow}>
+                        <Image source={brandLogo} style={styles.brandLogo} resizeMode="contain" />
                         <Text style={styles.brandText}>Chickaree</Text>
                     </View>
                 </View>
@@ -408,7 +411,7 @@ const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, sc
                     {hasItems ? (
                         <TouchableOpacity style={styles.itemCountPill} onPress={onToggleExpanded} activeOpacity={0.82}>
                             <Text style={styles.itemCountText}>{item.expense.itemCount} items</Text>
-                            <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={15} color="#006D44" />
+                            <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={15} color="#005232" />
                         </TouchableOpacity>
                     ) : null}
                     <Text style={[styles.recentAmount, { fontSize: compact ? 15 : 16 }]}>{item.amount}</Text>
@@ -451,10 +454,17 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     brandRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 0.01,
         flexShrink: 1,
     },
+    brandLogo: {
+        width: 32,
+        height: 32,
+    },
     brandText: {
-        color: '#006D44',
+        color: '#005232',
         fontSize: 20,
         fontWeight: '800',
         letterSpacing: -0.5,
@@ -627,7 +637,7 @@ const styles = StyleSheet.create({
         gap: 2,
     },
     itemCountText: {
-        color: '#006D44',
+        color: '#005232',
         fontSize: 10,
         fontWeight: '800',
     },
