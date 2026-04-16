@@ -7,7 +7,6 @@ import {
     ViewStyle,
     TextStyle,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { colors, borderRadius, spacing, fontSizes, fontWeights } from '../../theme';
 
 interface ButtonProps {
@@ -49,48 +48,28 @@ export const Button: React.FC<ButtonProps> = ({
             disabled={isDisabled}
             activeOpacity={0.8}
         >
-            {variant === 'primary' ? (
-                <LinearGradient
-                    colors={[colors.primary, colors.primaryLight]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.primaryFill}
-                >
-                    {loading ? (
-                        <ActivityIndicator color={colors.onPrimary} size="small" />
-                    ) : (
-                        <Text
-                            style={[
-                                styles.text,
-                                styles[`${variant}Text`],
-                                styles[`${size}Text`],
-                                textStyle,
-                            ]}
-                        >
-                            {title}
-                        </Text>
-                    )}
-                </LinearGradient>
+            {loading ? (
+                <ActivityIndicator
+                    color={
+                        variant === 'secondary'
+                            ? colors.onSecondary
+                            : variant === 'primary'
+                              ? colors.onPrimary
+                              : colors.primary
+                    }
+                    size="small"
+                />
             ) : (
-                <>
-                    {loading ? (
-                        <ActivityIndicator
-                            color={variant === 'secondary' ? colors.onSecondary : colors.primary}
-                            size="small"
-                        />
-                    ) : (
-                        <Text
-                            style={[
-                                styles.text,
-                                styles[`${variant}Text`],
-                                styles[`${size}Text`],
-                                textStyle,
-                            ]}
-                        >
-                            {title}
-                        </Text>
-                    )}
-                </>
+                <Text
+                    style={[
+                        styles.text,
+                        styles[`${variant}Text`],
+                        styles[`${size}Text`],
+                        textStyle,
+                    ]}
+                >
+                    {title}
+                </Text>
             )}
         </TouchableOpacity>
     );
@@ -120,14 +99,6 @@ const styles = StyleSheet.create({
     ghost: {
         backgroundColor: colors.surfaceContainerLow,
     },
-    primaryFill: {
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-        paddingHorizontal: spacing.xl,
-    },
-
     // Sizes
     sm: {
         paddingVertical: spacing.sm,

@@ -1,12 +1,13 @@
 import { create } from 'zustand';
-import { UserDto } from '../types';
-import { authApi } from '../api';
+import { SubmitRegistrationSurveyRequest, UserDto } from '../types';
+import { authApi, surveyApi } from '../api';
 import { getAuthToken, removeAuthToken } from '../api/client';
 
 interface AuthState {
     user: UserDto | null;
     isAuthenticated: boolean;
     isLoading: boolean;
+    shouldShowRegistrationSurvey: boolean;
     error: string | null;
 
     // Actions
@@ -15,6 +16,8 @@ interface AuthState {
     logout: () => Promise<void>;
     deleteAccount: () => Promise<void>;
     checkAuth: () => Promise<void>;
+    submitRegistrationSurvey: (data: SubmitRegistrationSurveyRequest) => Promise<void>;
+    resetRegistrationSurveyForTesting: () => Promise<void>;
     clearError: () => void;
     setUser: (user: UserDto | null) => void;
 }
@@ -23,6 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     user: null,
     isAuthenticated: false,
     isLoading: true, // Start with loading to check existing token
+    shouldShowRegistrationSurvey: false,
     error: null,
 
     login: async (email: string, password: string) => {
@@ -32,7 +36,8 @@ export const useAuthStore = create<AuthState>((set) => ({
             set({
                 user: response.user,
                 isAuthenticated: true,
-                isLoading: false
+                isLoading: false,
+                shouldShowRegistrationSurvey: false
             });
         } catch (error) {
             set({
@@ -50,7 +55,8 @@ export const useAuthStore = create<AuthState>((set) => ({
             set({
                 user: response.user,
                 isAuthenticated: true,
-                isLoading: false
+                isLoading: false,
+                shouldShowRegistrationSurvey: !response.user.hasCompletedRegistrationSurvey
             });
         } catch (error) {
             set({
@@ -67,7 +73,8 @@ export const useAuthStore = create<AuthState>((set) => ({
             user: null,
             isAuthenticated: false,
             isLoading: false,
-            error: null
+            error: null,
+            shouldShowRegistrationSurvey: false
         });
     },
 
@@ -80,7 +87,8 @@ export const useAuthStore = create<AuthState>((set) => ({
                 user: null,
                 isAuthenticated: false,
                 isLoading: false,
-                error: null
+                error: null,
+                shouldShowRegistrationSurvey: false
             });
         } catch (error) {
             set({
@@ -98,17 +106,55 @@ export const useAuthStore = create<AuthState>((set) => ({
             if (token) {
                 try {
                     const user = await authApi.getCurrentUser();
-                    set({ user, isAuthenticated: true, isLoading: false });
+                    set({ user, isAuthenticated: true, isLoading: false, shouldShowRegistrationSurvey: false });
                 } catch (apiError) {
                     // Token is invalid or expired - clear it
                     await removeAuthToken();
-                    set({ user: null, isAuthenticated: false, isLoading: false });
+                    set({ user: null, isAuthenticated: false, isLoading: false, shouldShowRegistrationSurvey: false });
                 }
             } else {
-                set({ user: null, isAuthenticated: false, isLoading: false });
+                set({ user: null, isAuthenticated: false, isLoading: false, shouldShowRegistrationSurvey: false });
             }
         } catch (error) {
-            set({ user: null, isAuthenticated: false, isLoading: false });
+            set({ user: null, isAuthenticated: false, isLoading: false, shouldShowRegistrationSurvey: false });
+        }
+    },
+
+    submitRegistrationSurvey: async (data: SubmitRegistrationSurveyRequest) => {
+        set({ isLoading: true, error: null });
+        try {
+            const user = await surveyApi.submitRegistrationSurvey(data);
+            set({
+                user,
+                isAuthenticated: true,
+                isLoading: false,
+                shouldShowRegistrationSurvey: false
+            });
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Survey submission failed',
+                isLoading: false
+            });
+            throw error;
+        }
+    },
+
+    resetRegistrationSurveyForTesting: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const user = await surveyApi.resetRegistrationSurvey();
+            set({
+                user,
+                isAuthenticated: true,
+                isLoading: false,
+                shouldShowRegistrationSurvey: true
+            });
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Survey reset failed',
+                isLoading: false
+            });
+            throw error;
         }
     },
 

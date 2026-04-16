@@ -22,20 +22,29 @@ export const Input: React.FC<InputProps> = ({
     leftIcon,
     containerStyle,
     style,
+    multiline,
     ...props
 }) => {
     return (
         <View style={[styles.container, containerStyle]}>
             {label && <Text style={styles.label}>{label}</Text>}
-            <View style={[styles.inputWrapper, error && styles.inputError]}>
+            <View
+                style={[
+                    styles.inputWrapper,
+                    multiline ? styles.inputWrapperMultiline : undefined,
+                    error && styles.inputError,
+                ]}
+            >
                 {leftIcon && <View style={styles.iconContainer}>{leftIcon}</View>}
                 <TextInput
                     style={[
                         styles.input,
+                        multiline ? styles.inputMultiline : undefined,
                         leftIcon ? styles.inputWithIcon : undefined,
                         style,
                     ]}
                     placeholderTextColor={colors.slate300}
+                    multiline={multiline}
                     {...props}
                 />
             </View>
@@ -65,6 +74,10 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: colors.transparent,
     },
+    inputWrapperMultiline: {
+        borderRadius: borderRadius.lg,
+        alignItems: 'flex-start',
+    },
     inputError: {
         borderColor: 'rgba(186, 26, 26, 0.2)',
     },
@@ -78,6 +91,10 @@ const styles = StyleSheet.create({
         color: colors.onSurface,
         paddingVertical: spacing.lg,
         paddingHorizontal: spacing.lg,
+    },
+    inputMultiline: {
+        minHeight: 96,
+        textAlignVertical: 'top',
     },
     inputWithIcon: {
         paddingLeft: spacing.md,

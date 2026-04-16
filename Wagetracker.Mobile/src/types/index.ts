@@ -44,11 +44,22 @@ export interface UserDto {
     billingCustomerId: string;
     subscription: SubscriptionSummary;
     access: FeatureAccess;
+    hasCompletedRegistrationSurvey: boolean;
 }
 
 export interface UpdateWeeklyGoalRequest {
     targetAmount: number | null;
     motivationQuote?: string | null;
+}
+
+export type SurveyPrimaryGoal = 'travel_savings' | 'new_experiences' | 'education_costs' | 'save_money';
+export type SurveyPlannedJobCount = 'one_job' | 'two_jobs' | 'three_or_more' | 'undecided';
+export type SurveySpendingHabit = 'frugal' | 'balanced' | 'experience_focused' | 'no_tracking';
+
+export interface SubmitRegistrationSurveyRequest {
+    primaryGoal: SurveyPrimaryGoal;
+    plannedJobCount: SurveyPlannedJobCount;
+    spendingHabit: SurveySpendingHabit;
 }
 
 // ==================== JOB TYPES ====================
@@ -328,6 +339,8 @@ export type TabParamList = {
 
 // Root Stack (Auth vs Main)
 export type RootStackParamList = {
+    Onboarding: undefined;
+    RegistrationSurvey: undefined;
     Auth: undefined;
     Main: undefined;
     Paywall: {

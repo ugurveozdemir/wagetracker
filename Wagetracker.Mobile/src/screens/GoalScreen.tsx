@@ -30,7 +30,8 @@ export const GoalScreen: React.FC = () => {
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const [goalInput, setGoalInput] = useState('');
     const [motivationQuoteInput, setMotivationQuoteInput] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
+    const [isSavingGoal, setIsSavingGoal] = useState(false);
+    const [isSavingQuote, setIsSavingQuote] = useState(false);
 
     const targetAmount = summary?.weeklyGoal?.targetAmount ?? null;
     const motivationQuote = summary?.weeklyGoal?.motivationQuote ?? null;
@@ -55,9 +56,8 @@ export const GoalScreen: React.FC = () => {
         []
     );
 
-    const handleSave = async () => {
+    const handleSaveGoal = async () => {
         const trimmedValue = goalInput.trim();
-        const trimmedQuote = motivationQuoteInput.trim();
         const parsedGoal = trimmedValue.length === 0 ? null : Number(trimmedValue);
 
         if (parsedGoal != null && (!Number.isFinite(parsedGoal) || parsedGoal < 0)) {
@@ -70,16 +70,16 @@ export const GoalScreen: React.FC = () => {
         }
 
         try {
-            setIsSaving(true);
+            setIsSavingGoal(true);
             await profileApi.updateWeeklyGoal({
                 targetAmount: parsedGoal,
-                motivationQuote: trimmedQuote.length ? trimmedQuote : null,
+                motivationQuote: motivationQuote,
             });
             await fetchDashboard();
             Toast.show({
                 type: 'success',
                 text1: 'Goal Updated',
-                text2: 'Your weekly target and motivation quote were saved.',
+                text2: parsedGoal == null ? 'This week no longer has a target.' : 'Your weekly target was saved.',
             });
         } catch (error) {
             Toast.show({
@@ -88,7 +88,33 @@ export const GoalScreen: React.FC = () => {
                 text2: error instanceof Error ? error.message : 'Could not update your weekly goal.',
             });
         } finally {
-            setIsSaving(false);
+            setIsSavingGoal(false);
+        }
+    };
+
+    const handleSaveQuote = async () => {
+        const trimmedQuote = motivationQuoteInput.trim();
+
+        try {
+            setIsSavingQuote(true);
+            await profileApi.updateWeeklyGoal({
+                targetAmount: targetAmount,
+                motivationQuote: trimmedQuote.length ? trimmedQuote : null,
+            });
+            await fetchDashboard();
+            Toast.show({
+                type: 'success',
+                text1: 'Quote Updated',
+                text2: trimmedQuote.length ? 'Your motivation quote was saved.' : 'Your motivation quote was cleared.',
+            });
+        } catch (error) {
+            Toast.show({
+                type: 'error',
+                text1: 'Save Failed',
+                text2: error instanceof Error ? error.message : 'Could not update your motivation quote.',
+            });
+        } finally {
+            setIsSavingQuote(false);
         }
     };
 
@@ -181,8 +207,8 @@ export const GoalScreen: React.FC = () => {
                         />
                         <Button
                             title="Save"
-                            onPress={handleSave}
-                            loading={isSaving}
+                            onPress={handleSaveGoal}
+                            loading={isSavingGoal}
                             style={styles.saveButton}
                         />
                     </View>
@@ -210,6 +236,12 @@ export const GoalScreen: React.FC = () => {
                     <View style={styles.quoteFooter}>
                         <Text style={styles.quoteCountText}>{motivationQuoteInput.length}/220</Text>
                     </View>
+                    <Button
+                        title="Save Quote"
+                        onPress={handleSaveQuote}
+                        loading={isSavingQuote}
+                        style={styles.quoteSaveButton}
+                    />
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -446,9 +478,9 @@ const styles = StyleSheet.create({
     quoteInput: {
         minHeight: 84,
         textAlignVertical: 'top',
-        fontSize: 16,
+        fontSize: 15,
         lineHeight: 22,
-        fontWeight: '600',
+        fontWeight: '500',
         paddingVertical: 14,
     },
     quoteFooter: {
@@ -459,5 +491,8 @@ const styles = StyleSheet.create({
         color: colors.outline,
         fontSize: 12,
         fontWeight: '600',
+    },
+    quoteSaveButton: {
+        marginTop: 12,
     },
 });

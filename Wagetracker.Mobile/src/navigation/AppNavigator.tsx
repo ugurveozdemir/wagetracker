@@ -22,8 +22,10 @@ import {
     RootStackParamList,
     TabParamList,
 } from '../types';
-import { useAuthStore, useExpenseStore, useJobsStore, useSubscriptionStore } from '../stores';
+import { useAuthStore, useExpenseStore, useJobsStore, useOnboardingStore, useSubscriptionStore } from '../stores';
 import { colors } from '../theme';
+import { OnboardingScreen } from '../screens/OnboardingScreen';
+import { RegistrationSurveyScreen } from '../screens/RegistrationSurveyScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -361,7 +363,8 @@ const MainNavigator: React.FC = () => {
 };
 
 export const AppNavigator: React.FC = () => {
-    const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
+    const { isAuthenticated, isLoading, checkAuth, user, shouldShowRegistrationSurvey } = useAuthStore();
+    const { hasCompletedOnboarding, isOnboardingLoading, checkOnboardingStatus } = useOnboardingStore();
     const { bootstrap, clear, refreshSubscriptionStatus } = useSubscriptionStore();
     const { fetchDashboard, clearData: clearJobsData } = useJobsStore();
     const { fetchExpenses, fetchWeeklyGroups, clearData: clearExpenseData } = useExpenseStore();
@@ -371,6 +374,10 @@ export const AppNavigator: React.FC = () => {
     useEffect(() => {
         checkAuth();
     }, [checkAuth]);
+
+    useEffect(() => {
+        checkOnboardingStatus();
+    }, [checkOnboardingStatus]);
 
     useEffect(() => {
         if (isAuthenticated && user) {
@@ -420,7 +427,7 @@ export const AppNavigator: React.FC = () => {
         Promise.all(tasks).catch(console.error);
     }, [clearExpenseData, clearJobsData, fetchDashboard, fetchExpenses, fetchWeeklyGroups, isAuthenticated, user]);
 
-    if (isLoading) {
+    if (isLoading || isOnboardingLoading) {
         return (
             <View style={styles.loading}>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -431,7 +438,11 @@ export const AppNavigator: React.FC = () => {
     return (
         <NavigationContainer>
             <RootStack.Navigator screenOptions={{ headerShown: false }}>
-                {isAuthenticated ? (
+                {!hasCompletedOnboarding ? (
+                    <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
+                ) : isAuthenticated && shouldShowRegistrationSurvey && !user?.hasCompletedRegistrationSurvey ? (
+                    <RootStack.Screen name="RegistrationSurvey" component={RegistrationSurveyScreen} />
+                ) : isAuthenticated ? (
                     <>
                         <RootStack.Screen name="Main" component={MainNavigator} />
                         <RootStack.Screen name="Paywall" component={PaywallScreen} />
