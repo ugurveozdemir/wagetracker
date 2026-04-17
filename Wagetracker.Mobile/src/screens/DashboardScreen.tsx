@@ -63,6 +63,7 @@ export const DashboardScreen: React.FC = () => {
     const sectionTitleSize = isCompact ? 24 : 28;
     const heroValueSize = isCompact ? 40 : 48;
     const heroValueLineHeight = isCompact ? 46 : 56;
+    const brandFontSize = 20;
     const gigCardWidth = Math.min(Math.max(width - 104, 228), 264);
     const addGigCardWidth = Math.min(Math.max(width - 176, 168), 188);
     const horizontalPadding = isCompact ? 18 : 24;
@@ -151,7 +152,18 @@ export const DashboardScreen: React.FC = () => {
                         onPress={() => navigation.navigate('ProfileTab')}
                     >
                         <Image source={brandLogo} style={styles.brandLogo} resizeMode="contain" />
-                        <Text style={styles.brandText}>Chickaree</Text>
+                        <Text
+                            style={[
+                                styles.brandText,
+                                {
+                                    fontSize: brandFontSize,
+                                    lineHeight: brandFontSize + 2,
+                                    transform: [{ translateY: 4 * scale }],
+                                },
+                            ]}
+                        >
+                            Chickaree
+                        </Text>
                     </TouchableOpacity>
                 </View>
 
@@ -539,9 +551,8 @@ const styles = StyleSheet.create({
     },
     brandText: {
         color: '#005232',
-        fontSize: 20,
         fontWeight: '800',
-        letterSpacing: -0.3,
+        letterSpacing: 0,
         flexShrink: 1,
     },
     heroCard: {

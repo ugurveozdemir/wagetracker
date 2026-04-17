@@ -27,6 +27,7 @@ export const LoginScreen: React.FC = () => {
     const navigation = useNavigation<LoginNavigationProp>();
     const { login, isLoading, error, clearError } = useAuthStore();
     const { isCompact, horizontalPadding, rs } = useResponsiveLayout();
+    const brandFontSize = isCompact ? 22 : 25;
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -136,10 +137,19 @@ export const LoginScreen: React.FC = () => {
                     keyboardShouldPersistTaps="handled"
                 >
                     <View style={styles.brandRow}>
-                        <View style={[styles.brandBadge, { width: rs(54), height: rs(54), borderRadius: rs(27) }]}> 
-                            <Image source={brandLogo} style={{ width: rs(46), height: rs(46) }} resizeMode="contain" />
-                        </View>
-                        <Text style={[styles.brandText, { fontSize: isCompact ? 22 : 25 }]}>Chickaree</Text>
+                        <Image source={brandLogo} style={{ width: rs(46), height: rs(46) }} resizeMode="contain" />
+                        <Text
+                            style={[
+                                styles.brandText,
+                                {
+                                    fontSize: brandFontSize,
+                                    lineHeight: brandFontSize + 2,
+                                    transform: [{ translateY: rs(5, 1) }],
+                                },
+                            ]}
+                        >
+                            Chickaree
+                        </Text>
                     </View>
 
                     <View style={styles.heroSection}>
@@ -227,12 +237,6 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         gap: 0.01,
         marginBottom: spacing['4xl'],
-    },
-    brandBadge: {
-        backgroundColor: colors.surfaceContainerHigh,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
     },
     brandText: {
         color: colors.primary,
