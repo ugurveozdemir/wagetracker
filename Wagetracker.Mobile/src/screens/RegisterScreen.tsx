@@ -103,7 +103,7 @@ export const RegisterScreen: React.FC = () => {
             Toast.show({
                 type: 'info',
                 text1: 'Agreement Required',
-                text2: 'Please accept the terms to continue.',
+                text2: 'Please accept the Privacy Policy to continue.',
                 visibilityTime: 2500,
             });
             return;
@@ -286,26 +286,29 @@ export const RegisterScreen: React.FC = () => {
                         }
                     )}
 
-                    <TouchableOpacity
-                        style={styles.policyRow}
-                        activeOpacity={0.85}
-                        onPress={() => setAgreedToPolicies((current) => !current)}
-                    >
-                        <View style={[styles.checkbox, agreedToPolicies && styles.checkboxActive]}>
+                    <View style={styles.policyRow}>
+                        <TouchableOpacity
+                            style={[styles.checkbox, agreedToPolicies && styles.checkboxActive]}
+                            activeOpacity={0.85}
+                            onPress={() => setAgreedToPolicies((current) => !current)}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: agreedToPolicies }}
+                            accessibilityLabel="Accept privacy policy"
+                        >
                             {agreedToPolicies ? <MaterialIcons name="check" size={16} color={colors.onPrimary} /> : null}
-                        </View>
+                        </TouchableOpacity>
                         <Text style={styles.policyText}>
                             I agree to the{' '}
-                            <Text style={styles.policyLink} onPress={() => Linking.openURL(config.TERMS_URL)}>
-                                Terms & Conditions
-                            </Text>
-                            {' '}and{' '}
-                            <Text style={styles.policyLink} onPress={() => Linking.openURL(config.PRIVACY_URL)}>
+                            <Text
+                                style={styles.policyLink}
+                                onPress={() => Linking.openURL(config.PRIVACY_URL)}
+                                accessibilityRole="button"
+                            >
                                 Privacy Policy
                             </Text>
                             .
                         </Text>
-                    </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity
                         style={[styles.primaryButton, !isFormValid && styles.primaryButtonDisabled]}

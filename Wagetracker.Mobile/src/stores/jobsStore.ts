@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { JobResponse, DashboardSummaryResponse, CreateJobRequest, UpdateJobRequest } from '../types';
 import { dashboardApi, jobsApi } from '../api';
 
+const sortJobsByCreation = (jobs: JobResponse[]) =>
+    [...jobs].sort((a, b) => {
+        const createdAtDifference = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return createdAtDifference || a.id - b.id;
+    });
+
 interface JobsState {
     // Dashboard data
     summary: DashboardSummaryResponse | null;
@@ -42,9 +48,13 @@ export const useJobsStore = create<JobsState>((set, get) => ({
 
         try {
             const summary = await dashboardApi.getSummary();
+            const sortedJobs = sortJobsByCreation(summary.jobs);
             set({
-                summary,
-                jobs: summary.jobs,
+                summary: {
+                    ...summary,
+                    jobs: sortedJobs,
+                },
+                jobs: sortedJobs,
                 hasLoadedDashboard: true,
                 isLoading: false
             });
@@ -65,7 +75,7 @@ export const useJobsStore = create<JobsState>((set, get) => ({
 
         try {
             const jobs = await jobsApi.getAll();
-            set({ jobs, isLoading: false });
+            set({ jobs: sortJobsByCreation(jobs), isLoading: false });
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : 'Failed to load jobs',
@@ -79,12 +89,12 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         try {
             const newJob = await jobsApi.create(data);
             set((state) => ({
-                jobs: [newJob, ...state.jobs],
+                jobs: sortJobsByCreation([...state.jobs, newJob]),
                 summary: state.summary
                     ? {
                         ...state.summary,
                         activeJobsCount: state.summary.activeJobsCount + 1,
-                        jobs: [newJob, ...state.summary.jobs],
+                        jobs: sortJobsByCreation([...state.summary.jobs, newJob]),
                     }
                     : state.summary,
                 isCreating: false

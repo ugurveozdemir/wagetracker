@@ -89,7 +89,8 @@ namespace WageTracker.API.Services
         {
             var jobs = await _context.Jobs
                 .Where(j => j.UserId == userId)
-                .OrderByDescending(j => j.CreatedAt)
+                .OrderBy(j => j.CreatedAt)
+                .ThenBy(j => j.Id)
                 .ToListAsync();
 
             var lockStates = await _subscriptionService.GetJobLockStatesAsync(userId);
@@ -253,7 +254,10 @@ namespace WageTracker.API.Services
                 TotalHours = totalHours,
                 TotalExpenses = totalExpenses,
                 ActiveJobsCount = jobs.Count,
-                Jobs = jobResponses.OrderByDescending(j => j.CreatedAt).ToList(),
+                Jobs = jobResponses
+                    .OrderBy(j => j.CreatedAt)
+                    .ThenBy(j => j.Id)
+                    .ToList(),
 
                 // Weekly
                 WeeklyEarnings = weeklyEarnings,
