@@ -25,6 +25,16 @@ LoginRequest {
   string Password
 }
 
+ForgotPasswordRequest {
+  string Email
+}
+
+ResetPasswordRequest {
+  string Email
+  string Code
+  string NewPassword
+}
+
 UserDto {
   int Id
   string Email
@@ -57,6 +67,26 @@ AuthResponse {
 - Request body: `LoginRequest`
 - Response shape: `AuthResponse`
 - Visible status handling: `200 OK`; explicit `401 Unauthorized` with `{ message: string }` for invalid credentials.
+
+### POST `/api/auth/forgot-password`
+
+- Method: `POST`
+- Route: `/api/auth/forgot-password`
+- Purpose: Request a one-time password reset code for the given email.
+- Auth: none
+- Request body: `ForgotPasswordRequest`
+- Response shape: `{ message: string }`
+- Visible status handling: `200 OK` with `"If this email exists, a reset code has been sent."` regardless of whether the email exists.
+
+### POST `/api/auth/reset-password`
+
+- Method: `POST`
+- Route: `/api/auth/reset-password`
+- Purpose: Reset account password using email + 6-digit reset code.
+- Auth: none
+- Request body: `ResetPasswordRequest`
+- Response shape: `{ message: string }`
+- Visible status handling: `200 OK` on success; explicit `401 Unauthorized` with `{ message: string }` for invalid/expired code.
 
 ## Jobs
 

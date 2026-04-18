@@ -10,6 +10,8 @@ namespace WageTracker.API.Controllers
     [EnableRateLimiting("auth")]
     public class AuthController : ControllerBase
     {
+        private const string ForgotPasswordResponseMessage = "If this email exists, a reset code has been sent.";
+
         private readonly IAuthService _authService;
 
         public AuthController(IAuthService authService)
@@ -42,6 +44,41 @@ namespace WageTracker.API.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("forgot-password")]
+        [EnableRateLimiting("password-reset")]
+        public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            try
+            {
+                await _authService.RequestPasswordResetAsync(request);
+            }
+            catch
+            {
+                // Always return a generic success response to prevent email enumeration.
+            }
+
+            return Ok(new { message = ForgotPasswordResponseMessage });
+        }
+
+        [HttpPost("reset-password")]
+        [EnableRateLimiting("password-reset")]
+        public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            try
+            {
+                await _authService.ResetPasswordAsync(request);
+                return Ok(new { message = "Password has been reset." });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (InvalidOperationException)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Password reset is temporarily unavailable" });
             }
         }
     }

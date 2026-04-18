@@ -28,6 +28,7 @@ import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { RegistrationSurveyScreen } from '../screens/RegistrationSurveyScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
+import { ForgotPasswordScreen } from '../screens/ForgotPasswordScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { GoalScreen } from '../screens/GoalScreen';
 import { JobDetailsScreen } from '../screens/JobDetailsScreen';
@@ -61,6 +62,7 @@ const AuthNavigator: React.FC = () => {
         >
             <AuthStack.Screen name="Login" component={LoginScreen} />
             <AuthStack.Screen name="Register" component={RegisterScreen} />
+            <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         </AuthStack.Navigator>
     );
 };

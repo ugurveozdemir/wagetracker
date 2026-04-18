@@ -11,6 +11,16 @@ export interface RegisterRequest {
     fullName: string;
 }
 
+export interface ForgotPasswordRequest {
+    email: string;
+}
+
+export interface ResetPasswordRequest {
+    email: string;
+    code: string;
+    newPassword: string;
+}
+
 export interface AuthResponse {
     token: string;
     user: UserDto;
@@ -370,6 +380,7 @@ export type RootStackParamList = {
 export type AuthStackParamList = {
     Login: undefined;
     Register: undefined;
+    ForgotPassword: undefined;
 };
 
 // Nested stacks inside tabs

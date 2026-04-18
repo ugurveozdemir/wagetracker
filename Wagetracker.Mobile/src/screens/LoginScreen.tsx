@@ -200,6 +200,14 @@ export const LoginScreen: React.FC = () => {
                     )}
 
                     <TouchableOpacity
+                        style={styles.forgotPasswordRow}
+                        onPress={() => navigation.navigate('ForgotPassword')}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
                         style={[styles.primaryButton, !isFormValid && styles.primaryButtonDisabled]}
                         activeOpacity={0.88}
                         onPress={handleLogin}
@@ -299,6 +307,17 @@ const styles = StyleSheet.create({
         fontSize: fontSizes.sm,
         marginTop: spacing.sm,
         marginLeft: spacing.sm,
+    },
+    forgotPasswordRow: {
+        alignSelf: 'flex-end',
+        marginTop: -spacing.md,
+        marginBottom: spacing.xl,
+        paddingHorizontal: spacing.xs,
+    },
+    forgotPasswordText: {
+        color: colors.secondary,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.semibold,
     },
     primaryButton: {
         height: 72,

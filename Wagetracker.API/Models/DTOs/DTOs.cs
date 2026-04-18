@@ -34,6 +34,28 @@ namespace WageTracker.API.Models.DTOs
         public UserDto User { get; set; } = null!;
     }
 
+    public class ForgotPasswordRequest
+    {
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email format")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordRequest
+    {
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email format")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Reset code is required")]
+        [RegularExpression("^[0-9]{6}$", ErrorMessage = "Reset code must be 6 digits")]
+        public string Code { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "New password is required")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
     public class UserDto
     {
         public int Id { get; set; }

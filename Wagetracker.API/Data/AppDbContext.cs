@@ -22,6 +22,7 @@ namespace WageTracker.API.Data
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<RevenueCatWebhookEvent> RevenueCatWebhookEvents { get; set; }
         public DbSet<UserRegistrationSurvey> UserRegistrationSurveys { get; set; }
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -189,6 +190,24 @@ namespace WageTracker.API.Data
                 entity.Property(e => e.SpendingHabit).IsRequired().HasMaxLength(60);
                 entity.Property(e => e.CreatedAt).IsRequired();
                 entity.Property(e => e.UpdatedAt).IsRequired();
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<PasswordResetToken>(entity =>
+            {
+                entity.ToTable("PasswordResetTokens");
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => new { e.UserId, e.CreatedAt });
+
+                entity.Property(e => e.CodeHash).IsRequired().HasMaxLength(128);
+                entity.Property(e => e.ExpiresAt).IsRequired();
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.FailedAttempts).IsRequired();
 
                 entity.HasOne(e => e.User)
                     .WithMany()
