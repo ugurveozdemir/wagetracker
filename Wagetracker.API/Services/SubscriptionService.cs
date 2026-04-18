@@ -500,7 +500,7 @@ namespace WageTracker.API.Services
 
         private string GetEntitlementId()
         {
-            return _configuration["RevenueCat:EntitlementId"] ?? "premium";
+            return _configuration["RevenueCat:EntitlementId"] ?? "pro";
         }
 
         private static string? ReadString(JsonElement? element, string propertyName)

@@ -234,6 +234,17 @@ export const ProfileScreen: React.FC = () => {
                         <Text style={styles.supportLink}>Privacy</Text>
                     </TouchableOpacity>
                 </View>
+
+                <TouchableOpacity style={styles.supportActionButton} onPress={handleManageSubscription} activeOpacity={0.82}>
+                    <MaterialIcons name="manage-accounts" size={18} color={colors.onSurface} />
+                    <Text style={styles.supportActionLabel}>Manage subscription</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.supportActionButton} onPress={handleRestore} activeOpacity={0.82}>
+                    <MaterialIcons name="restore" size={18} color={colors.onSurface} />
+                    <Text style={styles.supportActionLabel}>Restore purchases</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity style={styles.deleteInlineButton} onPress={handleDeleteAccount} activeOpacity={0.82}>
                     <Feather name="trash-2" size={18} color={colors.danger} />
                     <Text style={styles.deleteInlineText}>Delete account in app</Text>
@@ -357,26 +368,19 @@ export const ProfileScreen: React.FC = () => {
                     </View>
 
                     <View style={styles.subscriptionActions}>
-                        <TouchableOpacity
-                            style={styles.subscriptionButtonPrimary}
-                            activeOpacity={0.86}
-                            onPress={() => {
-                                if (user?.subscription.isPremium) {
-                                    handleManageSubscription();
-                                    return;
-                                }
-
-                                navigation.navigate('Paywall', { source: 'profile', feature: 'premium' });
-                            }}
-                        >
-                            <Text style={styles.subscriptionButtonPrimaryText}>
-                                {user?.subscription.isPremium ? 'Manage' : 'Upgrade'}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.subscriptionButtonSecondary} activeOpacity={0.86} onPress={handleRestore}>
-                            <Text style={styles.subscriptionButtonSecondaryText}>Restore</Text>
-                        </TouchableOpacity>
+                        {user?.subscription.isPremium ? (
+                            <View style={[styles.subscriptionButtonPrimary, styles.subscriptionButtonDisabled]}>
+                                <Text style={styles.subscriptionButtonPrimaryText}>Premium Active</Text>
+                            </View>
+                        ) : (
+                            <TouchableOpacity
+                                style={styles.subscriptionButtonPrimary}
+                                activeOpacity={0.86}
+                                onPress={() => navigation.navigate('Paywall', { source: 'profile', feature: 'premium' })}
+                            >
+                                <Text style={styles.subscriptionButtonPrimaryText}>Upgrade</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
 
@@ -629,21 +633,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    subscriptionButtonDisabled: {
+        opacity: 0.72,
+    },
     subscriptionButtonPrimaryText: {
         color: colors.white,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
-    },
-    subscriptionButtonSecondary: {
-        flex: 1,
-        minHeight: 52,
-        borderRadius: 999,
-        backgroundColor: colors.surfaceContainerHigh,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    subscriptionButtonSecondaryText: {
-        color: colors.onSurface,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
     },
@@ -704,6 +698,21 @@ const styles = StyleSheet.create({
         color: colors.primary,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
+    },
+    supportActionButton: {
+        minHeight: 48,
+        borderRadius: 18,
+        backgroundColor: colors.surfaceLow,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.md,
+        marginTop: spacing.md,
+    },
+    supportActionLabel: {
+        color: colors.onSurface,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.semibold,
     },
     deleteInlineButton: {
         minHeight: 48,

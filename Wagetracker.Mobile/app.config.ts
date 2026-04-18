@@ -18,14 +18,16 @@ const config: ExpoConfig = {
         backgroundColor: '#ffffff',
     },
     ios: {
-        supportsTablet: true,
+        supportsTablet: false,
         bundleIdentifier: iosBundleIdentifier,
+        buildNumber: process.env.EXPO_PUBLIC_IOS_BUILD_NUMBER || '1',
         infoPlist: {
             ITSAppUsesNonExemptEncryption: false,
         },
     },
     android: {
         package: androidPackage,
+        versionCode: Number(process.env.EXPO_PUBLIC_ANDROID_VERSION_CODE || '1'),
         permissions: ['com.android.vending.BILLING'],
         adaptiveIcon: {
             foregroundImage: './assets/adaptive-icon.png',

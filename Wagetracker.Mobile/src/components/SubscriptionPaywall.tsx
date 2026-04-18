@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import {
     Linking,
-    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -78,9 +77,7 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
         isPurchasing,
         error,
         presentRevenueCatPaywall,
-        presentCustomerCenter,
         purchaseSelectedPackage,
-        restorePurchases,
         refreshSubscriptionStatus,
     } = useSubscriptionStore();
 
@@ -159,51 +156,6 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                 text2: paywallError instanceof Error ? paywallError.message : 'Please try again.',
                 visibilityTime: 3200,
             });
-        }
-    };
-
-    const handleRestore = async () => {
-        try {
-            const updatedUser = await restorePurchases();
-            Toast.show({
-                type: updatedUser?.subscription.isPremium ? 'success' : 'info',
-                text1: updatedUser?.subscription.isPremium ? 'Purchases Restored' : 'No Active Subscription',
-                text2: updatedUser?.subscription.isPremium
-                    ? 'Your premium access has been restored.'
-                    : 'No active subscription was found for this account.',
-                visibilityTime: 2600,
-            });
-            if (updatedUser?.subscription.isPremium) {
-                onSuccess?.();
-            }
-        } catch (restoreError) {
-            Toast.show({
-                type: 'error',
-                text1: 'Restore Failed',
-                text2: restoreError instanceof Error ? restoreError.message : 'Please try again.',
-                visibilityTime: 2800,
-            });
-        }
-    };
-
-    const openManageUrl = async () => {
-        const url = Platform.OS === 'ios'
-            ? config.APP_STORE_SUBSCRIPTIONS_URL
-            : config.PLAY_STORE_SUBSCRIPTIONS_URL;
-        await Linking.openURL(url);
-    };
-
-    const handleCustomerCenter = async () => {
-        try {
-            await presentCustomerCenter();
-        } catch (customerCenterError) {
-            Toast.show({
-                type: 'info',
-                text1: 'Opening Store Settings',
-                text2: customerCenterError instanceof Error ? customerCenterError.message : 'Manage your subscription in the store.',
-                visibilityTime: 2800,
-            });
-            await openManageUrl();
         }
     };
 
@@ -300,19 +252,6 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                         </TouchableOpacity>
                     ))}
                 </View>
-
-                <TouchableOpacity
-                    style={[styles.secondaryButton, isPurchasing && styles.secondaryButtonDisabled]}
-                    activeOpacity={0.86}
-                    disabled={isPurchasing}
-                    onPress={handleRestore}
-                >
-                    <Text style={styles.secondaryButtonText}>Restore Purchases</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.86} onPress={handleCustomerCenter}>
-                    <Text style={styles.secondaryButtonText}>Customer Center</Text>
-                </TouchableOpacity>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 {isLoading ? <Text style={styles.helperText}>Loading offers...</Text> : null}
