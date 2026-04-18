@@ -17,7 +17,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-toast-message';
-import { useAuthStore, useJobsStore, useOnboardingStore, useSubscriptionStore } from '../stores';
+import { useAuthStore, useJobsStore, useSubscriptionStore } from '../stores';
 import { config } from '../config';
 import { colors, fontSizes, fontWeights, spacing, useResponsiveLayout } from '../theme';
 
@@ -30,8 +30,7 @@ type ProfileMenuKey = typeof menuItems[number]['key'];
 
 export const ProfileScreen: React.FC = () => {
     const navigation = useNavigation<any>();
-    const { user, logout, deleteAccount, resetRegistrationSurveyForTesting } = useAuthStore();
-    const { resetOnboarding } = useOnboardingStore();
+    const { user, logout, deleteAccount } = useAuthStore();
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const { restorePurchases, presentCustomerCenter } = useSubscriptionStore();
     const { isCompact, horizontalPadding, rs } = useResponsiveLayout();
@@ -58,35 +57,6 @@ export const ProfileScreen: React.FC = () => {
             text2: 'See you next time.',
             visibilityTime: 2000,
         });
-    };
-
-    const handleResetOnboarding = async () => {
-        await resetOnboarding();
-        Toast.show({
-            type: 'info',
-            text1: 'Onboarding Reset',
-            text2: 'The onboarding flow will open again.',
-            visibilityTime: 2000,
-        });
-    };
-
-    const handleResetSurvey = async () => {
-        try {
-            await resetRegistrationSurveyForTesting();
-            Toast.show({
-                type: 'info',
-                text1: 'Survey Reset',
-                text2: 'The registration survey will open again.',
-                visibilityTime: 2200,
-            });
-        } catch (error) {
-            Toast.show({
-                type: 'error',
-                text1: 'Survey Reset Failed',
-                text2: error instanceof Error ? error.message : 'Development API did not reset the survey.',
-                visibilityTime: 2800,
-            });
-        }
     };
 
     const handleRestore = async () => {
@@ -260,14 +230,8 @@ export const ProfileScreen: React.FC = () => {
                     <Text style={styles.supportEmail}>{config.SUPPORT_EMAIL}</Text>
                 </TouchableOpacity>
                 <View style={styles.supportLinkRow}>
-                    <TouchableOpacity activeOpacity={0.8} onPress={() => openUrl(config.TERMS_URL)}>
-                        <Text style={styles.supportLink}>Terms</Text>
-                    </TouchableOpacity>
                     <TouchableOpacity activeOpacity={0.8} onPress={() => openUrl(config.PRIVACY_URL)}>
                         <Text style={styles.supportLink}>Privacy</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity activeOpacity={0.8} onPress={() => openUrl(config.ACCOUNT_DELETION_URL)}>
-                        <Text style={styles.supportLink}>Delete account page</Text>
                     </TouchableOpacity>
                 </View>
                 <TouchableOpacity style={styles.deleteInlineButton} onPress={handleDeleteAccount} activeOpacity={0.82}>
@@ -450,44 +414,6 @@ export const ProfileScreen: React.FC = () => {
                     <Text style={[styles.logoutText, { fontSize: isCompact ? 18 : 20 }]}>Log Out</Text>
                 </TouchableOpacity>
 
-                {__DEV__ ? (
-                    <>
-                        <TouchableOpacity
-                            style={[
-                                styles.devResetCard,
-                                { borderRadius: rs(30), paddingHorizontal: rs(24), paddingVertical: rs(22) },
-                            ]}
-                            onPress={handleResetOnboarding}
-                            activeOpacity={0.86}
-                        >
-                            <View style={[styles.devResetIconBubble, { width: rs(48), height: rs(48), borderRadius: rs(24) }]}>
-                                <Feather name="rotate-ccw" size={20} color={colors.primary} />
-                            </View>
-                            <View style={styles.devResetCopy}>
-                                <Text style={[styles.devResetTitle, { fontSize: isCompact ? 18 : 20 }]}>Reset onboarding</Text>
-                                <Text style={styles.devResetSubtitle}>Development only</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[
-                                styles.devResetCard,
-                                { borderRadius: rs(30), paddingHorizontal: rs(24), paddingVertical: rs(22) },
-                            ]}
-                            onPress={handleResetSurvey}
-                            activeOpacity={0.86}
-                        >
-                            <View style={[styles.devResetIconBubble, { width: rs(48), height: rs(48), borderRadius: rs(24) }]}>
-                                <Feather name="clipboard" size={20} color={colors.primary} />
-                            </View>
-                            <View style={styles.devResetCopy}>
-                                <Text style={[styles.devResetTitle, { fontSize: isCompact ? 18 : 20 }]}>Reset survey</Text>
-                                <Text style={styles.devResetSubtitle}>Development only</Text>
-                            </View>
-                        </TouchableOpacity>
-                    </>
-                ) : null}
-
             </ScrollView>
         </SafeAreaView>
     );
@@ -634,36 +560,6 @@ const styles = StyleSheet.create({
     logoutText: {
         color: colors.danger,
         fontWeight: fontWeights.bold,
-    },
-    devResetCard: {
-        backgroundColor: colors.surfaceContainerLow,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.lg,
-        marginTop: spacing.md,
-        shadowColor: colors.onSurface,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.05,
-        shadowRadius: 18,
-        elevation: 4,
-    },
-    devResetIconBubble: {
-        backgroundColor: colors.surfaceContainerHighest,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    devResetCopy: {
-        flex: 1,
-    },
-    devResetTitle: {
-        color: colors.primary,
-        fontWeight: fontWeights.bold,
-    },
-    devResetSubtitle: {
-        color: colors.onSurfaceVariant,
-        fontSize: fontSizes.sm,
-        fontWeight: fontWeights.medium,
-        marginTop: spacing.xs,
     },
     subscriptionCard: {
         backgroundColor: colors.surfaceContainerLowest,
