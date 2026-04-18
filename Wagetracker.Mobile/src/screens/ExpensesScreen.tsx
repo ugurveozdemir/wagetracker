@@ -102,7 +102,7 @@ export const ExpensesScreen: React.FC = () => {
 
         return (summary?.categoryTotals ?? [])
             .slice(0, 4)
-            .map((categoryTotal, index) => {
+            .map((categoryTotal) => {
                 const categoryId = categoryTotal.category;
                 return {
                     label: categoryTotal.categoryName,
@@ -110,7 +110,6 @@ export const ExpensesScreen: React.FC = () => {
                     icon: iconMap[categoryId] ?? 'receipt-long',
                     tint: tintMap[categoryId] ?? '#eae8e0',
                     tone: toneMap[categoryId] ?? '#4f5a53',
-                    wide: index === 3,
                 };
             });
     }, [summary]);
@@ -239,7 +238,6 @@ export const ExpensesScreen: React.FC = () => {
                                 key={card.label}
                                 style={[
                                     styles.breakdownCard,
-                                    card.wide && styles.breakdownCardWide,
                                     {
                                         borderRadius: 30 * scale,
                                         padding: 24 * scale,
@@ -249,16 +247,9 @@ export const ExpensesScreen: React.FC = () => {
                                 <View style={[styles.breakdownIcon, { backgroundColor: card.tint }]}>
                                     <MaterialIcons name={card.icon} size={24} color={card.tone} />
                                 </View>
-                                <View style={card.wide ? styles.breakdownWideRow : undefined}>
-                                    <View>
-                                        <Text style={styles.breakdownLabel}>{card.label}</Text>
-                                        <Text style={[styles.breakdownValue, { color: card.tone }]}>{formatCurrency(card.amount)}</Text>
-                                    </View>
-                                    {card.wide ? (
-                                        <View style={styles.breakdownProgressTrack}>
-                                            <View style={styles.breakdownProgressFill} />
-                                        </View>
-                                    ) : null}
+                                <View>
+                                    <Text style={styles.breakdownLabel}>{card.label}</Text>
+                                    <Text style={[styles.breakdownValue, { color: card.tone }]}>{formatCurrency(card.amount)}</Text>
                                 </View>
                             </View>
                         ))
@@ -510,9 +501,6 @@ const styles = StyleSheet.create({
     breakdownCard: {
         backgroundColor: '#f5f4eb',
     },
-    breakdownCardWide: {
-        backgroundColor: '#e4e3da',
-    },
     emptyState: {
         backgroundColor: '#f5f4eb',
         alignItems: 'center',
@@ -549,24 +537,6 @@ const styles = StyleSheet.create({
         fontSize: 30,
         fontWeight: '800',
         letterSpacing: -0.7,
-    },
-    breakdownWideRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 16,
-    },
-    breakdownProgressTrack: {
-        width: 120,
-        height: 10,
-        borderRadius: 999,
-        backgroundColor: '#d2d8d1',
-        overflow: 'hidden',
-    },
-    breakdownProgressFill: {
-        width: '65%',
-        height: '100%',
-        backgroundColor: '#ff8a00',
     },
     recentPanel: {
         backgroundColor: '#f5f4eb',
