@@ -1,25 +1,31 @@
 import { create } from 'zustand';
 import {
     ConfirmReceiptScanExpenseRequest,
-    ExpenseResponse,
+    ExpenseSummaryResponse,
     CreateExpenseRequest,
     ReceiptScanDraftResponse,
     WeeklyExpenseGroupResponse,
 } from '../types';
 import { expensesApi } from '../api/expenses';
 
+const WEEKLY_HISTORY_PAGE_SIZE = 8;
+
 interface ExpenseStore {
-    expenses: ExpenseResponse[];
+    summary: ExpenseSummaryResponse | null;
     weeklyGroups: WeeklyExpenseGroupResponse[];
+    weeklyGroupsNextCursor: string | null;
+    hasMoreWeeklyGroups: boolean;
     isLoading: boolean;
-    isLoadingExpenses: boolean;
+    isLoadingSummary: boolean;
     isLoadingWeeklyGroups: boolean;
-    hasLoadedExpenses: boolean;
+    isLoadingMoreWeeklyGroups: boolean;
+    hasLoadedSummary: boolean;
     hasLoadedWeeklyGroups: boolean;
     error: string | null;
 
-    fetchExpenses: (options?: { silent?: boolean }) => Promise<void>;
+    fetchSummary: (options?: { silent?: boolean }) => Promise<void>;
     fetchWeeklyGroups: (options?: { silent?: boolean }) => Promise<void>;
+    loadMoreWeeklyGroups: () => Promise<void>;
     createExpense: (data: CreateExpenseRequest) => Promise<void>;
     scanReceipt: (image: { uri: string; name: string; type: string }) => Promise<ReceiptScanDraftResponse>;
     confirmReceiptScan: (data: ConfirmReceiptScanExpenseRequest) => Promise<void>;
@@ -28,35 +34,38 @@ interface ExpenseStore {
 }
 
 export const useExpenseStore = create<ExpenseStore>((set, get) => ({
-    expenses: [],
+    summary: null,
     weeklyGroups: [],
+    weeklyGroupsNextCursor: null,
+    hasMoreWeeklyGroups: false,
     isLoading: false,
-    isLoadingExpenses: false,
+    isLoadingSummary: false,
     isLoadingWeeklyGroups: false,
-    hasLoadedExpenses: false,
+    isLoadingMoreWeeklyGroups: false,
+    hasLoadedSummary: false,
     hasLoadedWeeklyGroups: false,
     error: null,
 
-    fetchExpenses: async (options) => {
+    fetchSummary: async (options) => {
         if (!options?.silent) {
-            set({ isLoading: true, isLoadingExpenses: true, error: null });
+            set({ isLoading: true, isLoadingSummary: true, error: null });
         } else {
             set({ error: null });
         }
 
         try {
-            const expenses = await expensesApi.getAll();
+            const summary = await expensesApi.getSummary();
             set((state) => ({
-                expenses,
-                hasLoadedExpenses: true,
-                isLoadingExpenses: false,
+                summary,
+                hasLoadedSummary: true,
+                isLoadingSummary: false,
                 isLoading: state.isLoadingWeeklyGroups,
             }));
         } catch (error: any) {
-            const message = error.response?.data?.message || error.message || 'Failed to fetch expenses';
+            const message = error.response?.data?.message || error.message || 'Failed to fetch expense summary';
             set((state) => ({
                 error: message,
-                isLoadingExpenses: false,
+                isLoadingSummary: false,
                 isLoading: state.isLoadingWeeklyGroups,
             }));
         }
@@ -70,29 +79,61 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
         }
 
         try {
-            const weeklyGroups = await expensesApi.getWeekly();
+            const page = await expensesApi.getWeeklyPage({ take: WEEKLY_HISTORY_PAGE_SIZE });
             set((state) => ({
-                weeklyGroups,
+                weeklyGroups: page.groups,
+                weeklyGroupsNextCursor: page.nextCursor,
+                hasMoreWeeklyGroups: page.hasMore,
                 hasLoadedWeeklyGroups: true,
                 isLoadingWeeklyGroups: false,
-                isLoading: state.isLoadingExpenses,
+                isLoading: state.isLoadingSummary,
             }));
         } catch (error: any) {
             const message = error.response?.data?.message || error.message || 'Failed to fetch expense history';
             set((state) => ({
                 error: message,
                 isLoadingWeeklyGroups: false,
-                isLoading: state.isLoadingExpenses,
+                isLoading: state.isLoadingSummary,
             }));
+        }
+    },
+
+    loadMoreWeeklyGroups: async () => {
+        const { hasMoreWeeklyGroups, isLoadingMoreWeeklyGroups, isLoadingWeeklyGroups, weeklyGroupsNextCursor } = get();
+        if (!hasMoreWeeklyGroups || isLoadingMoreWeeklyGroups || isLoadingWeeklyGroups || !weeklyGroupsNextCursor) {
+            return;
+        }
+
+        set({ isLoadingMoreWeeklyGroups: true, error: null });
+
+        try {
+            const page = await expensesApi.getWeeklyPage({
+                beforeWeekStart: weeklyGroupsNextCursor,
+                take: WEEKLY_HISTORY_PAGE_SIZE,
+            });
+
+            set((state) => ({
+                weeklyGroups: [...state.weeklyGroups, ...page.groups],
+                weeklyGroupsNextCursor: page.nextCursor,
+                hasMoreWeeklyGroups: page.hasMore,
+                isLoadingMoreWeeklyGroups: false,
+            }));
+        } catch (error: any) {
+            const message = error.response?.data?.message || error.message || 'Failed to load more expense history';
+            set({
+                error: message,
+                isLoadingMoreWeeklyGroups: false,
+            });
         }
     },
 
     createExpense: async (data: CreateExpenseRequest) => {
         try {
             await expensesApi.create(data);
-            // Refresh list after creation
-            await get().fetchExpenses();
-            await get().fetchWeeklyGroups();
+            await Promise.all([
+                get().fetchSummary(),
+                get().fetchWeeklyGroups(),
+            ]);
         } catch (error: any) {
             const message = error.response?.data?.message || error.message || 'Failed to create expense';
             throw new Error(message);
@@ -111,8 +152,10 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
     confirmReceiptScan: async (data: ConfirmReceiptScanExpenseRequest) => {
         try {
             await expensesApi.confirmReceiptScan(data);
-            await get().fetchExpenses();
-            await get().fetchWeeklyGroups();
+            await Promise.all([
+                get().fetchSummary(),
+                get().fetchWeeklyGroups(),
+            ]);
         } catch (error: any) {
             const message = error.response?.data?.message || error.message || 'Failed to save scanned expense';
             throw new Error(message);
@@ -122,19 +165,10 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
     deleteExpense: async (id: number) => {
         try {
             await expensesApi.delete(id);
-            // Optimistic update: remove from local state
-            set((state) => ({
-                expenses: state.expenses.filter((e) => e.id !== id),
-                weeklyGroups: state.weeklyGroups
-                    .map((group) => ({
-                        ...group,
-                        totalAmount: group.expenses
-                            .filter((expense) => expense.id !== id)
-                            .reduce((sum, expense) => sum + expense.amount, 0),
-                        expenses: group.expenses.filter((expense) => expense.id !== id),
-                    }))
-                    .filter((group) => group.expenses.length > 0),
-            }));
+            await Promise.all([
+                get().fetchSummary({ silent: true }),
+                get().fetchWeeklyGroups({ silent: true }),
+            ]);
         } catch (error: any) {
             const message = error.response?.data?.message || error.message || 'Failed to delete expense';
             throw new Error(message);
@@ -142,12 +176,15 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
     },
 
     clearData: () => set({
-        expenses: [],
+        summary: null,
         weeklyGroups: [],
+        weeklyGroupsNextCursor: null,
+        hasMoreWeeklyGroups: false,
         isLoading: false,
-        isLoadingExpenses: false,
+        isLoadingSummary: false,
         isLoadingWeeklyGroups: false,
-        hasLoadedExpenses: false,
+        isLoadingMoreWeeklyGroups: false,
+        hasLoadedSummary: false,
         hasLoadedWeeklyGroups: false,
         error: null,
     }),

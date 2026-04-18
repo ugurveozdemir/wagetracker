@@ -367,7 +367,7 @@ export const AppNavigator: React.FC = () => {
     const { hasCompletedOnboarding, isOnboardingLoading, checkOnboardingStatus } = useOnboardingStore();
     const { bootstrap, clear, refreshSubscriptionStatus } = useSubscriptionStore();
     const { fetchDashboard, clearData: clearJobsData } = useJobsStore();
-    const { fetchExpenses, fetchWeeklyGroups, clearData: clearExpenseData } = useExpenseStore();
+    const { fetchSummary, fetchWeeklyGroups, clearData: clearExpenseData } = useExpenseStore();
     const lastBootstrapKey = React.useRef<string | null>(null);
     const lastBootstrapUserId = React.useRef<number | null>(null);
 
@@ -421,11 +421,11 @@ export const AppNavigator: React.FC = () => {
 
         const tasks = [fetchDashboard()];
         if (user.access.canUseExpenses) {
-            tasks.push(fetchExpenses(), fetchWeeklyGroups());
+            tasks.push(fetchSummary(), fetchWeeklyGroups());
         }
 
         Promise.all(tasks).catch(console.error);
-    }, [clearExpenseData, clearJobsData, fetchDashboard, fetchExpenses, fetchWeeklyGroups, isAuthenticated, user]);
+    }, [clearExpenseData, clearJobsData, fetchDashboard, fetchSummary, fetchWeeklyGroups, isAuthenticated, user]);
 
     if (isLoading || isOnboardingLoading) {
         return (

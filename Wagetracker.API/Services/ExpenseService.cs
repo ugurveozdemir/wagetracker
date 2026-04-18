@@ -13,6 +13,8 @@ namespace WageTracker.API.Services
         private readonly ISubscriptionService _subscriptionService;
         private readonly IReceiptScanService _receiptScanService;
         private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+        private const int DefaultWeeklyHistoryTake = 8;
+        private const int MaxWeeklyHistoryTake = 26;
 
         // Kategori isim mapping'i (enum int → string)
         private static readonly Dictionary<int, string> CategoryNames = new()
@@ -171,6 +173,46 @@ namespace WageTracker.API.Services
             return expenses.Select(MapToResponse).ToList();
         }
 
+        public async Task<ExpenseSummaryResponse> GetSummaryAsync(int userId)
+        {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId);
+
+            var totalSpending = await _context.Expenses
+                .Where(e => e.UserId == userId)
+                .SumAsync(e => (decimal?)e.Amount) ?? 0m;
+
+            var expenseCategoryTotals = await _context.Expenses
+                .Where(e => e.UserId == userId && (e.PurchaseType != PurchaseType.MultiItem || !e.Items.Any()))
+                .GroupBy(e => (int)e.Category)
+                .Select(group => new { Category = group.Key, Amount = group.Sum(e => e.Amount) })
+                .ToListAsync();
+
+            var itemCategoryTotals = await _context.ExpenseItems
+                .Where(item => item.Expense != null
+                    && item.Expense.UserId == userId
+                    && item.Expense.PurchaseType == PurchaseType.MultiItem)
+                .GroupBy(item => (int)item.Category)
+                .Select(group => new { Category = group.Key, Amount = group.Sum(item => item.TotalAmount) })
+                .ToListAsync();
+
+            var categoryTotals = new Dictionary<int, decimal>();
+            foreach (var total in expenseCategoryTotals.Concat(itemCategoryTotals))
+            {
+                categoryTotals[total.Category] = categoryTotals.GetValueOrDefault(total.Category) + total.Amount;
+            }
+
+            var recentExpenses = await _context.Expenses
+                .Where(e => e.UserId == userId)
+                .Include(e => e.Items)
+                .OrderByDescending(e => e.Date)
+                .ThenByDescending(e => e.CreatedAt)
+                .ThenByDescending(e => e.Id)
+                .Take(4)
+                .ToListAsync();
+
+            return BuildSummaryResponse(totalSpending, categoryTotals, recentExpenses);
+        }
+
         public async Task<List<WeeklyExpenseGroupResponse>> GetWeeklyExpenseGroupsAsync(int userId)
         {
             await _subscriptionService.EnsureExpensesAccessAsync(userId);
@@ -182,27 +224,116 @@ namespace WageTracker.API.Services
                 .ThenByDescending(e => e.CreatedAt)
                 .ToListAsync();
 
-            return expenses
-                .GroupBy(e => GetWeekStartMonday(e.Date.Date))
-                .OrderByDescending(group => group.Key)
-                .Select(group => new WeeklyExpenseGroupResponse
-                {
-                    WeekStart = group.Key,
-                    WeekEnd = group.Key.AddDays(6),
-                    TotalAmount = group.Sum(e => e.Amount),
-                    Expenses = group
-                        .OrderByDescending(e => e.Date)
-                        .ThenByDescending(e => e.CreatedAt)
-                        .Select(MapToResponse)
-                        .ToList()
-                })
+            return BuildWeeklyExpenseGroups(expenses);
+        }
+
+        public async Task<PagedWeeklyExpenseGroupsResponse> GetWeeklyExpenseGroupsPageAsync(int userId, DateTime? beforeWeekStart, int take)
+        {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId);
+
+            var normalizedTake = NormalizeWeeklyHistoryTake(take);
+            var before = beforeWeekStart?.Date;
+            var expenseDatesQuery = _context.Expenses.Where(e => e.UserId == userId);
+            if (before.HasValue)
+            {
+                expenseDatesQuery = expenseDatesQuery.Where(e => e.Date < before.Value);
+            }
+
+            var weekStarts = (await expenseDatesQuery
+                    .Select(e => e.Date)
+                    .ToListAsync())
+                .Select(date => GetWeekStartMonday(date.Date))
+                .Distinct()
+                .OrderByDescending(weekStart => weekStart)
+                .Take(normalizedTake + 1)
                 .ToList();
+
+            var hasMore = weekStarts.Count > normalizedTake;
+            var pageWeekStarts = weekStarts.Take(normalizedTake).ToList();
+            if (pageWeekStarts.Count == 0)
+            {
+                return new PagedWeeklyExpenseGroupsResponse();
+            }
+
+            var newestWeekStart = pageWeekStarts.First();
+            var oldestWeekStart = pageWeekStarts.Last();
+            var newestWeekEndExclusive = newestWeekStart.AddDays(7);
+
+            var expenses = await _context.Expenses
+                .Where(e => e.UserId == userId && e.Date >= oldestWeekStart && e.Date < newestWeekEndExclusive)
+                .Include(e => e.Items)
+                .OrderByDescending(e => e.Date)
+                .ThenByDescending(e => e.CreatedAt)
+                .ThenByDescending(e => e.Id)
+                .ToListAsync();
+
+            return BuildWeeklyExpenseGroupsPageResponse(expenses, pageWeekStarts, hasMore);
         }
 
         // Static helper: Kategori int'inden isim döndürür (DashboardService'ten de kullanılır)
         public static string GetCategoryName(int category)
         {
             return CategoryNames.TryGetValue(category, out var name) ? name : "Other";
+        }
+
+        public static ExpenseSummaryResponse BuildSummaryResponse(IEnumerable<Expense> expenses, int recentLimit = 4)
+        {
+            var expenseList = expenses.ToList();
+            return BuildSummaryResponse(
+                expenseList.Sum(e => e.Amount),
+                BuildCategoryTotals(expenseList),
+                expenseList
+                    .OrderByDescending(e => e.Date)
+                    .ThenByDescending(e => e.CreatedAt)
+                    .ThenByDescending(e => e.Id)
+                    .Take(recentLimit));
+        }
+
+        private static Dictionary<int, decimal> BuildCategoryTotals(IEnumerable<Expense> expenses)
+        {
+            var categoryTotals = new Dictionary<int, decimal>();
+
+            foreach (var expense in expenses)
+            {
+                if (expense.PurchaseType == PurchaseType.MultiItem && expense.Items.Count > 0)
+                {
+                    foreach (var item in expense.Items)
+                    {
+                        var itemCategory = (int)item.Category;
+                        categoryTotals[itemCategory] = categoryTotals.GetValueOrDefault(itemCategory) + item.TotalAmount;
+                    }
+
+                    continue;
+                }
+
+                var category = (int)expense.Category;
+                categoryTotals[category] = categoryTotals.GetValueOrDefault(category) + expense.Amount;
+            }
+
+            return categoryTotals;
+        }
+
+        private static ExpenseSummaryResponse BuildSummaryResponse(
+            decimal totalSpending,
+            Dictionary<int, decimal> categoryTotals,
+            IEnumerable<Expense> recentExpenses)
+        {
+            return new ExpenseSummaryResponse
+            {
+                TotalSpending = totalSpending,
+                CategoryTotals = categoryTotals
+                    .Where(total => total.Value > 0)
+                    .OrderByDescending(total => total.Value)
+                    .ThenBy(total => total.Key)
+                    .Select(total => new ExpenseCategoryTotalResponse
+                    {
+                        Category = total.Key,
+                        CategoryName = GetCategoryName(total.Key),
+                        Amount = total.Value
+                    })
+                    .ToList(),
+                RecentExpenses = recentExpenses.Select(MapToResponse).ToList()
+            };
         }
 
         private static void ValidateCategory(int category)
@@ -322,6 +453,74 @@ namespace WageTracker.API.Services
         {
             var daysSinceMonday = ((int)date.DayOfWeek + 6) % 7;
             return date.AddDays(-daysSinceMonday);
+        }
+
+        public static PagedWeeklyExpenseGroupsResponse BuildWeeklyExpenseGroupsPageResponse(
+            IEnumerable<Expense> expenses,
+            DateTime? beforeWeekStart,
+            int take)
+        {
+            var normalizedTake = NormalizeWeeklyHistoryTake(take);
+            var filteredExpenses = beforeWeekStart.HasValue
+                ? expenses.Where(expense => GetWeekStartMonday(expense.Date.Date) < beforeWeekStart.Value.Date)
+                : expenses;
+
+            var expenseList = filteredExpenses.ToList();
+            var weekStarts = expenseList
+                .Select(expense => GetWeekStartMonday(expense.Date.Date))
+                .Distinct()
+                .OrderByDescending(weekStart => weekStart)
+                .Take(normalizedTake + 1)
+                .ToList();
+
+            var hasMore = weekStarts.Count > normalizedTake;
+            var pageWeekStarts = weekStarts.Take(normalizedTake).ToList();
+            var pageWeekStartSet = pageWeekStarts.ToHashSet();
+            var pageExpenses = expenseList
+                .Where(expense => pageWeekStartSet.Contains(GetWeekStartMonday(expense.Date.Date)))
+                .ToList();
+
+            return BuildWeeklyExpenseGroupsPageResponse(pageExpenses, pageWeekStarts, hasMore);
+        }
+
+        private static PagedWeeklyExpenseGroupsResponse BuildWeeklyExpenseGroupsPageResponse(
+            IEnumerable<Expense> expenses,
+            List<DateTime> pageWeekStarts,
+            bool hasMore)
+        {
+            return new PagedWeeklyExpenseGroupsResponse
+            {
+                Groups = BuildWeeklyExpenseGroups(expenses)
+                    .OrderBy(group => pageWeekStarts.IndexOf(group.WeekStart))
+                    .ToList(),
+                NextCursor = hasMore && pageWeekStarts.Count > 0 ? pageWeekStarts.Last() : null,
+                HasMore = hasMore
+            };
+        }
+
+        private static List<WeeklyExpenseGroupResponse> BuildWeeklyExpenseGroups(IEnumerable<Expense> expenses)
+        {
+            return expenses
+                .GroupBy(e => GetWeekStartMonday(e.Date.Date))
+                .OrderByDescending(group => group.Key)
+                .Select(group => new WeeklyExpenseGroupResponse
+                {
+                    WeekStart = group.Key,
+                    WeekEnd = group.Key.AddDays(6),
+                    TotalAmount = group.Sum(e => e.Amount),
+                    Expenses = group
+                        .OrderByDescending(e => e.Date)
+                        .ThenByDescending(e => e.CreatedAt)
+                        .ThenByDescending(e => e.Id)
+                        .Select(MapToResponse)
+                        .ToList()
+                })
+                .ToList();
+        }
+
+        private static int NormalizeWeeklyHistoryTake(int take)
+        {
+            return Math.Clamp(take <= 0 ? DefaultWeeklyHistoryTake : take, 1, MaxWeeklyHistoryTake);
         }
 
         public static ExpenseResponse MapToResponse(Expense expense)

@@ -194,6 +194,24 @@ export interface WeeklyExpenseGroupResponse {
     expenses: ExpenseResponse[];
 }
 
+export interface PagedWeeklyExpenseGroupsResponse {
+    groups: WeeklyExpenseGroupResponse[];
+    nextCursor: string | null;
+    hasMore: boolean;
+}
+
+export interface ExpenseCategoryTotalResponse {
+    category: number;
+    categoryName: string;
+    amount: number;
+}
+
+export interface ExpenseSummaryResponse {
+    totalSpending: number;
+    categoryTotals: ExpenseCategoryTotalResponse[];
+    recentExpenses: ExpenseResponse[];
+}
+
 export interface CreateExpenseRequest {
     amount: number;
     category: number;

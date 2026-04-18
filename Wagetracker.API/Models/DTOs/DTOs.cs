@@ -371,6 +371,27 @@ namespace WageTracker.API.Models.DTOs
         public List<ExpenseResponse> Expenses { get; set; } = new();
     }
 
+    public class PagedWeeklyExpenseGroupsResponse
+    {
+        public List<WeeklyExpenseGroupResponse> Groups { get; set; } = new();
+        public DateTime? NextCursor { get; set; }
+        public bool HasMore { get; set; }
+    }
+
+    public class ExpenseCategoryTotalResponse
+    {
+        public int Category { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+    }
+
+    public class ExpenseSummaryResponse
+    {
+        public decimal TotalSpending { get; set; }
+        public List<ExpenseCategoryTotalResponse> CategoryTotals { get; set; } = new();
+        public List<ExpenseResponse> RecentExpenses { get; set; } = new();
+    }
+
     // ==================== DASHBOARD DTOs ====================
 
     public class DailyEarningsPointResponse

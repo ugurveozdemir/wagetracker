@@ -59,6 +59,38 @@ namespace WageTracker.API.Controllers
             }
         }
 
+        [HttpGet("weekly-page")]
+        public async Task<ActionResult<PagedWeeklyExpenseGroupsResponse>> GetWeeklyPage(
+            [FromQuery] DateTime? beforeWeekStart,
+            [FromQuery] int take = 8)
+        {
+            try
+            {
+                var userId = GetUserId();
+                var weeklyGroups = await _expenseService.GetWeeklyExpenseGroupsPageAsync(userId, beforeWeekStart, take);
+                return Ok(weeklyGroups);
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
+            }
+        }
+
+        [HttpGet("summary")]
+        public async Task<ActionResult<ExpenseSummaryResponse>> GetSummary()
+        {
+            try
+            {
+                var userId = GetUserId();
+                var summary = await _expenseService.GetSummaryAsync(userId);
+                return Ok(summary);
+            }
+            catch (SubscriptionAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { code = ex.Code, message = ex.Message });
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<ExpenseResponse>> GetById(int id)
         {

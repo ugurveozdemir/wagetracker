@@ -1,10 +1,9 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    ScrollView,
-    RefreshControl,
+    SectionList,
     TouchableOpacity,
     StatusBar,
     ActivityIndicator,
@@ -37,7 +36,16 @@ const categoryIconMap: Record<number, string> = {
 
 export const ExpenseHistoryScreen: React.FC = () => {
     const navigation = useNavigation<ExpenseHistoryNavigationProp>();
-    const { weeklyGroups, fetchWeeklyGroups, isLoadingWeeklyGroups, hasLoadedWeeklyGroups, deleteExpense } = useExpenseStore();
+    const {
+        weeklyGroups,
+        fetchWeeklyGroups,
+        loadMoreWeeklyGroups,
+        isLoadingWeeklyGroups,
+        isLoadingMoreWeeklyGroups,
+        hasLoadedWeeklyGroups,
+        hasMoreWeeklyGroups,
+        deleteExpense,
+    } = useExpenseStore();
     const [expandedExpenseIds, setExpandedExpenseIds] = useState<Record<number, boolean>>({});
 
     useFocusEffect(
@@ -51,6 +59,15 @@ export const ExpenseHistoryScreen: React.FC = () => {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })}`;
+
+    const sections = useMemo(
+        () =>
+            weeklyGroups.map((group) => ({
+                ...group,
+                data: group.expenses,
+            })),
+        [weeklyGroups]
+    );
 
     const formatWeekRange = (weekStart: string, weekEnd: string) => {
         const start = new Date(weekStart);
@@ -117,55 +134,66 @@ export const ExpenseHistoryScreen: React.FC = () => {
                 <View style={styles.headerButtonPlaceholder} />
             </View>
 
-            <ScrollView
+            <SectionList
+                sections={sections}
                 style={styles.container}
                 contentContainerStyle={styles.contentContainer}
-                refreshControl={<RefreshControl refreshing={isLoadingWeeklyGroups} onRefresh={fetchWeeklyGroups} />}
+                keyExtractor={(expense) => String(expense.id)}
+                refreshing={isLoadingWeeklyGroups && hasLoadedWeeklyGroups}
+                onRefresh={fetchWeeklyGroups}
+                onEndReached={loadMoreWeeklyGroups}
+                onEndReachedThreshold={0.45}
                 showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.heroCard}>
-                    <Text style={styles.heroEyebrow}>Weekly Spending Ledger</Text>
-                    <Text style={styles.heroTitle}>Grouped by Monday-start weeks</Text>
-                    <Text style={styles.heroSubcopy}>Tap back any time to return to your all-time expense overview.</Text>
-                </View>
-
-                {weeklyGroups.length === 0 ? (
+                stickySectionHeadersEnabled={false}
+                ListHeaderComponent={
+                    <View style={styles.heroCard}>
+                        <Text style={styles.heroEyebrow}>Weekly Spending Ledger</Text>
+                        <Text style={styles.heroTitle}>Grouped by Monday-start weeks</Text>
+                        <Text style={styles.heroSubcopy}>Tap back any time to return to your all-time expense overview.</Text>
+                    </View>
+                }
+                ListEmptyComponent={
                     <View style={styles.emptyState}>
                         <Text style={styles.emptyTitle}>No expenses yet</Text>
                         <Text style={styles.emptyText}>Use the floating add action to log your first expense.</Text>
                     </View>
-                ) : (
-                    weeklyGroups.map((group) => (
-                        <View key={group.weekStart} style={styles.weekCard}>
-                            <View style={styles.weekHeader}>
-                                <View>
-                                    <Text style={styles.weekTitle}>{formatWeekRange(group.weekStart, group.weekEnd)}</Text>
-                                    <Text style={styles.weekMeta}>Monday through Sunday</Text>
-                                </View>
-                                <Text style={styles.weekAmount}>{formatCurrency(group.totalAmount)}</Text>
-                            </View>
-
-                            <View style={styles.expenseList}>
-                                {group.expenses.map((expense) => {
-                                    const category = EXPENSE_CATEGORIES[expense.category] ?? EXPENSE_CATEGORIES[7];
-                                    return (
-                                        <ExpenseHistoryItem
-                                            key={expense.id}
-                                            expense={expense}
-                                            color={category.color}
-                                            iconName={categoryIconMap[expense.category] ?? 'receipt-long'}
-                                            formatCurrency={formatCurrency}
-                                            onDelete={() => handleDeleteExpense(expense.id, expense.categoryName)}
-                                            expanded={!!expandedExpenseIds[expense.id]}
-                                            onToggleExpanded={() => toggleExpenseExpanded(expense.id)}
-                                        />
-                                    );
-                                })}
-                            </View>
+                }
+                ListFooterComponent={
+                    isLoadingMoreWeeklyGroups ? (
+                        <View style={styles.loadMoreFooter}>
+                            <ActivityIndicator size="small" color={colors.primary} />
                         </View>
-                    ))
+                    ) : hasMoreWeeklyGroups ? (
+                        <View style={styles.loadMoreFooter}>
+                            <Text style={styles.loadMoreText}>Scroll for older weeks</Text>
+                        </View>
+                    ) : null
+                }
+                renderSectionHeader={({ section }) => (
+                    <View style={styles.weekHeaderCard}>
+                        <View>
+                            <Text style={styles.weekTitle}>{formatWeekRange(section.weekStart, section.weekEnd)}</Text>
+                            <Text style={styles.weekMeta}>Monday through Sunday</Text>
+                        </View>
+                        <Text style={styles.weekAmount}>{formatCurrency(section.totalAmount)}</Text>
+                    </View>
                 )}
-            </ScrollView>
+                renderItem={({ item: expense, index, section }) => {
+                    const category = EXPENSE_CATEGORIES[expense.category] ?? EXPENSE_CATEGORIES[7];
+                    return (
+                        <ExpenseHistoryItem
+                            expense={expense}
+                            color={category.color}
+                            iconName={categoryIconMap[expense.category] ?? 'receipt-long'}
+                            formatCurrency={formatCurrency}
+                            onDelete={() => handleDeleteExpense(expense.id, expense.categoryName)}
+                            expanded={!!expandedExpenseIds[expense.id]}
+                            onToggleExpanded={() => toggleExpenseExpanded(expense.id)}
+                            isLastInSection={index === section.data.length - 1}
+                        />
+                    );
+                }}
+            />
         </SafeAreaView>
     );
 };
@@ -178,9 +206,10 @@ interface ExpenseHistoryItemProps {
     onDelete: () => void;
     expanded: boolean;
     onToggleExpanded: () => void;
+    isLastInSection: boolean;
 }
 
-const ExpenseHistoryItem: React.FC<ExpenseHistoryItemProps> = ({ expense, color, iconName, formatCurrency, onDelete, expanded, onToggleExpanded }) => {
+const ExpenseHistoryItem: React.FC<ExpenseHistoryItemProps> = ({ expense, color, iconName, formatCurrency, onDelete, expanded, onToggleExpanded, isLastInSection }) => {
     const hasItems = expense.purchaseType === 'MultiItem' && expense.items?.length > 0;
 
     const renderRightActions = (
@@ -233,7 +262,7 @@ const ExpenseHistoryItem: React.FC<ExpenseHistoryItemProps> = ({ expense, color,
 
     return (
         <Swipeable renderRightActions={renderRightActions} overshootRight={false} friction={2} rightThreshold={40}>
-            <View style={styles.expenseRow}>
+            <View style={[styles.expenseRow, isLastInSection && styles.expenseRowLast]}>
                 <View style={[styles.expenseIconWrap, { backgroundColor: `${color}22` }]}> 
                     <MaterialIcons name={iconName} size={18} color={color} />
                 </View>
@@ -322,6 +351,7 @@ const styles = StyleSheet.create({
     contentContainer: {
         paddingHorizontal: 24,
         paddingBottom: 120,
+        flexGrow: 1,
     },
     heroCard: {
         backgroundColor: '#f1f5ef',
@@ -367,22 +397,22 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 22,
     },
-    weekCard: {
+    weekHeaderCard: {
         backgroundColor: '#ffffff',
-        borderRadius: 28,
-        padding: 22,
-        marginBottom: 16,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingHorizontal: 22,
+        paddingTop: 22,
+        paddingBottom: 16,
+        marginTop: 16,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.05,
         shadowRadius: 18,
         elevation: 3,
-    },
-    weekHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 16,
         gap: 12,
     },
     weekTitle: {
@@ -402,17 +432,21 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '800',
     },
-    expenseList: {
-        gap: 12,
-    },
     expenseRow: {
+        backgroundColor: '#ffffff',
         minHeight: 72,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingTop: 12,
+        paddingHorizontal: 22,
+        paddingVertical: 12,
         borderTopWidth: 1,
         borderTopColor: '#f1f5ef',
+    },
+    expenseRowLast: {
+        borderBottomLeftRadius: 28,
+        borderBottomRightRadius: 28,
+        marginBottom: 16,
     },
     expenseIconWrap: {
         width: 40,
@@ -467,9 +501,21 @@ const styles = StyleSheet.create({
         fontWeight: '800',
     },
     expandedItems: {
+        backgroundColor: '#ffffff',
         paddingLeft: 52,
+        paddingRight: 22,
         paddingBottom: 10,
         gap: 8,
+    },
+    loadMoreFooter: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 18,
+    },
+    loadMoreText: {
+        color: '#6f7a71',
+        fontSize: 12,
+        fontWeight: '700',
     },
     expandedItemRow: {
         flexDirection: 'row',

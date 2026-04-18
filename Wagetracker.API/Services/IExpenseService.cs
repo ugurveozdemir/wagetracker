@@ -11,6 +11,8 @@ namespace WageTracker.API.Services
         Task DeleteAsync(int userId, int expenseId);
         Task<ExpenseResponse> GetByIdAsync(int userId, int expenseId);
         Task<List<ExpenseResponse>> GetUserExpensesAsync(int userId);
+        Task<ExpenseSummaryResponse> GetSummaryAsync(int userId);
         Task<List<WeeklyExpenseGroupResponse>> GetWeeklyExpenseGroupsAsync(int userId);
+        Task<PagedWeeklyExpenseGroupsResponse> GetWeeklyExpenseGroupsPageAsync(int userId, DateTime? beforeWeekStart, int take);
     }
 }

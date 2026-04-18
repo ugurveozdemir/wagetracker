@@ -19,7 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useExpenseStore } from '../stores';
-import { EXPENSE_CATEGORIES, ExpenseResponse, ExpenseStackParamList } from '../types';
+import { ExpenseResponse, ExpenseStackParamList } from '../types';
 import { colors } from '../theme';
 import Feather from 'react-native-vector-icons/Feather';
 import Toast from 'react-native-toast-message';
@@ -30,7 +30,7 @@ const brandLogo = require('../../assets/logo.png');
 export const ExpensesScreen: React.FC = () => {
     const { width } = useWindowDimensions();
     const navigation = useNavigation<ExpensesNavigationProp>();
-    const { expenses, fetchExpenses, deleteExpense, isLoadingExpenses, hasLoadedExpenses } = useExpenseStore();
+    const { summary, fetchSummary, deleteExpense, isLoadingSummary, hasLoadedSummary } = useExpenseStore();
     const [refreshing, setRefreshing] = useState(false);
     const [expandedExpenseIds, setExpandedExpenseIds] = useState<Record<number, boolean>>({});
     const compact = width < 380;
@@ -39,15 +39,15 @@ export const ExpensesScreen: React.FC = () => {
 
     useFocusEffect(
         useCallback(() => {
-            fetchExpenses({ silent: hasLoadedExpenses });
-        }, [fetchExpenses, hasLoadedExpenses])
+            fetchSummary({ silent: hasLoadedSummary });
+        }, [fetchSummary, hasLoadedSummary])
     );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await fetchExpenses();
+        await fetchSummary();
         setRefreshing(false);
-    }, [fetchExpenses]);
+    }, [fetchSummary]);
 
     const formatCurrency = (amount: number) =>
         `$${amount.toLocaleString(undefined, {
@@ -55,22 +55,7 @@ export const ExpensesScreen: React.FC = () => {
             maximumFractionDigits: 2,
         })}`;
 
-    const totalSpending = useMemo(() => expenses.reduce((sum, expense) => sum + expense.amount, 0), [expenses]);
-
-    const categoryTotals = useMemo(() => {
-        const totals = new Map<number, number>();
-        expenses.forEach((expense) => {
-            if (expense.purchaseType === 'MultiItem' && expense.items?.length) {
-                expense.items.forEach((item) => {
-                    totals.set(item.category, (totals.get(item.category) ?? 0) + item.totalAmount);
-                });
-                return;
-            }
-
-            totals.set(expense.category, (totals.get(expense.category) ?? 0) + expense.amount);
-        });
-        return totals;
-    }, [expenses]);
+    const totalSpending = summary?.totalSpending ?? 0;
 
     const currentMonthLabel = useMemo(
         () =>
@@ -115,34 +100,31 @@ export const ExpensesScreen: React.FC = () => {
             7: '#4f5a53',
         };
 
-        return Array.from(categoryTotals.entries())
-            .filter(([, amount]) => amount > 0)
-            .sort((a, b) => b[1] - a[1])
+        return (summary?.categoryTotals ?? [])
             .slice(0, 4)
-            .map(([categoryId, amount], index) => {
-                const category = EXPENSE_CATEGORIES[categoryId] ?? EXPENSE_CATEGORIES[7];
+            .map((categoryTotal, index) => {
+                const categoryId = categoryTotal.category;
                 return {
-                    label: category.name,
-                    amount,
+                    label: categoryTotal.categoryName,
+                    amount: categoryTotal.amount,
                     icon: iconMap[categoryId] ?? 'receipt-long',
                     tint: tintMap[categoryId] ?? '#eae8e0',
                     tone: toneMap[categoryId] ?? '#4f5a53',
                     wide: index === 3,
                 };
             });
-    }, [categoryTotals]);
+    }, [summary]);
 
     const recentItems = useMemo(
         () =>
-            expenses.slice(0, 4).map((expense, index) => {
-                const category = EXPENSE_CATEGORIES[expense.category] ?? EXPENSE_CATEGORIES[7];
+            (summary?.recentExpenses ?? []).map((expense, index) => {
                 const iconMap = ['shopping-bag', 'local-taxi', 'bolt', 'receipt-long'] as const;
                 const bgMap = ['rgba(255,220,196,0.30)', 'rgba(217,226,255,0.60)', 'rgba(156,245,193,0.30)', 'rgba(255,220,196,0.30)'];
                 const iconColorMap = ['#ab3600', '#00429B', '#005232', '#ab3600'];
 
                 return {
                     id: expense.id,
-                    title: category.name,
+                    title: expense.categoryName,
                     meta: new Date(expense.date).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -155,7 +137,7 @@ export const ExpensesScreen: React.FC = () => {
                     expense,
                 };
             }),
-        [expenses]
+        [summary]
     );
 
     const toggleExpenseExpanded = (expenseId: number) => {
@@ -197,7 +179,7 @@ export const ExpensesScreen: React.FC = () => {
         );
     };
 
-    if (isLoadingExpenses && !hasLoadedExpenses) {
+    if (isLoadingSummary && !hasLoadedSummary) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.primary} />

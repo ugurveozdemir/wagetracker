@@ -2,20 +2,27 @@ import { apiClient } from './client';
 import {
     ConfirmReceiptScanExpenseRequest,
     ExpenseResponse,
+    ExpenseSummaryResponse,
     CreateExpenseRequest,
+    PagedWeeklyExpenseGroupsResponse,
     ReceiptScanDraftResponse,
     UpdateExpenseRequest,
     WeeklyExpenseGroupResponse,
 } from '../types';
 
 export const expensesApi = {
-    getAll: async (): Promise<ExpenseResponse[]> => {
-        const response = await apiClient.get<ExpenseResponse[]>('/api/expenses');
+    getWeekly: async (): Promise<WeeklyExpenseGroupResponse[]> => {
+        const response = await apiClient.get<WeeklyExpenseGroupResponse[]>('/api/expenses/weekly');
         return response.data;
     },
 
-    getWeekly: async (): Promise<WeeklyExpenseGroupResponse[]> => {
-        const response = await apiClient.get<WeeklyExpenseGroupResponse[]>('/api/expenses/weekly');
+    getWeeklyPage: async (params?: { beforeWeekStart?: string | null; take?: number }): Promise<PagedWeeklyExpenseGroupsResponse> => {
+        const response = await apiClient.get<PagedWeeklyExpenseGroupsResponse>('/api/expenses/weekly-page', { params });
+        return response.data;
+    },
+
+    getSummary: async (): Promise<ExpenseSummaryResponse> => {
+        const response = await apiClient.get<ExpenseSummaryResponse>('/api/expenses/summary');
         return response.data;
     },
 
