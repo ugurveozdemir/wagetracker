@@ -15,10 +15,12 @@ Current installed versions are kept in `Wagetracker.Mobile/package.json`.
 Public SDK keys are configured through Expo public env values:
 
 ```env
-EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=test_OhbahuTbUcYxqMtxOwLyEJGmoGY
-EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=test_OhbahuTbUcYxqMtxOwLyEJGmoGY
-EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=Chickaree: Work Travel Tracker Pro
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=YOUR_REVENUECAT_PUBLIC_IOS_SDK_KEY
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=YOUR_REVENUECAT_PUBLIC_ANDROID_SDK_KEY
+EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=pro
 ```
+
+Development builds may use RevenueCat Test Store keys, but release/App Store/Play builds must use the platform-specific public SDK keys for iOS and Android.
 
 Android billing permission is declared in Expo config:
 
@@ -32,10 +34,12 @@ RevenueCat native modules require a rebuilt iOS/Android app. Expo Go is not enou
 
 ## RevenueCat dashboard setup
 
+Connect both the iOS app and Android app to their stores in RevenueCat before testing purchases.
+
 Create one entitlement:
 
 ```text
-Chickaree: Work Travel Tracker Pro
+pro
 ```
 
 Create subscription products with these identifiers:
@@ -46,15 +50,15 @@ six_month
 yearly
 ```
 
-Attach all three products to the Pro entitlement, then add them to the current offering. The in-app paywall uses RevenueCat's current offering by default.
+Attach all three products to the `pro` entitlement, then add them to the current offering. Create and publish a paywall for that offering, because the in-app paywall UI is loaded from RevenueCat's current offering/paywall configuration. Configure Customer Center as well if you want the in-app manage-subscription flow to use RevenueCat instead of falling back to the store settings pages.
 
-If the backend refresh endpoint is enabled, configure the API with a RevenueCat secret API key and matching product identifiers:
+This app's backend refresh/webhook flow requires the API to have a RevenueCat secret API key, the webhook authorization value from RevenueCat's dashboard, and matching product identifiers:
 
 ```json
 "RevenueCat": {
   "ApiKey": "YOUR_REVENUECAT_SECRET_API_KEY",
-  "WebhookSecret": "YOUR_REVENUECAT_WEBHOOK_SECRET",
-  "EntitlementId": "Chickaree: Work Travel Tracker Pro",
+  "WebhookSecret": "YOUR_REVENUECAT_WEBHOOK_AUTHORIZATION_VALUE",
+  "EntitlementId": "pro",
   "Products": {
     "Monthly": "monthly",
     "SixMonth": "six_month",
@@ -62,6 +66,8 @@ If the backend refresh endpoint is enabled, configure the API with a RevenueCat 
   }
 }
 ```
+
+Set `WebhookSecret` to the exact same value you enter into RevenueCat's webhook `Authorization header value` field.
 
 ## Code flow
 

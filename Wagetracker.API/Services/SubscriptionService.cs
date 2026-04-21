@@ -483,13 +483,50 @@ namespace WageTracker.API.Services
                 throw new InvalidOperationException("RevenueCat webhook secret is not configured.");
             }
 
-            var providedSecret = authorizationHeader?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true
-                ? authorizationHeader["Bearer ".Length..].Trim()
-                : xAuthorizationHeader?.Trim();
-
-            if (!string.Equals(expectedSecret, providedSecret, StringComparison.Ordinal))
+            if (!IsWebhookAuthorizationValid(expectedSecret, authorizationHeader, xAuthorizationHeader))
             {
                 throw new UnauthorizedAccessException("Invalid RevenueCat webhook secret.");
+            }
+        }
+
+        internal static bool IsWebhookAuthorizationValid(
+            string expectedSecret,
+            string? authorizationHeader,
+            string? xAuthorizationHeader)
+        {
+            foreach (var candidate in EnumerateWebhookAuthorizationCandidates(authorizationHeader, xAuthorizationHeader))
+            {
+                if (string.Equals(expectedSecret, candidate, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static IEnumerable<string> EnumerateWebhookAuthorizationCandidates(
+            string? authorizationHeader,
+            string? xAuthorizationHeader)
+        {
+            if (!string.IsNullOrWhiteSpace(authorizationHeader))
+            {
+                var trimmedAuthorization = authorizationHeader.Trim();
+                yield return trimmedAuthorization;
+
+                if (trimmedAuthorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                {
+                    var bearerValue = trimmedAuthorization["Bearer ".Length..].Trim();
+                    if (!string.IsNullOrWhiteSpace(bearerValue))
+                    {
+                        yield return bearerValue;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(xAuthorizationHeader))
+            {
+                yield return xAuthorizationHeader.Trim();
             }
         }
 

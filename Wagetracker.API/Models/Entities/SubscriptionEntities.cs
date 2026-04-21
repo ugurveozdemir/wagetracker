@@ -40,7 +40,7 @@ namespace WageTracker.API.Models.Entities
 
         [Required]
         [MaxLength(100)]
-        public string EntitlementId { get; set; } = "premium";
+        public string EntitlementId { get; set; } = "pro";
 
         [MaxLength(150)]
         public string? ProductId { get; set; }

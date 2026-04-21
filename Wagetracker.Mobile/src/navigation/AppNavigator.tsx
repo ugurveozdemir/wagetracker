@@ -372,6 +372,7 @@ export const AppNavigator: React.FC = () => {
     const { fetchSummary, fetchWeeklyGroups, clearData: clearExpenseData } = useExpenseStore();
     const lastBootstrapKey = React.useRef<string | null>(null);
     const lastBootstrapUserId = React.useRef<number | null>(null);
+    const initialSubscriptionRefreshUserId = React.useRef<number | null>(null);
 
     useEffect(() => {
         checkAuth();
@@ -382,13 +383,38 @@ export const AppNavigator: React.FC = () => {
     }, [checkOnboardingStatus]);
 
     useEffect(() => {
-        if (isAuthenticated && user) {
-            bootstrap(user).catch(console.error);
-            return;
-        }
+        let cancelled = false;
 
-        clear().catch(console.error);
-    }, [bootstrap, clear, isAuthenticated, user]);
+        const syncSubscriptions = async () => {
+            if (!isAuthenticated || !user) {
+                initialSubscriptionRefreshUserId.current = null;
+                await clear();
+                return;
+            }
+
+            try {
+                await bootstrap(user);
+            } catch (error) {
+                console.error(error);
+            }
+
+            if (cancelled || initialSubscriptionRefreshUserId.current === user.id) {
+                return;
+            }
+
+            initialSubscriptionRefreshUserId.current = user.id;
+            const refreshedUser = await refreshSubscriptionStatus();
+            if (!refreshedUser && !cancelled) {
+                initialSubscriptionRefreshUserId.current = null;
+            }
+        };
+
+        syncSubscriptions().catch(console.error);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [bootstrap, clear, isAuthenticated, refreshSubscriptionStatus, user]);
 
     useEffect(() => {
         const subscription = AppState.addEventListener('change', (nextState) => {
