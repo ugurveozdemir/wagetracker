@@ -1,7 +1,10 @@
 import type { ExpoConfig } from 'expo/config';
 
-const iosBundleIdentifier = process.env.EXPO_PUBLIC_IOS_BUNDLE_ID || 'com.chickaree.app';
-const androidPackage = process.env.EXPO_PUBLIC_ANDROID_PACKAGE || 'com.chickaree.app';
+const DEFAULT_IOS_BUNDLE_ID = 'com.ugurozdemir.chickareej1';
+const DEFAULT_ANDROID_PACKAGE = 'com.ugurozdemir.chickareej1';
+
+const iosBundleIdentifier = process.env.IOS_BUNDLE_ID || DEFAULT_IOS_BUNDLE_ID;
+const androidPackage = process.env.ANDROID_PACKAGE || DEFAULT_ANDROID_PACKAGE;
 
 const config: ExpoConfig = {
     name: 'Chickaree',
@@ -20,14 +23,14 @@ const config: ExpoConfig = {
     ios: {
         supportsTablet: false,
         bundleIdentifier: iosBundleIdentifier,
-        buildNumber: process.env.EXPO_PUBLIC_IOS_BUILD_NUMBER || '1',
+        buildNumber: process.env.IOS_BUILD_NUMBER || '1',
         infoPlist: {
             ITSAppUsesNonExemptEncryption: false,
         },
     },
     android: {
         package: androidPackage,
-        versionCode: Number(process.env.EXPO_PUBLIC_ANDROID_VERSION_CODE || '1'),
+        versionCode: Number(process.env.ANDROID_VERSION_CODE || '1'),
         permissions: ['com.android.vending.BILLING'],
         adaptiveIcon: {
             foregroundImage: './assets/adaptive-icon.png',
@@ -51,7 +54,7 @@ const config: ExpoConfig = {
     ],
     extra: {
         eas: {
-            projectId: 'aeadbd90-11c5-4c4d-835b-687e4c4089d7',
+            projectId: '825dcad9-fbfd-487e-9c9b-658a68f96bc9',
         },
     },
 };

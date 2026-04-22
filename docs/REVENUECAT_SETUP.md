@@ -12,6 +12,17 @@ Current installed versions are kept in `Wagetracker.Mobile/package.json`.
 
 ## App configuration
 
+For local development, create `Wagetracker.Mobile/.env` from `.env.example` or pull the shared values with `npx eas-cli env:pull --environment development`.
+
+For EAS builds, configure the same variable names in EAS environments and let `eas.json` select the correct `development`, `preview`, or `production` environment for each build profile.
+
+Build-time native identifiers live in plain env vars:
+
+```env
+IOS_BUNDLE_ID=com.ugurozdemir.chickareej1
+ANDROID_PACKAGE=com.ugurozdemir.chickareej1
+```
+
 Public SDK keys are configured through Expo public env values:
 
 ```env

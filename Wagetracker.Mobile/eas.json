@@ -5,6 +5,7 @@
   },
   "build": {
     "development": {
+      "environment": "development",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
@@ -15,15 +16,24 @@
       }
     },
     "development-simulator": {
+      "environment": "development",
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
         "simulator": true
       }
     },
-    "preview": {
+    "development-device": {
+      "environment": "development",
+      "developmentClient": true,
       "distribution": "internal"
     },
-    "production": {}
+    "preview": {
+      "environment": "preview",
+      "distribution": "internal"
+    },
+    "production": {
+      "environment": "production"
+    }
   }
 }
