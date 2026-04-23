@@ -10,7 +10,6 @@ import {
     KeyboardAvoidingView,
     ScrollView,
     TextInput,
-    useWindowDimensions,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -18,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useExpenseStore } from '../stores';
 import { EXPENSE_CATEGORIES, ReceiptScanItemDraft } from '../types';
+import { useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
 
 interface AddExpenseModalProps {
@@ -35,10 +35,8 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     onClose,
     onCreated,
 }) => {
-    const { width } = useWindowDimensions();
+    const { horizontalPadding, isCompact: compact, metrics, rfs, rs, rv } = useResponsiveLayout();
     const { createExpense, confirmReceiptScan, scanReceipt, isLoading } = useExpenseStore();
-    const compact = width < 380;
-    const scale = Math.min(Math.max(width / 393, 0.84), 1);
     const canScanReceipt = Platform.OS !== 'web';
 
     const [amount, setAmount] = useState('');
@@ -309,17 +307,17 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                 <ScrollView
                     style={styles.container}
                     contentContainerStyle={{
-                        paddingHorizontal: compact ? 18 : 24,
-                        paddingTop: 12,
-                        paddingBottom: 36,
+                        paddingHorizontal: horizontalPadding,
+                        paddingTop: rv(12, 0.72, 1),
+                        paddingBottom: rv(36, 0.78, 1),
                     }}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    <View style={[styles.heroCard, { borderRadius: 40 * scale, padding: 28 * scale }]}> 
+                    <View style={[styles.heroCard, { borderRadius: rs(40, 0.84, 1), padding: rs(28, 0.84, 1), marginBottom: rv(18, 0.78, 1) }]}>
                         <Text style={styles.heroLabel}>NEW EXPENSE</Text>
-                        <Text style={[styles.heroValue, { fontSize: compact ? 42 : 50 }]}>${amount || '0.00'}</Text>
-                        <Text style={styles.heroSubtext}>{purchaseMode === 'multi' ? 'Review the receipt total and item-level sub-buyings.' : 'Record the amount, category, date and an optional description.'}</Text>
+                        <Text style={[styles.heroValue, { fontSize: rfs(compact ? 42 : 50, 0.82, 1) }]}>${amount || '0.00'}</Text>
+                        <Text style={[styles.heroSubtext, { fontSize: rfs(14, 0.9, 1), lineHeight: Math.round(rfs(14, 0.9, 1) * 1.55) }]}>{purchaseMode === 'multi' ? 'Review the receipt total and item-level sub-buyings.' : 'Record the amount, category, date and an optional description.'}</Text>
                     </View>
 
                     <View style={styles.modeSwitch}>
@@ -378,10 +376,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     ) : null}
 
                     {purchaseMode === 'multi' ? (
-                        <View style={[styles.fieldCard, { borderRadius: 28 * scale }]}>
+                        <View style={[styles.fieldCard, { borderRadius: rs(28, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
                             <Text style={styles.fieldLabel}>Receipt</Text>
                             <TextInput
-                                style={styles.standardInput}
+                                style={[styles.standardInput, { minHeight: metrics.compactInputHeight, fontSize: rfs(16, 0.9, 1) }]}
                                 placeholder="Merchant name"
                                 placeholderTextColor="#bec9bf"
                                 value={merchantName}
@@ -390,12 +388,12 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                         </View>
                     ) : null}
 
-                    <View style={[styles.fieldCard, { borderRadius: 28 * scale }]}>
-                        <Text style={styles.fieldLabel}>Amount</Text>
-                        <View style={styles.moneyField}>
-                            <Text style={styles.moneyPrefix}>$</Text>
+                    <View style={[styles.fieldCard, { borderRadius: rs(28, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
+                        <Text style={[styles.fieldLabel, { fontSize: rfs(16, 0.9, 1), marginBottom: rv(12, 0.74, 1) }]}>Amount</Text>
+                        <View style={[styles.moneyField, { minHeight: metrics.compactInputHeight, paddingHorizontal: rs(18, 0.86, 1) }]}>
+                            <Text style={[styles.moneyPrefix, { fontSize: rfs(18, 0.9, 1) }]}>$</Text>
                             <TextInput
-                                style={styles.moneyInput}
+                                style={[styles.moneyInput, { fontSize: rfs(24, 0.86, 1) }]}
                                 placeholder="25.50"
                                 placeholderTextColor="#bec9bf"
                                 value={amount}
@@ -405,8 +403,8 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                         </View>
                     </View>
 
-                    <View style={[styles.fieldCard, { borderRadius: 28 * scale }]}>
-                        <Text style={styles.fieldLabel}>Category</Text>
+                    <View style={[styles.fieldCard, { borderRadius: rs(28, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
+                        <Text style={[styles.fieldLabel, { fontSize: rfs(16, 0.9, 1), marginBottom: rv(12, 0.74, 1) }]}>Category</Text>
                         <View style={styles.categoryWrap}>
                             {EXPENSE_CATEGORIES.map((item) => {
                                 const active = item.id === category;
@@ -426,10 +424,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                         </View>
                     </View>
 
-                    <View style={[styles.fieldCard, { borderRadius: 28 * scale }]}>
-                        <Text style={styles.fieldLabel}>Date</Text>
-                        <TouchableOpacity style={styles.dateButton} activeOpacity={0.88} onPress={() => setShowDatePicker(true)}>
-                            <Text style={styles.dateText}>
+                    <View style={[styles.fieldCard, { borderRadius: rs(28, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
+                        <Text style={[styles.fieldLabel, { fontSize: rfs(16, 0.9, 1), marginBottom: rv(12, 0.74, 1) }]}>Date</Text>
+                        <TouchableOpacity style={[styles.dateButton, { minHeight: metrics.compactInputHeight, paddingHorizontal: rs(18, 0.86, 1) }]} activeOpacity={0.88} onPress={() => setShowDatePicker(true)}>
+                            <Text style={[styles.dateText, { fontSize: rfs(18, 0.9, 1) }]}>
                                 {date.toLocaleDateString('en-US', {
                                     month: 'short',
                                     day: 'numeric',
@@ -455,10 +453,18 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                         <DateTimePicker value={date} mode="date" display="calendar" onChange={onDateChange} />
                     ) : null}
 
-                    <View style={[styles.fieldCard, { borderRadius: 28 * scale }]}>
-                        <Text style={styles.fieldLabel}>Description</Text>
+                    <View style={[styles.fieldCard, { borderRadius: rs(28, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
+                        <Text style={[styles.fieldLabel, { fontSize: rfs(16, 0.9, 1), marginBottom: rv(12, 0.74, 1) }]}>Description</Text>
                         <TextInput
-                            style={[styles.descriptionInput, { minHeight: 110 * scale, borderRadius: 24 * scale }]}
+                            style={[
+                                styles.descriptionInput,
+                                {
+                                    minHeight: rv(110, 0.78, 1),
+                                    borderRadius: rs(24, 0.86, 1),
+                                    fontSize: rfs(16, 0.9, 1),
+                                    lineHeight: Math.round(rfs(16, 0.9, 1) * 1.5),
+                                },
+                            ]}
                             multiline
                             placeholder="Optional note for this expense..."
                             placeholderTextColor="#bec9bf"
@@ -469,7 +475,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     </View>
 
                     {purchaseMode === 'multi' ? (
-                        <View style={[styles.fieldCard, { borderRadius: 28 * scale }]}>
+                        <View style={[styles.fieldCard, { borderRadius: rs(28, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
                             <View style={styles.itemsHeader}>
                                 <Text style={styles.fieldLabel}>Sub-buyings</Text>
                                 <TouchableOpacity onPress={addReceiptItem} activeOpacity={0.8}>
@@ -483,14 +489,14 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                                     <View key={`${index}-${item.name}`} style={styles.receiptItemRow}>
                                         <View style={styles.receiptItemTopRow}>
                                             <TextInput
-                                                style={[styles.itemNameInput, { borderRadius: 16 * scale }]}
+                                                style={[styles.itemNameInput, { borderRadius: rs(16, 0.86, 1), minHeight: metrics.touchTarget }]}
                                                 placeholder="Item name"
                                                 placeholderTextColor="#bec9bf"
                                                 value={item.name}
                                                 onChangeText={(value) => updateReceiptItem(index, { name: value })}
                                             />
                                             <TextInput
-                                                style={[styles.itemAmountInput, { borderRadius: 16 * scale }]}
+                                                style={[styles.itemAmountInput, { borderRadius: rs(16, 0.86, 1), minHeight: metrics.touchTarget }]}
                                                 placeholder="0.00"
                                                 placeholderTextColor="#bec9bf"
                                                 value={String(item.totalAmount || '')}
@@ -530,12 +536,19 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     ) : null}
 
                     <TouchableOpacity
-                        style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+                        style={[
+                            styles.submitButton,
+                            {
+                                minHeight: metrics.buttonHeight,
+                                marginTop: rv(8, 0.72, 1),
+                            },
+                            isLoading && styles.submitButtonDisabled,
+                        ]}
                         activeOpacity={0.9}
                         onPress={handleSubmit}
                         disabled={isLoading || isScanning}
                     >
-                        <Text style={styles.submitButtonText}>{isLoading ? 'Saving...' : 'Save'}</Text>
+                        <Text style={[styles.submitButtonText, { fontSize: rfs(20, 0.86, 1) }]}>{isLoading ? 'Saving...' : 'Save'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>

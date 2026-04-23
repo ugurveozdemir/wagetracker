@@ -9,12 +9,11 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    useWindowDimensions,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useJobsStore } from '../stores';
 import { JobResponse } from '../types';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
 
 interface EditJobModalProps {
@@ -25,10 +24,8 @@ interface EditJobModalProps {
 }
 
 export const EditJobModal: React.FC<EditJobModalProps> = ({ visible, job, onClose, onUpdated }) => {
-    const { width } = useWindowDimensions();
+    const { horizontalPadding, isCompact: compact, metrics, rfs, rs, rv } = useResponsiveLayout();
     const { updateJob, isUpdating } = useJobsStore();
-    const compact = width < 380;
-    const scale = Math.min(Math.max(width / 393, 0.84), 1);
 
     const [title, setTitle] = useState('');
     const [hourlyRate, setHourlyRate] = useState('');
@@ -86,20 +83,20 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({ visible, job, onClos
                 <ScrollView
                     style={styles.container}
                     contentContainerStyle={{
-                        paddingHorizontal: compact ? 18 : 24,
-                        paddingTop: compact ? 14 : 18,
-                        paddingBottom: 36,
+                        paddingHorizontal: horizontalPadding,
+                        paddingTop: rv(compact ? 14 : 18, 0.72, 1),
+                        paddingBottom: rv(36, 0.78, 1),
                     }}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <TouchableOpacity style={styles.backRow} activeOpacity={0.8} onPress={onClose}>
+                    <TouchableOpacity style={[styles.backRow, { marginBottom: rv(18, 0.74, 1) }]} activeOpacity={0.8} onPress={onClose}>
                         <MaterialIcons name="arrow-back" size={20} color="#3f4942" />
-                        <Text style={styles.backText}>Edit Job</Text>
+                        <Text style={[styles.backText, { fontSize: rfs(18, 0.9, 1) }]}>Edit Job</Text>
                     </TouchableOpacity>
 
-                    <Text style={[styles.heading, { fontSize: compact ? 40 : 46 }]}>Refine Role.</Text>
-                    <Text style={styles.subheading}>Update the tracked job details used by the backend ledger.</Text>
+                    <Text style={[styles.heading, { fontSize: rfs(compact ? 40 : 46, 0.82, 1) }]}>Refine Role.</Text>
+                    <Text style={[styles.subheading, { fontSize: rfs(17, 0.88, 1), lineHeight: Math.round(rfs(17, 0.88, 1) * 1.55), marginBottom: rv(18, 0.74, 1) }]}>Update the tracked job details used by the backend ledger.</Text>
 
                     {error ? (
                         <View style={styles.errorBanner}>
@@ -107,13 +104,21 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({ visible, job, onClos
                         </View>
                     ) : null}
 
-                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}>
+                    <View style={[styles.fieldCard, { borderRadius: rs(32, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
                         <View style={styles.fieldLabelRow}>
                             <MaterialIcons name="work" size={16} color={colors.primary} />
                             <Text style={styles.fieldLabel}>JOB TITLE</Text>
                         </View>
                         <TextInput
-                            style={styles.fieldInput}
+                            style={[
+                                styles.fieldInput,
+                                {
+                                    minHeight: metrics.compactInputHeight,
+                                    paddingHorizontal: rs(20, 0.86, 1),
+                                    paddingVertical: rv(16, 0.76, 1),
+                                    fontSize: rfs(18, 0.88, 1),
+                                },
+                            ]}
                             placeholder={titlePlaceholder}
                             placeholderTextColor="#bec9bf"
                             value={title}
@@ -121,15 +126,15 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({ visible, job, onClos
                         />
                     </View>
 
-                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}>
+                    <View style={[styles.fieldCard, { borderRadius: rs(32, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
                         <View style={styles.fieldLabelRow}>
                             <MaterialIcons name="payments" size={16} color={colors.primary} />
                             <Text style={styles.fieldLabel}>HOURLY RATE</Text>
                         </View>
-                        <View style={styles.moneyField}>
-                            <Text style={styles.moneyPrefix}>$</Text>
+                        <View style={[styles.moneyField, { minHeight: metrics.compactInputHeight, paddingLeft: rs(22, 0.84, 1), paddingRight: rs(20, 0.84, 1) }]}>
+                            <Text style={[styles.moneyPrefix, { fontSize: rfs(22, 0.88, 1) }]}>$</Text>
                             <TextInput
-                                style={styles.moneyInput}
+                                style={[styles.moneyInput, { fontSize: rfs(34, 0.82, 1) }]}
                                 placeholder="25.00"
                                 placeholderTextColor="#bec9bf"
                                 value={hourlyRate}
@@ -141,12 +146,19 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({ visible, job, onClos
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.submitButton, isUpdating && styles.submitButtonDisabled]}
+                        style={[
+                            styles.submitButton,
+                            {
+                                minHeight: metrics.buttonHeight,
+                                marginTop: rv(8, 0.72, 1),
+                            },
+                            isUpdating && styles.submitButtonDisabled,
+                        ]}
                         activeOpacity={0.9}
                         onPress={handleSubmit}
                         disabled={isUpdating}
                     >
-                        <Text style={styles.submitButtonText}>{isUpdating ? 'Saving...' : 'Save'}</Text>
+                        <Text style={[styles.submitButtonText, { fontSize: rfs(22, 0.86, 1) }]}>{isUpdating ? 'Saving...' : 'Save'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>

@@ -33,7 +33,7 @@ export const ProfileScreen: React.FC = () => {
     const { user, logout, deleteAccount } = useAuthStore();
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const { restorePurchases, presentCustomerCenter } = useSubscriptionStore();
-    const { isCompact, horizontalPadding, rs } = useResponsiveLayout();
+    const { isCompact, horizontalPadding, rfs, rs, rv } = useResponsiveLayout();
     const [refreshing, setRefreshing] = React.useState(false);
     const [expandedSection, setExpandedSection] = React.useState<ProfileMenuKey | null>('personal');
 
@@ -201,9 +201,9 @@ export const ProfileScreen: React.FC = () => {
     const maxUnlockedJobs = user?.access.maxUnlockedJobs ?? 0;
 
     const renderInfoRow = (label: string, value: string) => (
-        <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{label}</Text>
-            <Text style={styles.detailValue}>{value}</Text>
+        <View style={[styles.detailRow, { paddingVertical: rv(8, 0.76, 1) }]}>
+            <Text style={[styles.detailLabel, { fontSize: rfs(14, 0.9, 1) }]}>{label}</Text>
+            <Text style={[styles.detailValue, { fontSize: rfs(14, 0.9, 1) }]}>{value}</Text>
         </View>
     );
 
@@ -265,7 +265,7 @@ export const ProfileScreen: React.FC = () => {
         <SafeAreaView style={styles.safeArea}>
             <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
 
-            <View style={[styles.header, { paddingHorizontal: horizontalPadding, paddingTop: rs(8) }]}>
+            <View style={[styles.header, { paddingHorizontal: horizontalPadding, paddingTop: rv(8, 0.72, 1) }]}>
                 <TouchableOpacity
                     style={[styles.headerIconButton, { width: rs(42), height: rs(42), borderRadius: rs(21) }]}
                     onPress={() => navigation.navigate('HomeTab')}
@@ -274,7 +274,7 @@ export const ProfileScreen: React.FC = () => {
                     <Feather name="arrow-left" size={22} color={colors.primary} />
                 </TouchableOpacity>
 
-                <Text style={[styles.headerTitle, { fontSize: isCompact ? 19 : 22 }]}>Profile</Text>
+                <Text style={[styles.headerTitle, { fontSize: rfs(isCompact ? 19 : 22, 0.9, 1) }]}>Profile</Text>
 
                 <View style={{ width: rs(42), height: rs(42) }} />
             </View>
@@ -283,43 +283,43 @@ export const ProfileScreen: React.FC = () => {
                 style={styles.container}
                 contentContainerStyle={{
                     paddingHorizontal: horizontalPadding,
-                    paddingTop: rs(18),
-                    paddingBottom: rs(156),
+                    paddingTop: rv(18, 0.74, 1),
+                    paddingBottom: rv(156, 0.82, 1),
                 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             >
-                <View style={styles.heroSection}>
+                <View style={[styles.heroSection, { marginBottom: rv(32, 0.72, 1) }]}>
                     <View style={[styles.avatarShell, { width: rs(172), height: rs(172), borderRadius: rs(52) }]}>
                         <View style={[styles.avatarCore, { borderRadius: rs(44) }]}>
-                            <Text style={[styles.avatarText, { fontSize: isCompact ? 46 : 52 }]}>{initials}</Text>
+                            <Text style={[styles.avatarText, { fontSize: rfs(isCompact ? 46 : 52, 0.84, 1) }]}>{initials}</Text>
                         </View>
                     </View>
 
-                    <Text style={[styles.userName, { fontSize: isCompact ? 32 : 36 }]}>{user?.fullName || 'Account'}</Text>
+                    <Text style={[styles.userName, { fontSize: rfs(isCompact ? 32 : 36, 0.84, 1), marginTop: rv(16, 0.74, 1), marginBottom: rv(8, 0.74, 1) }]}>{user?.fullName || 'Account'}</Text>
                     <View style={styles.locationRow}>
                         <Feather name="mail" size={16} color={colors.onSurfaceVariant} />
                         <Text style={styles.locationText}>{user?.email || 'No email available'}</Text>
                     </View>
                 </View>
 
-                <View style={styles.statsRow}>
-                    <View style={[styles.statCard, styles.statCardPrimary, { borderRadius: rs(30), padding: rs(24) }]}>
+                <View style={[styles.statsRow, { gap: rs(16, 0.82, 1), marginBottom: rv(24, 0.74, 1) }]}>
+                    <View style={[styles.statCard, styles.statCardPrimary, { minHeight: rv(186, 0.82, 1), borderRadius: rs(30), padding: rs(24) }]}>
                         <View style={styles.statIconWrap}>
                             <MaterialIcons name="payments" size={24} color={colors.emeraldLight} />
                         </View>
                         <Text style={[styles.statLabel, styles.statLabelPrimary]}>Total Earned</Text>
-                        <Text style={[styles.statValue, styles.statValuePrimary, { fontSize: isCompact ? 24 : 28 }]}>
+                        <Text style={[styles.statValue, styles.statValuePrimary, { fontSize: rfs(isCompact ? 24 : 28, 0.86, 1) }]}>
                             {formatCurrency(summary?.totalEarnings)}
                         </Text>
                     </View>
 
-                    <View style={[styles.statCard, styles.statCardSecondary, { borderRadius: rs(30), padding: rs(24) }]}>
+                    <View style={[styles.statCard, styles.statCardSecondary, { minHeight: rv(186, 0.82, 1), borderRadius: rs(30), padding: rs(24) }]}>
                         <View style={styles.statIconWrap}>
                             <MaterialIcons name="savings" size={24} color="#5a2400" />
                         </View>
                         <Text style={styles.statLabel}>Weekly Net</Text>
-                        <Text style={[styles.statValue, { fontSize: isCompact ? 24 : 28 }]}>{formatCurrency(summary?.weeklyNet)}</Text>
+                        <Text style={[styles.statValue, { fontSize: rfs(isCompact ? 24 : 28, 0.86, 1) }]}>{formatCurrency(summary?.weeklyNet)}</Text>
                     </View>
                 </View>
 
@@ -327,7 +327,7 @@ export const ProfileScreen: React.FC = () => {
                     <View style={styles.subscriptionHeader}>
                         <View>
                             <Text style={styles.subscriptionEyebrow}>Subscription</Text>
-                            <Text style={[styles.subscriptionTitle, { fontSize: isCompact ? 24 : 28 }]}>
+                            <Text style={[styles.subscriptionTitle, { fontSize: rfs(isCompact ? 24 : 28, 0.86, 1) }]}>
                                 {subscriptionTitle}
                             </Text>
                         </View>
@@ -395,7 +395,7 @@ export const ProfileScreen: React.FC = () => {
                                 <View style={[styles.menuIconBubble, { width: rs(52), height: rs(52), borderRadius: rs(26) }]}>
                                     <MaterialIcons name={item.icon} size={24} color={colors.primary} />
                                 </View>
-                                <Text style={[styles.menuLabel, { fontSize: isCompact ? 18 : 20 }]}>{item.label}</Text>
+                                <Text style={[styles.menuLabel, { fontSize: rfs(isCompact ? 18 : 20, 0.88, 1) }]}>{item.label}</Text>
                                 <Feather
                                     name={expandedSection === item.key ? 'chevron-up' : 'chevron-down'}
                                     size={22}
@@ -415,7 +415,7 @@ export const ProfileScreen: React.FC = () => {
                     <View style={[styles.logoutIconBubble, { width: rs(48), height: rs(48), borderRadius: rs(24) }]}>
                         <Feather name="log-out" size={20} color={colors.danger} />
                     </View>
-                    <Text style={[styles.logoutText, { fontSize: isCompact ? 18 : 20 }]}>Log Out</Text>
+                    <Text style={[styles.logoutText, { fontSize: rfs(isCompact ? 18 : 20, 0.88, 1) }]}>Log Out</Text>
                 </TouchableOpacity>
 
             </ScrollView>

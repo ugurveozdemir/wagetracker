@@ -7,7 +7,7 @@ import {
     ViewStyle,
     TextStyle,
 } from 'react-native';
-import { colors, borderRadius, spacing, fontSizes, fontWeights } from '../../theme';
+import { colors, borderRadius, spacing, fontSizes, fontWeights, useResponsiveLayout } from '../../theme';
 
 interface ButtonProps {
     title: string;
@@ -33,6 +33,27 @@ export const Button: React.FC<ButtonProps> = ({
     textStyle,
 }) => {
     const isDisabled = disabled || loading;
+    const { metrics, rfs, rv, rs } = useResponsiveLayout();
+    const sizeMetrics = {
+        sm: {
+            minHeight: Math.max(metrics.touchTarget, Math.round(rv(40, 0.9, 1))),
+            paddingVertical: rv(8, 0.82, 1),
+            paddingHorizontal: rs(16, 0.9, 1.02),
+            fontSize: rfs(12, 0.9, 1),
+        },
+        md: {
+            minHeight: Math.max(metrics.touchTarget, Math.round(rv(48, 0.88, 1))),
+            paddingVertical: rv(12, 0.8, 1),
+            paddingHorizontal: rs(20, 0.88, 1.02),
+            fontSize: rfs(14, 0.9, 1),
+        },
+        lg: {
+            minHeight: metrics.buttonHeight,
+            paddingVertical: rv(16, 0.78, 1),
+            paddingHorizontal: rs(24, 0.86, 1.02),
+            fontSize: rfs(16, 0.9, 1),
+        },
+    }[size];
 
     return (
         <TouchableOpacity
@@ -40,6 +61,11 @@ export const Button: React.FC<ButtonProps> = ({
                 styles.base,
                 styles[variant],
                 styles[size],
+                {
+                    minHeight: sizeMetrics.minHeight,
+                    paddingVertical: sizeMetrics.paddingVertical,
+                    paddingHorizontal: sizeMetrics.paddingHorizontal,
+                },
                 fullWidth && styles.fullWidth,
                 isDisabled && styles.disabled,
                 style,
@@ -65,6 +91,7 @@ export const Button: React.FC<ButtonProps> = ({
                         styles.text,
                         styles[`${variant}Text`],
                         styles[`${size}Text`],
+                        { fontSize: sizeMetrics.fontSize },
                         textStyle,
                     ]}
                 >

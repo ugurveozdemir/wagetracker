@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, borderRadius, spacing } from '../../theme';
+import { colors, borderRadius, spacing, useResponsiveLayout } from '../../theme';
 
 interface CardProps {
     children: React.ReactNode;
@@ -14,13 +14,16 @@ export const Card: React.FC<CardProps> = ({
     variant = 'default',
     style,
 }) => {
+    const { cardRadius, metrics } = useResponsiveLayout();
+    const responsiveBase = { borderRadius: cardRadius, padding: metrics.cardPadding };
+
     if (variant === 'earnings') {
         return (
             <LinearGradient
                 colors={[colors.emeraldGradientStart, colors.emeraldGradientEnd]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[styles.base, styles.gradient, style]}
+                style={[styles.base, responsiveBase, styles.gradient, style]}
             >
                 {children}
             </LinearGradient>
@@ -33,7 +36,7 @@ export const Card: React.FC<CardProps> = ({
                 colors={[colors.violetGradientStart, colors.violetGradientEnd]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[styles.base, styles.gradient, style]}
+                style={[styles.base, responsiveBase, styles.gradient, style]}
             >
                 {children}
             </LinearGradient>
@@ -46,7 +49,7 @@ export const Card: React.FC<CardProps> = ({
                 colors={[colors.secondary, colors.secondaryContainer]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[styles.base, styles.gradient, style]}
+                style={[styles.base, responsiveBase, styles.gradient, style]}
             >
                 {children}
             </LinearGradient>
@@ -54,7 +57,7 @@ export const Card: React.FC<CardProps> = ({
     }
 
     return (
-        <View style={[styles.base, styles.default, style]}>
+        <View style={[styles.base, responsiveBase, styles.default, style]}>
             {children}
         </View>
     );

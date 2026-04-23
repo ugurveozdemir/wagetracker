@@ -76,17 +76,36 @@ const onboardingSlides = [
 export const OnboardingScreen: React.FC = () => {
     const scrollRef = useRef<ScrollView>(null);
     const { top, bottom } = useSafeAreaInsets();
-    const { width, height, horizontalPadding, isCompact, isSmallHeight, rs } = useResponsiveLayout();
+    const {
+        width,
+        height,
+        horizontalPadding,
+        isCompact,
+        isSmallHeight,
+        isShortHeight,
+        isVeryShortHeight,
+        rs,
+        rv,
+        rfs,
+        metrics,
+    } = useResponsiveLayout();
     const { completeOnboarding } = useOnboardingStore();
     const [activeIndex, setActiveIndex] = useState(0);
     const [isCompleting, setIsCompleting] = useState(false);
 
     const lastIndex = onboardingSlides.length - 1;
     const isLastSlide = activeIndex === lastIndex;
-    const topOffset = Math.max(top + spacing['2xl'], 56);
+    const topOffset = Math.max(top + rv(isVeryShortHeight ? 12 : 20, 0.7, 1), isVeryShortHeight ? 40 : 52);
     const footerBottom = Math.max(bottom, Platform.OS === 'ios' ? spacing.lg : spacing.md);
-    const visualHeight = Math.min(height * (isSmallHeight ? 0.3 : 0.34), isCompact ? 292 : 310);
-    const verticalGap = isSmallHeight ? spacing.md : spacing.xl;
+    const visualHeight = Math.min(
+        height * (isVeryShortHeight ? 0.26 : isSmallHeight ? 0.29 : 0.34),
+        isCompact ? 268 : 310,
+    );
+    const verticalGap = rv(isSmallHeight ? 12 : 20, 0.7, 1);
+    const footerGap = rv(isShortHeight ? 20 : 32, 0.7, 1);
+    const skipHeight = Math.max(metrics.touchTarget, Math.round(rv(54, 0.78, 1)));
+    const titleSize = rfs(isCompact ? 34 : 38, 0.82, 1);
+    const titleLineHeight = Math.round(titleSize * 1.16);
 
     const handleMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -140,7 +159,7 @@ export const OnboardingScreen: React.FC = () => {
                                 width,
                                 paddingHorizontal: horizontalPadding,
                                 paddingTop: topOffset,
-                                paddingBottom: footerBottom + spacing.md,
+                                paddingBottom: footerBottom + metrics.primaryButtonHeight + skipHeight + footerGap,
                             },
                         ]}
                     >
@@ -149,7 +168,7 @@ export const OnboardingScreen: React.FC = () => {
                                 {slide.showBrand ? (
                                     <View style={styles.brandRow}>
                                         <Image source={brandLogo} style={{ width: rs(42), height: rs(42) }} resizeMode="contain" />
-                                        <Text style={[styles.brandText, { fontSize: isCompact ? 25 : 29 }]}>Chickaree</Text>
+                                        <Text style={[styles.brandText, { fontSize: rfs(isCompact ? 25 : 29, 0.88, 1) }]}>Chickaree</Text>
                                     </View>
                                 ) : null}
                             </View>
@@ -159,7 +178,7 @@ export const OnboardingScreen: React.FC = () => {
                                     styles.visualWrap,
                                     {
                                         height: visualHeight,
-                                        marginTop: slide.showBrand ? spacing.xl : 0,
+                                        marginTop: slide.showBrand ? rv(18, 0.7, 1) : 0,
                                     },
                                 ]}
                             >
@@ -214,7 +233,7 @@ export const OnboardingScreen: React.FC = () => {
                             </View>
 
                             <View style={[styles.copyBlock, { marginTop: verticalGap }]}>
-                                <Text style={[styles.title, { fontSize: isCompact ? 32 : 36, lineHeight: isCompact ? 39 : 43 }]}>
+                                <Text style={[styles.title, { fontSize: titleSize, lineHeight: titleLineHeight, marginBottom: rv(18, 0.7, 1) }]}>
                                     {slide.titleStart}
                                     {slide.titleAccent ? (
                                         <>
@@ -231,13 +250,14 @@ export const OnboardingScreen: React.FC = () => {
                                 <Text
                                     style={[
                                         styles.description,
+                                        slide.key === 'earnings' ? styles.earningDescription : null,
                                         {
                                             fontSize:
                                                 slide.key === 'earnings'
-                                                    ? (isCompact ? 17 : 18)
-                                                    : (isCompact ? 19 : 21),
+                                                    ? rfs(18, 0.88, 1)
+                                                    : rfs(20, 0.86, 1),
+                                            lineHeight: Math.round((slide.key === 'earnings' ? rfs(18, 0.88, 1) : rfs(20, 0.86, 1)) * 1.48),
                                         },
-                                        slide.key === 'earnings' ? styles.earningDescription : null,
                                     ]}
                                 >
                                     {slide.description}
@@ -258,7 +278,7 @@ export const OnboardingScreen: React.FC = () => {
                     },
                 ]}
             >
-                <View style={styles.dotsRow}>
+                <View style={[styles.dotsRow, { marginBottom: footerGap }]}>
                     {onboardingSlides.map((slide, index) => (
                         <View
                             key={slide.key}
@@ -273,9 +293,16 @@ export const OnboardingScreen: React.FC = () => {
                     activeOpacity={0.88}
                     disabled={isCompleting}
                     onPress={handlePrimaryPress}
-                    style={[styles.primaryButton, isCompleting && styles.disabledButton]}
+                    style={[
+                        styles.primaryButton,
+                        {
+                            minHeight: metrics.primaryButtonHeight,
+                            borderRadius: metrics.primaryButtonHeight / 2,
+                        },
+                        isCompleting && styles.disabledButton,
+                    ]}
                 >
-                    <Text style={styles.primaryButtonText}>{isCompleting ? 'Starting...' : onboardingSlides[activeIndex].cta}</Text>
+                    <Text style={[styles.primaryButtonText, { fontSize: rfs(20, 0.86, 1) }]}>{isCompleting ? 'Starting...' : onboardingSlides[activeIndex].cta}</Text>
                     {!isLastSlide ? <MaterialIcons name="arrow-forward" size={28} color={colors.white} /> : null}
                 </TouchableOpacity>
 
@@ -286,12 +313,12 @@ export const OnboardingScreen: React.FC = () => {
                         activeOpacity={0.75}
                         disabled={isCompleting}
                         onPress={() => finishOnboarding().catch(console.error)}
-                        style={styles.skipButton}
+                        style={[styles.skipButton, { minHeight: skipHeight, marginTop: rv(16, 0.65, 1) }]}
                     >
-                        <Text style={styles.skipText}>Skip for now</Text>
+                        <Text style={[styles.skipText, { fontSize: rfs(18, 0.86, 1) }]}>Skip for now</Text>
                     </TouchableOpacity>
                 ) : (
-                    <View style={styles.skipPlaceholder} />
+                    <View style={{ height: skipHeight + rv(16, 0.65, 1) }} />
                 )}
             </View>
         </SafeAreaView>
@@ -461,7 +488,6 @@ const styles = StyleSheet.create({
         gap: spacing.md,
         height: 18,
         marginBottom: spacing['3xl'],
-        transform: [{ translateY: 18 }],
     },
     dot: {
         width: 12,

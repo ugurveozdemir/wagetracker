@@ -26,8 +26,9 @@ const brandLogo = require('../../assets/logo.png');
 export const LoginScreen: React.FC = () => {
     const navigation = useNavigation<LoginNavigationProp>();
     const { login, isLoading, error, clearError } = useAuthStore();
-    const { isCompact, horizontalPadding, rs } = useResponsiveLayout();
-    const brandFontSize = isCompact ? 22 : 25;
+    const { isCompact, isShortHeight, horizontalPadding, metrics, rfs, rs, rv } = useResponsiveLayout();
+    const brandFontSize = rfs(isCompact ? 22 : 25, 0.9, 1);
+    const titleSize = rfs(isCompact ? 42 : 48, 0.82, 1.01);
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -102,10 +103,19 @@ export const LoginScreen: React.FC = () => {
         onBlur: () => void,
         extraProps?: Partial<React.ComponentProps<typeof TextInput>>,
     ) => (
-        <View style={styles.fieldBlock}>
-            <Text style={styles.fieldLabel}>{label}</Text>
+        <View style={[styles.fieldBlock, { marginBottom: rv(isShortHeight ? 16 : 20, 0.75, 1) }]}>
+            <Text style={[styles.fieldLabel, { fontSize: rfs(20, 0.86, 1), marginBottom: rv(12, 0.72, 1) }]}>{label}</Text>
             <TextInput
-                style={[styles.input, errorText ? styles.inputError : null]}
+                style={[
+                    styles.input,
+                    {
+                        height: metrics.inputHeight,
+                        borderRadius: metrics.inputHeight / 2,
+                        paddingHorizontal: rs(20, 0.86, 1),
+                        fontSize: rfs(18, 0.88, 1),
+                    },
+                    errorText ? styles.inputError : null,
+                ]}
                 placeholder={placeholder}
                 placeholderTextColor={colors.slate400}
                 value={value}
@@ -113,7 +123,7 @@ export const LoginScreen: React.FC = () => {
                 onBlur={onBlur}
                 {...extraProps}
             />
-            {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
+            {errorText ? <Text style={[styles.errorText, { fontSize: rfs(12, 0.9, 1), marginTop: rv(8, 0.7, 1) }]}>{errorText}</Text> : null}
         </View>
     );
 
@@ -129,14 +139,14 @@ export const LoginScreen: React.FC = () => {
                         styles.scrollContent,
                         {
                             paddingHorizontal: horizontalPadding,
-                            paddingTop: rs(28),
-                            paddingBottom: rs(44),
+                            paddingTop: rv(isShortHeight ? 18 : 28, 0.7, 1),
+                            paddingBottom: rv(44, 0.74, 1),
                         },
                     ]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View style={styles.brandRow}>
+                    <View style={[styles.brandRow, { marginBottom: rv(isShortHeight ? 24 : 40, 0.65, 1) }]}>
                         <Image source={brandLogo} style={{ width: rs(46), height: rs(46) }} resizeMode="contain" />
                         <Text
                             style={[
@@ -152,14 +162,14 @@ export const LoginScreen: React.FC = () => {
                         </Text>
                     </View>
 
-                    <View style={styles.heroSection}>
-                        <Text style={[styles.title, { fontSize: isCompact ? 40 : 48, lineHeight: isCompact ? 44 : 52 }]}>Welcome Back</Text>
-                        <Text style={[styles.subtitle, { fontSize: isCompact ? 16 : 18 }]}>Sign in to continue tracking your work and money.</Text>
+                    <View style={[styles.heroSection, { marginBottom: rv(isShortHeight ? 18 : 24, 0.72, 1) }]}>
+                        <Text style={[styles.title, { fontSize: titleSize, lineHeight: Math.round(titleSize * 1.1), marginBottom: rv(12, 0.7, 1) }]}>Welcome Back</Text>
+                        <Text style={[styles.subtitle, { fontSize: rfs(18, 0.88, 1), lineHeight: Math.round(rfs(18, 0.88, 1) * 1.4) }]}>Sign in to continue tracking your work and money.</Text>
                     </View>
 
                     {error ? (
-                        <View style={styles.errorBanner}>
-                            <Text style={styles.errorBannerText}>{error}</Text>
+                        <View style={[styles.errorBanner, { marginBottom: rv(20, 0.76, 1), paddingVertical: rv(12, 0.76, 1) }]}>
+                            <Text style={[styles.errorBannerText, { fontSize: rfs(12, 0.9, 1) }]}>{error}</Text>
                             <TouchableOpacity onPress={clearError} activeOpacity={0.7}>
                                 <MaterialIcons name="close" size={20} color={colors.danger} />
                             </TouchableOpacity>
@@ -200,7 +210,7 @@ export const LoginScreen: React.FC = () => {
                     )}
 
                     <TouchableOpacity
-                        style={styles.forgotPasswordRow}
+                        style={[styles.forgotPasswordRow, { marginTop: -rv(12, 0.7, 1), marginBottom: rv(20, 0.72, 1) }]}
                         onPress={() => navigation.navigate('ForgotPassword')}
                         activeOpacity={0.8}
                     >
@@ -208,18 +218,25 @@ export const LoginScreen: React.FC = () => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.primaryButton, !isFormValid && styles.primaryButtonDisabled]}
+                        style={[
+                            styles.primaryButton,
+                            {
+                                height: metrics.primaryButtonHeight,
+                                borderRadius: metrics.primaryButtonHeight / 2,
+                            },
+                            !isFormValid && styles.primaryButtonDisabled,
+                        ]}
                         activeOpacity={0.88}
                         onPress={handleLogin}
                         disabled={!isFormValid || isLoading}
                     >
-                        <Text style={styles.primaryButtonText}>{isLoading ? 'Signing In...' : 'Sign In'}</Text>
+                        <Text style={[styles.primaryButtonText, { fontSize: rfs(18, 0.9, 1) }]}>{isLoading ? 'Signing In...' : 'Sign In'}</Text>
                     </TouchableOpacity>
 
-                    <View style={styles.footer}>
-                        <Text style={styles.footerText}>Don’t have an account?</Text>
+                    <View style={[styles.footer, { marginTop: rv(isShortHeight ? 28 : 40, 0.7, 1), marginBottom: rv(12, 0.74, 1) }]}>
+                        <Text style={[styles.footerText, { fontSize: rfs(18, 0.88, 1) }]}>Don’t have an account?</Text>
                         <TouchableOpacity onPress={() => navigation.navigate('Register')} activeOpacity={0.8}>
-                            <Text style={styles.footerLink}>Sign Up</Text>
+                            <Text style={[styles.footerLink, { fontSize: rfs(18, 0.88, 1) }]}>Sign Up</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>

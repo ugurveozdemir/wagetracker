@@ -33,7 +33,7 @@ export const JobDetailsScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const route = useRoute<JobDetailsRouteProp>();
     const { jobId } = route.params;
-    const { isCompact, horizontalPadding, panelRadius, rs } = useResponsiveLayout();
+    const { isCompact, horizontalPadding, panelRadius, metrics, rfs, rs, rv } = useResponsiveLayout();
 
     const { jobDetails, weeks, isLoading, fetchJobDetails, deleteEntry, clearJobDetails } = useEntriesStore();
     const { fetchDashboard, deleteJob } = useJobsStore();
@@ -163,7 +163,7 @@ export const JobDetailsScreen: React.FC = () => {
                 >
                     <Feather name="arrow-left" size={20} color={colors.primary} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { fontSize: isCompact ? 19 : fontSizes.xl }]} numberOfLines={1}>
+                <Text style={[styles.headerTitle, { fontSize: rfs(isCompact ? 19 : fontSizes.xl, 0.9, 1) }]} numberOfLines={1}>
                     {job?.title || 'Job'}
                 </Text>
                 <TouchableOpacity
@@ -201,30 +201,30 @@ export const JobDetailsScreen: React.FC = () => {
                 style={styles.container}
                 contentContainerStyle={[
                     styles.contentContainer,
-                    { paddingHorizontal: horizontalPadding, paddingBottom: rs(120) },
+                    { paddingHorizontal: horizontalPadding, paddingBottom: rv(120, 0.82, 1) },
                 ]}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={[styles.heroCard, { borderRadius: panelRadius, padding: rs(32) }]}>
+                <View style={[styles.heroCard, { borderRadius: panelRadius, padding: rs(32, 0.82, 1), marginBottom: rv(20, 0.74, 1) }]}>
                     <Text style={styles.heroEyebrow}>Job Ledger</Text>
-                    <Text style={[styles.heroTitle, { fontSize: isCompact ? 30 : fontSizes['4xl'] }]}>{job?.title}</Text>
-                    <Text style={styles.heroSubcopy}>
+                    <Text style={[styles.heroTitle, { fontSize: rfs(isCompact ? 30 : fontSizes['4xl'], 0.84, 1), lineHeight: Math.round(rfs(isCompact ? 30 : fontSizes['4xl'], 0.84, 1) * 1.15) }]}>{job?.title}</Text>
+                    <Text style={[styles.heroSubcopy, { fontSize: rfs(14, 0.9, 1), lineHeight: Math.round(rfs(14, 0.9, 1) * 1.55) }]}>
                         ${job?.hourlyRate ?? 0}/hr · tracked with weekly overtime grouping
                     </Text>
                 </View>
 
-                <View style={styles.summaryRow}>
-                    <Card variant="earnings" style={[styles.summaryCard, { borderRadius: rs(24), padding: rs(24) }]}>
+                <View style={[styles.summaryRow, { gap: rv(12, 0.82, 1), marginBottom: rv(24, 0.74, 1) }]}>
+                    <Card variant="earnings" style={[styles.summaryCard, { borderRadius: rs(24), padding: metrics.cardPadding }]}>
                         <Text style={styles.summaryLabel}>Earned</Text>
-                        <Text style={[styles.summaryValue, { fontSize: isCompact ? 26 : fontSizes['3xl'] }]}>
+                        <Text style={[styles.summaryValue, { fontSize: rfs(isCompact ? 26 : fontSizes['3xl'], 0.86, 1) }]}>
                             {formatCurrency(job?.totalEarnings || 0)}
                         </Text>
                     </Card>
 
-                    <Card variant="hours" style={[styles.summaryCard, { borderRadius: rs(24), padding: rs(24) }]}>
+                    <Card variant="hours" style={[styles.summaryCard, { borderRadius: rs(24), padding: metrics.cardPadding }]}>
                         <Text style={styles.summaryLabel}>Hours</Text>
-                        <Text style={[styles.summaryValue, { fontSize: isCompact ? 26 : fontSizes['3xl'] }]}>
+                        <Text style={[styles.summaryValue, { fontSize: rfs(isCompact ? 26 : fontSizes['3xl'], 0.86, 1) }]}>
                             {job?.totalHours?.toFixed(1) || '0.0'}
                             <Text style={styles.summaryUnit}>h</Text>
                         </Text>
@@ -280,6 +280,7 @@ interface WeekGroupProps {
 }
 
 const WeekGroupComponent: React.FC<WeekGroupProps> = ({ week, onDeleteEntry, isLocked }) => {
+    const { rfs, rs, rv } = useResponsiveLayout();
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -288,29 +289,29 @@ const WeekGroupComponent: React.FC<WeekGroupProps> = ({ week, onDeleteEntry, isL
     const formatCurrency = (amount: number) => `$${amount.toFixed(0)}`;
 
     return (
-        <View style={styles.weekGroup}>
-            <View style={styles.weekHeader}>
+        <View style={[styles.weekGroup, { marginBottom: rv(20, 0.78, 1) }]}>
+            <View style={[styles.weekHeader, { marginBottom: rv(12, 0.78, 1) }]}>
                 <View>
-                    <Text style={styles.weekTitle}>Week of {formatDate(week.weekStart)}</Text>
-                    <Text style={styles.weekSubtitle}>to {formatDate(week.weekEnd)}</Text>
+                    <Text style={[styles.weekTitle, { fontSize: rfs(12, 0.9, 1) }]}>Week of {formatDate(week.weekStart)}</Text>
+                    <Text style={[styles.weekSubtitle, { fontSize: rfs(10, 0.92, 1) }]}>to {formatDate(week.weekEnd)}</Text>
                 </View>
                 <View style={styles.weekTotals}>
-                    <Text style={styles.weekEarnings}>{formatCurrency(week.totalEarnings)}</Text>
-                    <Text style={styles.weekHours}>{week.totalHours.toFixed(1)}h</Text>
+                    <Text style={[styles.weekEarnings, { fontSize: rfs(16, 0.9, 1) }]}>{formatCurrency(week.totalEarnings)}</Text>
+                    <Text style={[styles.weekHours, { fontSize: rfs(12, 0.9, 1) }]}>{week.totalHours.toFixed(1)}h</Text>
                 </View>
             </View>
 
             {week.overtimeHours > 0 ? (
-                <View style={styles.overtimeBanner}>
+                <View style={[styles.overtimeBanner, { borderRadius: rs(32, 0.86, 1), padding: rs(16, 0.84, 1), marginBottom: rv(12, 0.78, 1) }]}>
                     <View>
                         <Text style={styles.overtimeLabel}>Overtime included</Text>
                         <Text style={styles.overtimeMeta}>{week.overtimeHours.toFixed(1)}h at premium rate</Text>
                     </View>
-                    <Text style={styles.overtimeValue}>{formatCurrency(week.overtimeBonus)}</Text>
+                    <Text style={[styles.overtimeValue, { fontSize: rfs(16, 0.9, 1) }]}>{formatCurrency(week.overtimeBonus)}</Text>
                 </View>
             ) : null}
 
-            <View style={styles.entriesContainer}>
+            <View style={[styles.entriesContainer, { borderRadius: rs(32, 0.86, 1) }]}>
                 {week.entries.map((entry, idx) => (
                     <EntryItem
                         key={entry.id}
@@ -333,6 +334,7 @@ interface EntryItemProps {
 }
 
 const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete, isLocked }) => {
+    const { rfs, rs } = useResponsiveLayout();
     const formatTime = (time: string | null) => {
         if (!time) return null;
         const parts = time.split(':');
@@ -399,21 +401,21 @@ const EntryItem: React.FC<EntryItemProps> = ({ entry, isLast, onDelete, isLocked
     };
 
     const content = (
-        <View style={[styles.entryItem, !isLast && styles.entryItemBorder]}>
+        <View style={[styles.entryItem, { padding: rs(20, 0.84, 1) }, !isLast && styles.entryItemBorder]}>
             <View style={styles.entryLeft}>
-                <View style={styles.dateBox}>
-                    <Text style={styles.dateWeekday}>{entry.dayOfWeek.slice(0, 3).toUpperCase()}</Text>
-                    <Text style={styles.dateDay}>{entry.dayOfMonth}</Text>
+                <View style={[styles.dateBox, { width: rs(48, 0.86, 1), height: rs(48, 0.86, 1), borderRadius: rs(24, 0.86, 1) }]}>
+                    <Text style={[styles.dateWeekday, { fontSize: rfs(8, 0.92, 1) }]}>{entry.dayOfWeek.slice(0, 3).toUpperCase()}</Text>
+                    <Text style={[styles.dateDay, { fontSize: rfs(12, 0.9, 1) }]}>{entry.dayOfMonth}</Text>
                 </View>
                 <View style={styles.entryDetails}>
-                    <Text style={styles.entryHours}>{entry.totalHours} hrs</Text>
-                    <Text style={styles.entryMeta}>{getTimeDisplay()}</Text>
+                    <Text style={[styles.entryHours, { fontSize: rfs(16, 0.9, 1) }]}>{entry.totalHours} hrs</Text>
+                    <Text style={[styles.entryMeta, { fontSize: rfs(10, 0.92, 1) }]}>{getTimeDisplay()}</Text>
                     {entry.tip > 0 ? (
                         <Text style={styles.entryTip}>+ ${entry.tip} tip</Text>
                     ) : null}
                 </View>
             </View>
-            <Text style={styles.entryEarnings}>${entry.totalEarnings.toFixed(0)}</Text>
+            <Text style={[styles.entryEarnings, { fontSize: rfs(16, 0.9, 1) }]}>${entry.totalEarnings.toFixed(0)}</Text>
         </View>
     );
 

@@ -7,7 +7,6 @@ import {
     RefreshControl,
     TouchableOpacity,
     StatusBar,
-    useWindowDimensions,
     ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +15,7 @@ import { CompositeNavigationProp, useFocusEffect, useNavigation } from '@react-n
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore, useJobsStore } from '../stores';
 import { OverviewStackParamList, RootStackParamList } from '../types';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 import { CreateJobModal } from '../components/CreateJobModal';
 import { LockedFeatureModal } from '../components/LockedFeaturePreview';
 
@@ -35,16 +34,14 @@ const overviewCardThemes = [
 ] as const;
 
 export const OverviewScreen: React.FC = () => {
-    const { width } = useWindowDimensions();
+    const { horizontalPadding, isCompact: compactLayout, rfs, rs, rv } = useResponsiveLayout();
     const navigation = useNavigation<OverviewNavigationProp>();
     const { user } = useAuthStore();
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const [refreshing, setRefreshing] = useState(false);
     const [showCreateJobModal, setShowCreateJobModal] = useState(false);
     const [showJobLimitLocked, setShowJobLimitLocked] = useState(false);
-    const scale = Math.min(Math.max(width / 393, 0.84), 1);
-    const compact = width < 380;
-    const horizontalPadding = compact ? 18 : 24;
+    const compact = compactLayout;
     const jobs = summary?.jobs ?? [];
 
     useFocusEffect(
@@ -96,15 +93,15 @@ export const OverviewScreen: React.FC = () => {
                 style={styles.container}
                 contentContainerStyle={{
                     paddingHorizontal: horizontalPadding,
-                    paddingTop: 18,
-                    paddingBottom: 170,
+                    paddingTop: rv(18, 0.74, 1),
+                    paddingBottom: rv(166, 0.82, 1),
                 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={[styles.title, { fontSize: compact ? 34 : 38 }]}>My Jobs</Text>
+                <Text style={[styles.title, { fontSize: rfs(compact ? 34 : 38, 0.84, 1), marginBottom: rv(8, 0.74, 1) }]}>My Jobs</Text>
 
-                <View style={[styles.jobsStack, { gap: 18 * scale }]}>
+                <View style={[styles.jobsStack, { gap: rv(18, 0.78, 1) }]}>
                     {cards.map((job) => (
                         <TouchableOpacity
                             key={job.id}
@@ -120,9 +117,9 @@ export const OverviewScreen: React.FC = () => {
                                         ? styles.jobCardTertiary
                                         : styles.jobCardQuaternary,
                                 {
-                                    minHeight: 256 * scale,
-                                    padding: 22 * scale,
-                                    borderRadius: 24 * scale,
+                                    minHeight: rv(256, 0.84, 1),
+                                    padding: rs(22, 0.84, 1),
+                                    borderRadius: rs(24, 0.86, 1),
                                 },
                             ]}
                         >
@@ -133,13 +130,13 @@ export const OverviewScreen: React.FC = () => {
                             <View style={styles.jobTop}>
                                 <MaterialIcons
                                     name={job.icon}
-                                    size={Math.round(32 * scale)}
+                                    size={Math.round(rs(32, 0.84, 1))}
                                     color={colors.white}
                                 />
                             </View>
 
                             <View>
-                                <Text style={[styles.jobName, { fontSize: compact ? 24 : 27 }]}>{job.title}</Text>
+                                <Text style={[styles.jobName, { fontSize: rfs(compact ? 24 : 27, 0.86, 1), marginBottom: rv(18, 0.74, 1) }]}>{job.title}</Text>
                                 {job.isLocked ? <Text style={styles.lockedTag}>Locked on free tier</Text> : null}
                                 <View
                                     style={[
@@ -155,7 +152,7 @@ export const OverviewScreen: React.FC = () => {
                                         ]}
                                     >
                                         ${job.hourlyRate.toFixed(2)}
-                                        <Text style={[styles.rateSuffix, { fontSize: compact ? 12 : 14 }]}>/hr</Text>
+                                        <Text style={[styles.rateSuffix, { fontSize: rfs(compact ? 12 : 14, 0.9, 1) }]}>/hr</Text>
                                     </Text>
                                 </View>
                             </View>
@@ -181,7 +178,7 @@ export const OverviewScreen: React.FC = () => {
 
                     <TouchableOpacity
                         activeOpacity={0.88}
-                        style={[styles.addJobCard, { minHeight: 256 * scale, borderRadius: 24 * scale }]}
+                        style={[styles.addJobCard, { minHeight: rv(256, 0.84, 1), borderRadius: rs(24, 0.86, 1), paddingHorizontal: rs(28, 0.84, 1) }]}
                         onPress={() => {
                             if (!user?.subscription.isPremium && jobs.length >= 2) {
                                 setShowJobLimitLocked(true);
@@ -191,11 +188,21 @@ export const OverviewScreen: React.FC = () => {
                             setShowCreateJobModal(true);
                         }}
                     >
-                        <View style={styles.addIconWrap}>
-                            <MaterialIcons name="add" size={30} color="#8a948d" />
+                        <View
+                            style={[
+                                styles.addIconWrap,
+                                {
+                                    width: rs(64, 0.84, 1),
+                                    height: rs(64, 0.84, 1),
+                                    borderRadius: rs(32, 0.84, 1),
+                                    marginBottom: rv(16, 0.74, 1),
+                                },
+                            ]}
+                        >
+                            <MaterialIcons name="add" size={Math.round(rs(30, 0.86, 1))} color="#8a948d" />
                         </View>
-                        <Text style={styles.addJobTitle}>{!user?.subscription.isPremium && jobs.length >= 2 ? 'Upgrade for more' : 'Add New Job'}</Text>
-                        <Text style={styles.addJobCopy}>
+                        <Text style={[styles.addJobTitle, { fontSize: rfs(26, 0.86, 1) }]}>{!user?.subscription.isPremium && jobs.length >= 2 ? 'Upgrade for more' : 'Add New Job'}</Text>
+                        <Text style={[styles.addJobCopy, { fontSize: rfs(15, 0.9, 1), lineHeight: Math.round(rfs(15, 0.9, 1) * 1.6) }]}>
                             {!user?.subscription.isPremium && jobs.length >= 2
                                 ? 'Free accounts keep 2 jobs unlocked. Upgrade to add more without locking older roles.'
                                 : 'Maximize your income by tracking a second or third role.'}

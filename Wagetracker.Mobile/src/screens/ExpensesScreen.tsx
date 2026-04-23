@@ -8,7 +8,6 @@ import {
     RefreshControl,
     TouchableOpacity,
     StatusBar,
-    useWindowDimensions,
     Alert,
     Animated,
     ActivityIndicator,
@@ -20,7 +19,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useExpenseStore } from '../stores';
 import { ExpenseResponse, ExpenseStackParamList } from '../types';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 import Feather from 'react-native-vector-icons/Feather';
 import Toast from 'react-native-toast-message';
 
@@ -28,15 +27,11 @@ type ExpensesNavigationProp = NativeStackNavigationProp<ExpenseStackParamList, '
 const brandLogo = require('../../assets/logo.png');
 
 export const ExpensesScreen: React.FC = () => {
-    const { width } = useWindowDimensions();
+    const { horizontalPadding, isCompact: compact, rfs, rs, rv } = useResponsiveLayout();
     const navigation = useNavigation<ExpensesNavigationProp>();
     const { summary, fetchSummary, deleteExpense, isLoadingSummary, hasLoadedSummary } = useExpenseStore();
     const [refreshing, setRefreshing] = useState(false);
     const [expandedExpenseIds, setExpandedExpenseIds] = useState<Record<number, boolean>>({});
-    const compact = width < 380;
-    const scale = Math.min(Math.max(width / 393, 0.84), 1);
-    const horizontalPadding = compact ? 18 : 24;
-
     useFocusEffect(
         useCallback(() => {
             fetchSummary({ silent: hasLoadedSummary });
@@ -193,42 +188,42 @@ export const ExpensesScreen: React.FC = () => {
                 style={styles.container}
                 contentContainerStyle={{
                     paddingHorizontal: horizontalPadding,
-                    paddingTop: 12,
-                    paddingBottom: 168,
+                    paddingTop: rv(12, 0.74, 1),
+                    paddingBottom: rv(164, 0.82, 1),
                 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.topBar}>
+                <View style={[styles.topBar, { marginBottom: rv(18, 0.78, 1) }]}>
                     <View style={styles.brandRow}>
-                        <Image source={brandLogo} style={styles.brandLogo} resizeMode="contain" />
-                        <Text style={styles.brandText}>Chickaree</Text>
+                        <Image source={brandLogo} style={[styles.brandLogo, { width: rs(32, 0.9, 1), height: rs(32, 0.9, 1) }]} resizeMode="contain" />
+                        <Text style={[styles.brandText, { fontSize: rfs(20, 0.9, 1) }]}>Chickaree</Text>
                     </View>
                 </View>
 
                 <TouchableOpacity
                     activeOpacity={0.92}
                     onPress={() => navigation.navigate('ExpenseHistory')}
-                    style={[styles.heroCard, { borderRadius: 40 * scale, padding: 32 * scale }]}
+                    style={[styles.heroCard, { borderRadius: rs(40, 0.84, 1), padding: rs(32, 0.82, 1), marginBottom: rv(24, 0.74, 1) }]}
                 >
                     <Text style={styles.heroLabel}>TOTAL SPENDING TO DATE</Text>
-                    <Text style={[styles.heroValue, { fontSize: compact ? 44 : 52 }]}>{formatCurrency(totalSpending)}</Text>
-                    <Text style={styles.heroSubtext}>Tap to view every expense grouped by Monday-start weeks.</Text>
+                    <Text style={[styles.heroValue, { fontSize: rfs(compact ? 44 : 52, 0.82, 1) }]}>{formatCurrency(totalSpending)}</Text>
+                    <Text style={[styles.heroSubtext, { fontSize: rfs(14, 0.9, 1), lineHeight: Math.round(rfs(14, 0.9, 1) * 1.55) }]}>Tap to view every expense grouped by Monday-start weeks.</Text>
                     <View style={styles.heroGhost}>
-                        <MaterialIcons name="receipt-long" size={88} color="rgba(65,33,0,0.10)" />
+                        <MaterialIcons name="receipt-long" size={Math.round(rs(88, 0.82, 1))} color="rgba(65,33,0,0.10)" />
                     </View>
                 </TouchableOpacity>
 
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Breakdown</Text>
+                <View style={[styles.sectionHeader, { marginBottom: rv(16, 0.78, 1) }]}>
+                    <Text style={[styles.sectionTitle, { fontSize: rfs(32, 0.84, 1) }]}>Breakdown</Text>
                     <View style={styles.monthPill}>
                         <Text style={styles.monthText}>{currentMonthLabel}</Text>
                     </View>
                 </View>
 
-                <View style={[styles.breakdownGrid, { gap: 14 * scale }]}>
+                <View style={[styles.breakdownGrid, { gap: rv(14, 0.78, 1), marginBottom: rv(26, 0.78, 1) }]}>
                     {breakdownCards.length === 0 ? (
-                        <View style={[styles.emptyState, { borderRadius: 30 * scale, padding: 24 * scale }]}>
+                        <View style={[styles.emptyState, { borderRadius: rs(30, 0.84, 1), padding: rs(24, 0.84, 1) }]}>
                             <Text style={styles.emptyTitle}>No expenses yet</Text>
                             <Text style={styles.emptyText}>Use the add button to log your first expense.</Text>
                         </View>
@@ -239,8 +234,8 @@ export const ExpensesScreen: React.FC = () => {
                                 style={[
                                     styles.breakdownCard,
                                     {
-                                        borderRadius: 30 * scale,
-                                        padding: 24 * scale,
+                                        borderRadius: rs(30, 0.84, 1),
+                                        padding: rs(24, 0.84, 1),
                                     },
                                 ]}
                             >
@@ -256,8 +251,8 @@ export const ExpensesScreen: React.FC = () => {
                     )}
                 </View>
 
-                <View style={[styles.recentPanel, { borderRadius: 40 * scale, padding: 28 * scale }]}>
-                    <Text style={[styles.sectionTitle, styles.recentTitleHeading, { fontSize: compact ? 24 : 27 }]}>Recent Spending</Text>
+                <View style={[styles.recentPanel, { borderRadius: rs(40, 0.84, 1), padding: rs(28, 0.84, 1) }]}>
+                    <Text style={[styles.sectionTitle, styles.recentTitleHeading, { fontSize: rfs(compact ? 24 : 27, 0.86, 1), marginBottom: rv(16, 0.78, 1) }]}>Recent Spending</Text>
 
                     <View style={styles.recentList}>
                         {recentItems.map((item) => (
@@ -265,7 +260,6 @@ export const ExpensesScreen: React.FC = () => {
                                 key={item.id}
                                 item={item}
                                 compact={compact}
-                                scale={scale}
                                 onDelete={() => handleDeleteExpense(item.id, item.title)}
                                 expanded={!!expandedExpenseIds[item.id]}
                                 onToggleExpanded={() => toggleExpenseExpanded(item.id)}
@@ -292,15 +286,15 @@ interface RecentExpenseItemProps {
         expense: ExpenseResponse;
     };
     compact: boolean;
-    scale: number;
     onDelete: () => void;
     expanded: boolean;
     onToggleExpanded: () => void;
     formatCurrency: (amount: number) => string;
 }
 
-const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, scale, onDelete, expanded, onToggleExpanded, formatCurrency }) => {
+const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, onDelete, expanded, onToggleExpanded, formatCurrency }) => {
     const hasItems = item.expense.purchaseType === 'MultiItem' && item.expense.items?.length > 0;
+    const { rfs, rs, rv } = useResponsiveLayout();
 
     const renderRightActions = (
         _progress: Animated.AnimatedInterpolation<number>,
@@ -352,28 +346,28 @@ const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, sc
 
     return (
         <Swipeable renderRightActions={renderRightActions} overshootRight={false} friction={2} rightThreshold={40}>
-            <View style={[styles.recentItem, { borderRadius: 24 * scale, padding: 20 * scale }]}> 
+            <View style={[styles.recentItem, { borderRadius: rs(24, 0.86, 1), padding: rs(20, 0.84, 1), height: rv(92, 0.86, 1) }]}>
                 <View style={styles.recentLeft}>
-                    <View style={[styles.recentIconWrap, { backgroundColor: item.iconBg }]}> 
-                        <MaterialIcons name={item.icon} size={24} color={item.iconColor} />
+                    <View style={[styles.recentIconWrap, { width: rs(48, 0.86, 1), height: rs(48, 0.86, 1), borderRadius: rs(24, 0.86, 1), backgroundColor: item.iconBg }]}>
+                        <MaterialIcons name={item.icon} size={Math.round(rs(24, 0.86, 1))} color={item.iconColor} />
                     </View>
 
                     <View style={styles.recentCopy}>
                         <Text
                             numberOfLines={1}
-                            style={[styles.recentTitle, { fontSize: compact ? 15 : 16 }]}
+                            style={[styles.recentTitle, { fontSize: rfs(compact ? 15 : 16, 0.9, 1) }]}
                         >
                             {item.title}
                         </Text>
                         <Text
                             numberOfLines={1}
-                            style={[styles.recentMeta, { fontSize: compact ? 10 : 11 }]}
+                            style={[styles.recentMeta, { fontSize: rfs(compact ? 10 : 11, 0.92, 1) }]}
                         >
                             {item.meta}
                         </Text>
                         <Text
                             numberOfLines={1}
-                            style={[styles.recentDescription, { fontSize: compact ? 10 : 11 }]}
+                            style={[styles.recentDescription, { fontSize: rfs(compact ? 10 : 11, 0.92, 1) }]}
                         >
                             {item.description || ' '}
                         </Text>
@@ -387,7 +381,7 @@ const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, sc
                             <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={15} color="#005232" />
                         </TouchableOpacity>
                     ) : null}
-                    <Text style={[styles.recentAmount, { fontSize: compact ? 15 : 16 }]}>{item.amount}</Text>
+                    <Text style={[styles.recentAmount, { fontSize: rfs(compact ? 15 : 16, 0.9, 1) }]}>{item.amount}</Text>
                 </View>
             </View>
             {hasItems && expanded ? (

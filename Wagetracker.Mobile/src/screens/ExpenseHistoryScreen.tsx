@@ -18,7 +18,7 @@ import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { ExpenseResponse, ExpenseStackParamList, EXPENSE_CATEGORIES } from '../types';
 import { useExpenseStore } from '../stores';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
 
 type ExpenseHistoryNavigationProp = NativeStackNavigationProp<ExpenseStackParamList, 'ExpenseHistory'>;
@@ -36,6 +36,7 @@ const categoryIconMap: Record<number, string> = {
 
 export const ExpenseHistoryScreen: React.FC = () => {
     const navigation = useNavigation<ExpenseHistoryNavigationProp>();
+    const { horizontalPadding, metrics, rfs, rs, rv } = useResponsiveLayout();
     const {
         weeklyGroups,
         fetchWeeklyGroups,
@@ -126,18 +127,28 @@ export const ExpenseHistoryScreen: React.FC = () => {
         <SafeAreaView style={styles.safeArea}>
             <StatusBar barStyle="dark-content" backgroundColor="#fbf9f1" />
 
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+            <View style={[styles.header, { paddingHorizontal: horizontalPadding, paddingTop: rv(8, 0.72, 1), paddingBottom: rv(12, 0.74, 1) }]}>
+                <TouchableOpacity
+                    style={[styles.headerButton, { width: metrics.touchTarget, height: metrics.touchTarget, borderRadius: metrics.touchTarget / 2 }]}
+                    onPress={() => navigation.goBack()}
+                    activeOpacity={0.8}
+                >
                     <Feather name="arrow-left" size={20} color={colors.primary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Expense History</Text>
-                <View style={styles.headerButtonPlaceholder} />
+                <Text style={[styles.headerTitle, { fontSize: rfs(20, 0.9, 1) }]}>Expense History</Text>
+                <View style={[styles.headerButtonPlaceholder, { width: metrics.touchTarget, height: metrics.touchTarget }]} />
             </View>
 
             <SectionList
                 sections={sections}
                 style={styles.container}
-                contentContainerStyle={styles.contentContainer}
+                contentContainerStyle={[
+                    styles.contentContainer,
+                    {
+                        paddingHorizontal: horizontalPadding,
+                        paddingBottom: rv(120, 0.82, 1),
+                    },
+                ]}
                 keyExtractor={(expense) => String(expense.id)}
                 refreshing={isLoadingWeeklyGroups && hasLoadedWeeklyGroups}
                 onRefresh={fetchWeeklyGroups}
@@ -146,16 +157,16 @@ export const ExpenseHistoryScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
                 stickySectionHeadersEnabled={false}
                 ListHeaderComponent={
-                    <View style={styles.heroCard}>
+                    <View style={[styles.heroCard, { borderRadius: rs(32, 0.86, 1), padding: rs(28, 0.84, 1), marginBottom: rv(24, 0.74, 1) }]}>
                         <Text style={styles.heroEyebrow}>Weekly Spending Ledger</Text>
-                        <Text style={styles.heroTitle}>Grouped by Monday-start weeks</Text>
-                        <Text style={styles.heroSubcopy}>Tap back any time to return to your all-time expense overview.</Text>
+                        <Text style={[styles.heroTitle, { fontSize: rfs(30, 0.84, 1), lineHeight: Math.round(rfs(30, 0.84, 1) * 1.14) }]}>Grouped by Monday-start weeks</Text>
+                        <Text style={[styles.heroSubcopy, { fontSize: rfs(15, 0.9, 1), lineHeight: Math.round(rfs(15, 0.9, 1) * 1.48) }]}>Tap back any time to return to your all-time expense overview.</Text>
                     </View>
                 }
                 ListEmptyComponent={
-                    <View style={styles.emptyState}>
-                        <Text style={styles.emptyTitle}>No expenses yet</Text>
-                        <Text style={styles.emptyText}>Use the floating add action to log your first expense.</Text>
+                    <View style={[styles.emptyState, { borderRadius: rs(28, 0.86, 1), padding: rs(28, 0.84, 1) }]}>
+                        <Text style={[styles.emptyTitle, { fontSize: rfs(22, 0.86, 1) }]}>No expenses yet</Text>
+                        <Text style={[styles.emptyText, { fontSize: rfs(15, 0.9, 1), lineHeight: Math.round(rfs(15, 0.9, 1) * 1.48) }]}>Use the floating add action to log your first expense.</Text>
                     </View>
                 }
                 ListFooterComponent={
@@ -170,12 +181,12 @@ export const ExpenseHistoryScreen: React.FC = () => {
                     ) : null
                 }
                 renderSectionHeader={({ section }) => (
-                    <View style={styles.weekHeaderCard}>
+                    <View style={[styles.weekHeaderCard, { paddingHorizontal: rs(22, 0.84, 1), paddingTop: rv(22, 0.78, 1), paddingBottom: rv(16, 0.78, 1), marginTop: rv(16, 0.78, 1) }]}>
                         <View>
-                            <Text style={styles.weekTitle}>{formatWeekRange(section.weekStart, section.weekEnd)}</Text>
-                            <Text style={styles.weekMeta}>Monday through Sunday</Text>
+                            <Text style={[styles.weekTitle, { fontSize: rfs(20, 0.88, 1) }]}>{formatWeekRange(section.weekStart, section.weekEnd)}</Text>
+                            <Text style={[styles.weekMeta, { fontSize: rfs(12, 0.9, 1) }]}>Monday through Sunday</Text>
                         </View>
-                        <Text style={styles.weekAmount}>{formatCurrency(section.totalAmount)}</Text>
+                        <Text style={[styles.weekAmount, { fontSize: rfs(20, 0.88, 1) }]}>{formatCurrency(section.totalAmount)}</Text>
                     </View>
                 )}
                 renderItem={({ item: expense, index, section }) => {
@@ -211,6 +222,7 @@ interface ExpenseHistoryItemProps {
 
 const ExpenseHistoryItem: React.FC<ExpenseHistoryItemProps> = ({ expense, color, iconName, formatCurrency, onDelete, expanded, onToggleExpanded, isLastInSection }) => {
     const hasItems = expense.purchaseType === 'MultiItem' && expense.items?.length > 0;
+    const { rfs, rs, rv } = useResponsiveLayout();
 
     const renderRightActions = (
         _progress: Animated.AnimatedInterpolation<number>,
@@ -262,21 +274,31 @@ const ExpenseHistoryItem: React.FC<ExpenseHistoryItemProps> = ({ expense, color,
 
     return (
         <Swipeable renderRightActions={renderRightActions} overshootRight={false} friction={2} rightThreshold={40}>
-            <View style={[styles.expenseRow, isLastInSection && styles.expenseRowLast]}>
-                <View style={[styles.expenseIconWrap, { backgroundColor: `${color}22` }]}> 
-                    <MaterialIcons name={iconName} size={18} color={color} />
+            <View
+                style={[
+                    styles.expenseRow,
+                    {
+                        minHeight: rv(72, 0.86, 1),
+                        paddingHorizontal: rs(22, 0.84, 1),
+                        paddingVertical: rv(12, 0.78, 1),
+                    },
+                    isLastInSection && styles.expenseRowLast,
+                ]}
+            >
+                <View style={[styles.expenseIconWrap, { width: rs(40, 0.9, 1), height: rs(40, 0.9, 1), borderRadius: rs(20, 0.9, 1), backgroundColor: `${color}22` }]}>
+                    <MaterialIcons name={iconName} size={Math.round(rs(18, 0.9, 1))} color={color} />
                 </View>
 
                 <View style={styles.expenseCopy}>
-                    <Text style={styles.expenseTitle}>{expense.categoryName}</Text>
-                    <Text style={styles.expenseMeta}>
+                    <Text style={[styles.expenseTitle, { fontSize: rfs(15, 0.9, 1) }]}>{expense.categoryName}</Text>
+                    <Text style={[styles.expenseMeta, { fontSize: rfs(12, 0.9, 1) }]}>
                         {new Date(expense.date).toLocaleDateString('en-US', {
                             weekday: 'short',
                             month: 'short',
                             day: 'numeric',
                         })}
                     </Text>
-                    <Text numberOfLines={1} style={styles.expenseDescription}>
+                    <Text numberOfLines={1} style={[styles.expenseDescription, { fontSize: rfs(12, 0.9, 1) }]}>
                         {expense.description?.trim() || ' '}
                     </Text>
                 </View>
@@ -288,11 +310,11 @@ const ExpenseHistoryItem: React.FC<ExpenseHistoryItemProps> = ({ expense, color,
                             <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={15} color="#005232" />
                         </TouchableOpacity>
                     ) : null}
-                    <Text style={styles.expenseAmount}>-{formatCurrency(expense.amount)}</Text>
+                    <Text style={[styles.expenseAmount, { fontSize: rfs(15, 0.9, 1) }]}>-{formatCurrency(expense.amount)}</Text>
                 </View>
             </View>
             {hasItems && expanded ? (
-                <View style={styles.expandedItems}>
+                <View style={[styles.expandedItems, { paddingLeft: rs(52, 0.84, 1), paddingRight: rs(22, 0.84, 1), paddingBottom: rv(10, 0.78, 1) }]}>
                     {expense.items.map((item) => (
                         <View key={item.id} style={styles.expandedItemRow}>
                             <View style={styles.expandedItemCopy}>

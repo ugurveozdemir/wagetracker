@@ -7,7 +7,6 @@ import {
     Text,
     TouchableOpacity,
     View,
-    useWindowDimensions,
 } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,7 +22,7 @@ import {
     TabParamList,
 } from '../types';
 import { useAuthStore, useExpenseStore, useJobsStore, useOnboardingStore, useSubscriptionStore } from '../stores';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { RegistrationSurveyScreen } from '../screens/RegistrationSurveyScreen';
 import { LoginScreen } from '../screens/LoginScreen';
@@ -141,15 +140,13 @@ const visibleTabs = [
 
 const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
     const { user } = useAuthStore();
-    const { width } = useWindowDimensions();
+    const { horizontalPadding, isCompact: compact, metrics, rfs, rs, rv } = useResponsiveLayout();
     const activeRouteName = state.routes[state.index]?.name;
     const activeRoute = state.routes[state.index];
     const nestedState = activeRoute?.state;
     const nestedRoute = nestedState?.routes?.[nestedState.index ?? 0];
     const isDashboardJobDetails = activeRouteName === 'HomeTab' && nestedRoute?.name === 'JobDetails';
     const showFab = isDashboardJobDetails || activeRouteName === 'OverviewTab' || (activeRouteName === 'ExpensesTab' && user?.access.canUseExpenses);
-    const compact = width < 380;
-    const tabScale = Math.min(Math.max(width / 393, 0.84), 1);
 
     return (
         <View pointerEvents="box-none" style={tabStyles.wrapper}>
@@ -158,29 +155,29 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
                     style={[
                         tabStyles.fab,
                         {
-                            right: compact ? 18 : 24,
-                            bottom: compact ? 102 : 112,
-                            width: 64 * tabScale,
-                            height: 64 * tabScale,
-                            borderRadius: 32 * tabScale,
+                            right: horizontalPadding,
+                            bottom: rv(compact ? 96 : 108, 0.82, 1),
+                            width: rs(64, 0.82, 1),
+                            height: rs(64, 0.82, 1),
+                            borderRadius: rs(32, 0.82, 1),
                         },
                     ]}
                     onPress={() => onAddPress(state)}
                     activeOpacity={0.9}
                 >
-                    <MaterialIcons name="add" size={Math.round(34 * tabScale)} color={colors.white} />
+                    <MaterialIcons name="add" size={Math.round(rs(34, 0.84, 1))} color={colors.white} />
                 </TouchableOpacity>
             ) : null}
 
             <View
                 style={[
-                    tabStyles.footer,
-                    {
+                        tabStyles.footer,
+                        {
                         paddingHorizontal: compact ? 8 : 16,
-                        paddingTop: compact ? 12 : 16,
-                        paddingBottom: Platform.OS === 'ios' ? (compact ? 26 : 32) : compact ? 18 : 24,
-                        borderTopLeftRadius: compact ? 36 : 48,
-                        borderTopRightRadius: compact ? 36 : 48,
+                        paddingTop: rv(compact ? 12 : 16, 0.78, 1),
+                        paddingBottom: Platform.OS === 'ios' ? rv(compact ? 24 : 32, 0.78, 1) : rv(compact ? 18 : 24, 0.78, 1),
+                        borderTopLeftRadius: rs(compact ? 36 : 48, 0.84, 1),
+                        borderTopRightRadius: rs(compact ? 36 : 48, 0.84, 1),
                     },
                 ]}
             >
@@ -208,7 +205,8 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
                                 tabStyles.tabItem,
                                 {
                                     paddingHorizontal: compact ? 0 : 2,
-                                    paddingVertical: compact ? 6 : 8,
+                                    paddingVertical: rv(compact ? 6 : 8, 0.78, 1),
+                                    minHeight: Math.max(metrics.touchTarget, Math.round(rv(56, 0.82, 1))),
                                 },
                                 isFocused && tabStyles.tabItemActive,
                             ]}
@@ -217,7 +215,7 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
                         >
                             <MaterialIcons
                                 name={tab.icon}
-                                size={compact ? 20 : 22}
+                                size={metrics.tabBarIconSize}
                                 color={isFocused ? '#005232' : '#94a3b8'}
                             />
                             <Text
@@ -225,7 +223,7 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
                                 style={[
                                     tabStyles.tabLabel,
                                     {
-                                        fontSize: compact ? 10 : 11,
+                                        fontSize: rfs(compact ? 10 : 11, 0.86, 1),
                                     },
                                     isFocused && tabStyles.tabLabelActive,
                                 ]}

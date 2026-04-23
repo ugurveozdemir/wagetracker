@@ -10,10 +10,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-toast-message';
-import { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { useAuthStore, useSubscriptionStore } from '../stores';
 import { config } from '../config';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 
 type PaywallFeature = 'premium' | 'goals' | 'expenses' | 'jobs';
 type PaywallSource = 'goals' | 'expenses' | 'job_limit' | 'locked_job' | 'profile' | 'dashboard';
@@ -49,18 +48,64 @@ const featureCopy: Record<PaywallFeature, { eyebrow: string; title: string; body
     },
 };
 
-const sortWeight = (identifier: string) => {
+type PlanKind = 'monthly' | 'six_month' | 'annual' | 'unknown';
+
+const getPlanKind = (identifier: string): PlanKind => {
     const normalized = identifier.toLowerCase();
-    if (normalized.includes('annual') || normalized.includes('year')) return 3;
-    if (normalized.includes('6') || normalized.includes('six')) return 2;
-    return 1;
+    if (normalized.includes('annual') || normalized.includes('year') || normalized.includes('12')) return 'annual';
+    if (normalized.includes('6') || normalized.includes('six')) return 'six_month';
+    if (normalized.includes('month')) return 'monthly';
+    return 'unknown';
 };
 
 const getPlanLabel = (identifier: string) => {
-    const normalized = identifier.toLowerCase();
-    if (normalized.includes('annual') || normalized.includes('year')) return '12 Months';
-    if (normalized.includes('6') || normalized.includes('six')) return '6 Months';
+    const kind = getPlanKind(identifier);
+    if (kind === 'annual') return 'Yearly';
+    if (kind === 'six_month') return '6 Months';
     return 'Monthly';
+};
+
+const getPlanOrder = (identifier: string) => {
+    const kind = getPlanKind(identifier);
+    if (kind === 'monthly') return 0;
+    if (kind === 'six_month') return 1;
+    if (kind === 'annual') return 2;
+    return 99;
+};
+
+const getPlanSupportCopy = (identifier: string) => {
+    const kind = getPlanKind(identifier);
+
+    if (kind === 'six_month') {
+        return {
+            eyebrow: 'Best offer for one full season',
+            benefits: [
+                'Unlimited jobs across your full season',
+                'Receipt scan, expenses, and weekly history',
+                'Weekly income goals and premium dashboard tools',
+            ],
+        };
+    }
+
+    if (kind === 'annual') {
+        return {
+            eyebrow: 'Built for long-term tracking',
+            benefits: [
+                'Unlimited jobs whenever you add a new role',
+                'Receipt scan, expenses, and weekly history',
+                'Weekly goals that stay available year-round',
+            ],
+        };
+    }
+
+    return {
+        eyebrow: 'Start using every premium feature now',
+        benefits: [
+            'Unlimited jobs as soon as you upgrade',
+            'Receipt scan, expenses, and weekly history',
+            'Weekly goals and premium dashboard tools',
+        ],
+    };
 };
 
 export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
@@ -70,20 +115,20 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
     onBackPress,
     onSuccess,
 }) => {
+    const { horizontalPadding, metrics, rfs, rs, rv } = useResponsiveLayout();
     const { user } = useAuthStore();
     const {
         availablePackages,
         isLoading,
         isPurchasing,
         error,
-        presentRevenueCatPaywall,
         purchaseSelectedPackage,
         refreshSubscriptionStatus,
     } = useSubscriptionStore();
 
     const copy = featureCopy[feature];
     const packages = useMemo(
-        () => [...availablePackages].sort((a, b) => sortWeight(b.identifier) - sortWeight(a.identifier)),
+        () => [...availablePackages].sort((a, b) => getPlanOrder(a.identifier) - getPlanOrder(b.identifier)),
         [availablePackages]
     );
 
@@ -107,64 +152,23 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
         }
     };
 
-    const handleRevenueCatPaywall = async () => {
-        try {
-            const result = await presentRevenueCatPaywall();
-
-            if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-                Toast.show({
-                    type: 'success',
-                    text1: result === PAYWALL_RESULT.PURCHASED ? 'Premium Unlocked' : 'Purchases Restored',
-                    text2: 'Your subscription access is active.',
-                    visibilityTime: 2200,
-                });
-                onSuccess?.();
-                return;
-            }
-
-            if (result === PAYWALL_RESULT.NOT_PRESENTED) {
-                Toast.show({
-                    type: 'info',
-                    text1: 'Premium Active',
-                    text2: 'Your Pro entitlement is already active.',
-                    visibilityTime: 2200,
-                });
-                onSuccess?.();
-                return;
-            }
-
-            if (result === PAYWALL_RESULT.CANCELLED) {
-                Toast.show({
-                    type: 'info',
-                    text1: 'Paywall Closed',
-                    text2: 'No purchase was made.',
-                    visibilityTime: 2200,
-                });
-                return;
-            }
-
-            Toast.show({
-                type: 'error',
-                text1: 'Paywall Error',
-                text2: 'Please try again.',
-                visibilityTime: 2800,
-            });
-        } catch (paywallError) {
-            Toast.show({
-                type: 'error',
-                text1: 'Paywall Unavailable',
-                text2: paywallError instanceof Error ? paywallError.message : 'Please try again.',
-                visibilityTime: 3200,
-            });
-        }
-    };
-
     return (
         <SafeAreaView style={styles.safeArea}>
-            <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                <View style={styles.header}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={[
+                    styles.content,
+                    {
+                        paddingHorizontal: horizontalPadding,
+                        paddingTop: rv(16, 0.74, 1),
+                        paddingBottom: rv(48, 0.78, 1),
+                    },
+                ]}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={[styles.header, { marginBottom: rv(18, 0.78, 1) }]}>
                     {showBackButton ? (
-                        <TouchableOpacity style={styles.backButton} activeOpacity={0.82} onPress={onBackPress}>
+                        <TouchableOpacity style={[styles.backButton, { width: metrics.touchTarget, height: metrics.touchTarget, borderRadius: metrics.touchTarget / 2 }]} activeOpacity={0.82} onPress={onBackPress}>
                             <MaterialIcons name="arrow-back" size={20} color={colors.primary} />
                         </TouchableOpacity>
                     ) : (
@@ -177,42 +181,33 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.heroCard}>
+                <View style={[styles.heroCard, { borderRadius: rs(32, 0.86, 1), padding: rs(28, 0.84, 1), marginBottom: rv(20, 0.78, 1) }]}>
                     <Text style={styles.eyebrow}>{copy.eyebrow}</Text>
-                    <Text style={styles.title}>{copy.title}</Text>
-                    <Text style={styles.body}>{copy.body}</Text>
+                    <Text style={[styles.title, { fontSize: rfs(34, 0.84, 1) }]}>{copy.title}</Text>
+                    <Text style={[styles.body, { fontSize: rfs(16, 0.9, 1), lineHeight: Math.round(rfs(16, 0.9, 1) * 1.5), marginBottom: rv(20, 0.78, 1) }]}>{copy.body}</Text>
 
                     <View style={styles.bullets}>
                         <View style={styles.bulletRow}>
                             <MaterialIcons name="check-circle" size={18} color={colors.primarySoft} />
-                            <Text style={styles.bulletText}>Unlimited unlocked jobs</Text>
+                            <Text style={[styles.bulletText, { fontSize: rfs(15, 0.9, 1) }]}>Unlimited unlocked jobs</Text>
                         </View>
                         <View style={styles.bulletRow}>
                             <MaterialIcons name="check-circle" size={18} color={colors.primarySoft} />
-                            <Text style={styles.bulletText}>Receipt scan, expenses, and weekly history</Text>
+                            <Text style={[styles.bulletText, { fontSize: rfs(15, 0.9, 1) }]}>Receipt scan, expenses, and weekly history</Text>
                         </View>
                         <View style={styles.bulletRow}>
                             <MaterialIcons name="check-circle" size={18} color={colors.primarySoft} />
-                            <Text style={styles.bulletText}>Weekly goals and premium dashboard cards</Text>
+                            <Text style={[styles.bulletText, { fontSize: rfs(15, 0.9, 1) }]}>Weekly goals and premium dashboard cards</Text>
                         </View>
                     </View>
                 </View>
 
-                <TouchableOpacity
-                    style={[styles.primaryButton, isPurchasing && styles.primaryButtonDisabled]}
-                    activeOpacity={0.88}
-                    disabled={isPurchasing}
-                    onPress={handleRevenueCatPaywall}
-                >
-                    <Text style={styles.primaryButtonText}>See Pro Plans</Text>
-                </TouchableOpacity>
-
                 {user?.subscription.isPremium ? (
-                    <View style={styles.activeCard}>
+                    <View style={[styles.activeCard, { borderRadius: rs(28, 0.86, 1), padding: rs(22, 0.84, 1), marginBottom: rv(18, 0.78, 1) }]}>
                         <Text style={styles.activeLabel}>Current plan</Text>
-                        <Text style={styles.activeValue}>
+                        <Text style={[styles.activeValue, { fontSize: rfs(28, 0.86, 1) }]}>
                             {user.subscription.planTerm === 'annual'
-                                ? '12 Months'
+                                ? 'Yearly'
                                 : user.subscription.planTerm === 'six_month'
                                     ? '6 Months'
                                     : user.subscription.planTerm === 'monthly'
@@ -225,32 +220,56 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                     </View>
                 ) : null}
 
-                <View style={styles.planStack}>
-                    {packages.map((pkg, index) => (
-                        <TouchableOpacity
-                            key={pkg.identifier}
-                            activeOpacity={0.88}
-                            style={[styles.planCard, index === 0 && styles.planCardFeatured]}
-                            disabled={isPurchasing}
-                            onPress={() => handlePurchase(pkg)}
-                        >
-                            <View style={styles.planHeader}>
-                                <View>
-                                    <Text style={styles.planTitle}>{getPlanLabel(pkg.identifier)}</Text>
-                                    <Text style={styles.planSubtitle}>{pkg.product.description || 'Auto-renewing subscription'}</Text>
-                                </View>
-                                {index === 0 ? (
-                                    <View style={styles.featuredPill}>
-                                        <Text style={styles.featuredPillText}>Best Value</Text>
+                <View style={[styles.planStack, { gap: rv(14, 0.78, 1), marginBottom: rv(18, 0.78, 1) }]}>
+                    {packages.map((pkg) => {
+                        const kind = getPlanKind(pkg.identifier);
+                        const support = getPlanSupportCopy(pkg.identifier);
+                        const isBestOffer = kind === 'six_month';
+
+                        return (
+                            <TouchableOpacity
+                                key={pkg.identifier}
+                                activeOpacity={0.88}
+                                style={[
+                                    styles.planCard,
+                                    { borderRadius: rs(28, 0.86, 1), padding: rs(22, 0.84, 1) },
+                                    isBestOffer && styles.planCardFeatured,
+                                ]}
+                                disabled={isPurchasing}
+                                onPress={() => handlePurchase(pkg)}
+                            >
+                                <View style={styles.planHeader}>
+                                    <View style={styles.planHeaderCopy}>
+                                        <Text style={[styles.planTitle, { fontSize: rfs(24, 0.86, 1) }]}>{getPlanLabel(pkg.identifier)}</Text>
+                                        <Text style={[styles.planSubtitle, { fontSize: rfs(14, 0.9, 1), lineHeight: Math.round(rfs(14, 0.9, 1) * 1.42) }]}>
+                                            {support.eyebrow}
+                                        </Text>
                                     </View>
-                                ) : null}
-                            </View>
-                            <View style={styles.priceRow}>
-                                <Text style={styles.priceText}>{pkg.product.priceString}</Text>
-                                <MaterialIcons name="arrow-forward" size={18} color={colors.primary} />
-                            </View>
-                        </TouchableOpacity>
-                    ))}
+                                    {isBestOffer ? (
+                                        <View style={styles.featuredPill}>
+                                            <Text style={styles.featuredPillText}>Best Offer</Text>
+                                        </View>
+                                    ) : null}
+                                </View>
+
+                                <View style={styles.priceRow}>
+                                    <Text style={[styles.priceText, { fontSize: rfs(22, 0.86, 1) }]}>{pkg.product.priceString}</Text>
+                                    <MaterialIcons name="arrow-forward" size={18} color={colors.primary} />
+                                </View>
+
+                                <View style={styles.planBenefits}>
+                                    {support.benefits.map((benefit) => (
+                                        <View key={`${pkg.identifier}-${benefit}`} style={styles.planBenefitRow}>
+                                            <MaterialIcons name="check-circle" size={16} color={isBestOffer ? '#ff8a00' : colors.primary} />
+                                            <Text style={[styles.planBenefitText, { fontSize: rfs(13, 0.92, 1), lineHeight: Math.round(rfs(13, 0.92, 1) * 1.4) }]}>
+                                                {benefit}
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </View>
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -393,36 +412,26 @@ const styles = StyleSheet.create({
         gap: 14,
         marginBottom: 18,
     },
-    primaryButton: {
-        minHeight: 62,
-        borderRadius: 999,
-        backgroundColor: '#ff8a00',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 18,
-    },
-    primaryButtonDisabled: {
-        opacity: 0.72,
-    },
-    primaryButtonText: {
-        color: '#412100',
-        fontSize: 17,
-        fontWeight: '800',
-    },
     planCard: {
         backgroundColor: colors.surfaceContainerLowest,
         borderRadius: 28,
         padding: 22,
+        borderWidth: 1,
+        borderColor: colors.outlineVariant,
     },
     planCardFeatured: {
         borderWidth: 2,
         borderColor: '#ff8a00',
+        backgroundColor: '#fff9f1',
     },
     planHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         gap: 12,
         marginBottom: 16,
+    },
+    planHeaderCopy: {
+        flex: 1,
     },
     planTitle: {
         color: colors.onSurface,
@@ -454,11 +463,26 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginBottom: 16,
     },
     priceText: {
         color: colors.primary,
         fontSize: 22,
         fontWeight: '800',
+    },
+    planBenefits: {
+        gap: 10,
+    },
+    planBenefitRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 10,
+    },
+    planBenefitText: {
+        flex: 1,
+        color: colors.onSurfaceVariant,
+        fontSize: 13,
+        fontWeight: '600',
     },
     secondaryButton: {
         minHeight: 58,

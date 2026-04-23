@@ -7,7 +7,7 @@ import {
     TextInputProps,
     ViewStyle,
 } from 'react-native';
-import { colors, borderRadius, spacing, fontSizes, fontWeights } from '../../theme';
+import { colors, borderRadius, spacing, fontSizes, fontWeights, useResponsiveLayout } from '../../theme';
 
 interface InputProps extends TextInputProps {
     label?: string;
@@ -25,12 +25,18 @@ export const Input: React.FC<InputProps> = ({
     multiline,
     ...props
 }) => {
+    const { metrics, rfs, rv, rs } = useResponsiveLayout();
+
     return (
-        <View style={[styles.container, containerStyle]}>
-            {label && <Text style={styles.label}>{label}</Text>}
+        <View style={[styles.container, { marginBottom: rv(16, 0.78, 1) }, containerStyle]}>
+            {label && <Text style={[styles.label, { fontSize: rfs(10, 0.9, 1) }]}>{label}</Text>}
             <View
                 style={[
                     styles.inputWrapper,
+                    {
+                        minHeight: multiline ? undefined : metrics.inputHeight,
+                        borderRadius: multiline ? rs(32, 0.86, 1) : borderRadius.full,
+                    },
                     multiline ? styles.inputWrapperMultiline : undefined,
                     error && styles.inputError,
                 ]}
@@ -39,7 +45,13 @@ export const Input: React.FC<InputProps> = ({
                 <TextInput
                     style={[
                         styles.input,
+                        {
+                            fontSize: rfs(18, 0.88, 1),
+                            paddingVertical: rv(16, 0.76, 1),
+                            paddingHorizontal: rs(16, 0.86, 1),
+                        },
                         multiline ? styles.inputMultiline : undefined,
+                        multiline ? { minHeight: rv(96, 0.78, 1) } : undefined,
                         leftIcon ? styles.inputWithIcon : undefined,
                         style,
                     ]}
@@ -48,7 +60,7 @@ export const Input: React.FC<InputProps> = ({
                     {...props}
                 />
             </View>
-            {error && <Text style={styles.errorText}>{error}</Text>}
+            {error && <Text style={[styles.errorText, { fontSize: rfs(12, 0.9, 1) }]}>{error}</Text>}
         </View>
     );
 };

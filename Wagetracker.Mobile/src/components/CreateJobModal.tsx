@@ -9,11 +9,10 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    useWindowDimensions,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useJobsStore } from '../stores';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
 
 interface CreateJobModalProps {
@@ -33,10 +32,8 @@ const weekStartDays = [
 ] as const;
 
 export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose, onCreated }) => {
-    const { width } = useWindowDimensions();
+    const { horizontalPadding, isCompact: compact, metrics, rfs, rs, rv } = useResponsiveLayout();
     const { createJob, isCreating } = useJobsStore();
-    const compact = width < 380;
-    const scale = Math.min(Math.max(width / 393, 0.84), 1);
 
     const [title, setTitle] = useState('');
     const [hourlyRate, setHourlyRate] = useState('');
@@ -92,9 +89,9 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                 <ScrollView
                     style={styles.container}
                     contentContainerStyle={{
-                        paddingHorizontal: compact ? 18 : 24,
-                        paddingTop: compact ? 14 : 18,
-                        paddingBottom: 36,
+                        paddingHorizontal: horizontalPadding,
+                        paddingTop: rv(compact ? 14 : 18, 0.72, 1),
+                        paddingBottom: rv(36, 0.78, 1),
                     }}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
@@ -105,15 +102,23 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                         </View>
                     ) : null}
 
-                    <Text style={[styles.heading, { fontSize: compact ? 40 : 46 }]}>New Adventure.</Text>
+                    <Text style={[styles.heading, { fontSize: rfs(compact ? 40 : 46, 0.82, 1), marginBottom: rv(18, 0.74, 1) }]}>New Adventure.</Text>
 
-                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}> 
+                    <View style={[styles.fieldCard, { borderRadius: rs(32, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
                         <View style={styles.fieldLabelRow}>
                             <MaterialIcons name="work" size={16} color={colors.primary} />
                             <Text style={styles.fieldLabel}>JOB TITLE</Text>
                         </View>
                         <TextInput
-                            style={styles.fieldInput}
+                            style={[
+                                styles.fieldInput,
+                                {
+                                    minHeight: metrics.compactInputHeight,
+                                    paddingHorizontal: rs(20, 0.86, 1),
+                                    paddingVertical: rv(16, 0.76, 1),
+                                    fontSize: rfs(18, 0.88, 1),
+                                },
+                            ]}
                             placeholder="e.g. Resort Manager"
                             placeholderTextColor="#bec9bf"
                             value={title}
@@ -121,15 +126,15 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                         />
                     </View>
 
-                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}> 
+                    <View style={[styles.fieldCard, { borderRadius: rs(32, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
                         <View style={styles.fieldLabelRow}>
                             <MaterialIcons name="payments" size={16} color={colors.primary} />
                             <Text style={styles.fieldLabel}>HOURLY RATE</Text>
                         </View>
-                        <View style={styles.moneyField}>
-                            <Text style={styles.moneyPrefix}>$</Text>
+                        <View style={[styles.moneyField, { minHeight: metrics.compactInputHeight, paddingLeft: rs(22, 0.84, 1), paddingRight: rs(20, 0.84, 1) }]}>
+                            <Text style={[styles.moneyPrefix, { fontSize: rfs(22, 0.88, 1) }]}>$</Text>
                             <TextInput
-                                style={styles.moneyInput}
+                                style={[styles.moneyInput, { fontSize: rfs(24, 0.86, 1), lineHeight: Math.round(rfs(24, 0.86, 1) * 1.18) }]}
                                 placeholder="25.00"
                                 placeholderTextColor="#bec9bf"
                                 value={hourlyRate}
@@ -140,7 +145,7 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                         </View>
                     </View>
 
-                    <View style={[styles.fieldCard, { borderRadius: 32 * scale }]}>
+                    <View style={[styles.fieldCard, { borderRadius: rs(32, 0.86, 1), padding: rs(20, 0.84, 1), marginBottom: rv(16, 0.78, 1) }]}>
                         <View style={styles.fieldLabelRow}>
                             <MaterialIcons name="event-repeat" size={16} color={colors.primary} />
                             <Text style={styles.fieldLabel}>WEEK STARTS ON</Text>
@@ -163,12 +168,19 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.submitButton, isCreating && styles.submitButtonDisabled]}
+                        style={[
+                            styles.submitButton,
+                            {
+                                minHeight: metrics.buttonHeight,
+                                marginTop: rv(8, 0.72, 1),
+                            },
+                            isCreating && styles.submitButtonDisabled,
+                        ]}
                         activeOpacity={0.9}
                         onPress={handleSubmit}
                         disabled={isCreating}
                     >
-                        <Text style={styles.submitButtonText}>{isCreating ? 'Saving...' : 'Save'}</Text>
+                        <Text style={[styles.submitButtonText, { fontSize: rfs(22, 0.86, 1) }]}>{isCreating ? 'Saving...' : 'Save'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>

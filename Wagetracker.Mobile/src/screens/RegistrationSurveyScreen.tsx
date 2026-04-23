@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -150,11 +149,12 @@ const stepMeta = [
 
 export const RegistrationSurveyScreen: React.FC = () => {
     const { submitRegistrationSurvey, isSubmittingSurvey } = useAuthStore();
-    const { horizontalPadding, isCompact, rs } = useResponsiveLayout();
+    const { horizontalPadding, isCompact, isShortHeight, rfs, rs, rv } = useResponsiveLayout();
     const [step, setStep] = useState<SurveyStep>(0);
     const [primaryGoal, setPrimaryGoal] = useState<SurveyPrimaryGoal | null>(null);
     const [plannedJobCount, setPlannedJobCount] = useState<SurveyPlannedJobCount | null>(null);
     const [spendingHabit, setSpendingHabit] = useState<SurveySpendingHabit | null>(null);
+    const [isFinalizing, setIsFinalizing] = useState(false);
 
     const activeOptions = useMemo(() => {
         if (step === 0) return primaryGoalOptions;
@@ -166,47 +166,19 @@ export const RegistrationSurveyScreen: React.FC = () => {
     const meta = stepMeta[step];
     const progressPercent = `${Math.round(((step + 1) / 3) * 100)}%` as const;
 
-    const handleSelect = (value: SurveyAnswer) => {
-        if (step === 0) {
-            setPrimaryGoal(value as SurveyPrimaryGoal);
-            return;
-        }
-
-        if (step === 1) {
-            setPlannedJobCount(value as SurveyPlannedJobCount);
-            return;
-        }
-
-        setSpendingHabit(value as SurveySpendingHabit);
-    };
-
-    const handleContinue = async () => {
-        if (!activeValue) {
-            Toast.show({
-                type: 'info',
-                text1: 'Choose an answer',
-                text2: 'Please select one option to continue.',
-                visibilityTime: 2200,
-            });
-            return;
-        }
-
-        if (step < 2) {
-            setStep((current) => (current + 1) as SurveyStep);
-            return;
-        }
-
-        if (!primaryGoal || !plannedJobCount || !spendingHabit) {
+    const submitFinalSurvey = async (selectedSpendingHabit: SurveySpendingHabit) => {
+        if (!primaryGoal || !plannedJobCount || isFinalizing || isSubmittingSurvey) {
             return;
         }
 
         const payload: SubmitRegistrationSurveyRequest = {
             primaryGoal,
             plannedJobCount,
-            spendingHabit,
+            spendingHabit: selectedSpendingHabit,
         };
 
         try {
+            setIsFinalizing(true);
             await submitRegistrationSurvey(payload);
             Toast.show({
                 type: 'success',
@@ -215,6 +187,7 @@ export const RegistrationSurveyScreen: React.FC = () => {
                 visibilityTime: 2000,
             });
         } catch (error) {
+            setIsFinalizing(false);
             Toast.show({
                 type: 'error',
                 text1: 'Survey Failed',
@@ -222,6 +195,28 @@ export const RegistrationSurveyScreen: React.FC = () => {
                 visibilityTime: 2800,
             });
         }
+    };
+
+    const handleSelect = (value: SurveyAnswer) => {
+        if (isFinalizing || isSubmittingSurvey) {
+            return;
+        }
+
+        if (step === 0) {
+            setPrimaryGoal(value as SurveyPrimaryGoal);
+            setStep(1);
+            return;
+        }
+
+        if (step === 1) {
+            setPlannedJobCount(value as SurveyPlannedJobCount);
+            setStep(2);
+            return;
+        }
+
+        const selectedSpendingHabit = value as SurveySpendingHabit;
+        setSpendingHabit(selectedSpendingHabit);
+        void submitFinalSurvey(selectedSpendingHabit);
     };
 
     const handleBack = () => {
@@ -234,12 +229,12 @@ export const RegistrationSurveyScreen: React.FC = () => {
         <SafeAreaView style={styles.safeArea}>
             <StatusBar barStyle="dark-content" backgroundColor={colors.surfaceBright} />
 
-            <View style={[styles.header, { paddingHorizontal: horizontalPadding, paddingTop: rs(8) }]}>
+            <View style={[styles.header, { paddingHorizontal: horizontalPadding, paddingTop: rv(8, 0.7, 1) }]}>
                 <TouchableOpacity
                     style={[styles.headerButton, { opacity: step === 0 ? 0.35 : 1 }]}
                     activeOpacity={0.8}
                     onPress={handleBack}
-                    disabled={step === 0 || isSubmittingSurvey}
+                    disabled={step === 0 || isSubmittingSurvey || isFinalizing}
                 >
                     <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
                 </TouchableOpacity>
@@ -251,27 +246,47 @@ export const RegistrationSurveyScreen: React.FC = () => {
                 style={styles.scroll}
                 contentContainerStyle={{
                     paddingHorizontal: horizontalPadding,
-                    paddingTop: spacing['2xl'],
-                    paddingBottom: rs(136),
+                    paddingTop: rv(isShortHeight ? 16 : 24, 0.7, 1),
+                    paddingBottom: rv(40, 0.72, 1),
                 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.progressBlock}>
+                <View style={[styles.progressBlock, { marginBottom: rv(isShortHeight ? 20 : 32, 0.7, 1) }]}>
                     <View style={styles.progressMeta}>
-                        <Text style={styles.progressTitle}>{meta.eyebrow}</Text>
-                        <Text style={styles.progressText}>{meta.progress}</Text>
+                        <Text style={[styles.progressTitle, { fontSize: rfs(20, 0.86, 1) }]}>{meta.eyebrow}</Text>
+                        <Text style={[styles.progressText, { fontSize: rfs(12, 0.9, 1) }]}>{meta.progress}</Text>
                     </View>
                     <View style={styles.progressTrack}>
                         <View style={[styles.progressFill, { width: progressPercent }]} />
                     </View>
                 </View>
 
-                <View style={styles.questionBlock}>
-                    <Text style={[styles.title, { fontSize: isCompact ? 34 : 38 }]}>{meta.title}</Text>
-                    <Text style={styles.subtitle}>{meta.subtitle}</Text>
+                <View style={[styles.questionBlock, { marginBottom: rv(isShortHeight ? 18 : 24, 0.72, 1) }]}>
+                    <Text
+                        style={[
+                            styles.title,
+                            {
+                                fontSize: rfs(isCompact ? 34 : 38, 0.8, 1),
+                                lineHeight: Math.round(rfs(isCompact ? 34 : 38, 0.8, 1) * 1.14),
+                            },
+                        ]}
+                    >
+                        {meta.title}
+                    </Text>
+                    <Text
+                        style={[
+                            styles.subtitle,
+                            {
+                                fontSize: rfs(18, 0.88, 1),
+                                lineHeight: Math.round(rfs(18, 0.88, 1) * 1.42),
+                            },
+                        ]}
+                    >
+                        {meta.subtitle}
+                    </Text>
                 </View>
 
-                <View style={styles.optionsGrid}>
+                <View style={[styles.optionsGrid, { gap: rv(12, 0.74, 1) }]}>
                     {activeOptions.map((option) => {
                         const isSelected = activeValue === option.value;
 
@@ -280,22 +295,48 @@ export const RegistrationSurveyScreen: React.FC = () => {
                                 key={option.value}
                                 style={[
                                     styles.optionCard,
+                                    {
+                                        minHeight: rv(isShortHeight ? 96 : 114, 0.84, 1),
+                                        padding: rs(isShortHeight ? 14 : 16, 0.84, 1),
+                                        borderRadius: rs(24, 0.86, 1),
+                                        gap: rs(12, 0.82, 1),
+                                    },
                                     isSelected && styles.optionCardSelected,
                                 ]}
                                 activeOpacity={0.86}
                                 onPress={() => handleSelect(option.value)}
-                            disabled={isSubmittingSurvey}
+                                disabled={isSubmittingSurvey || isFinalizing}
                             >
-                                <View style={[styles.optionIcon, styles[`${option.tone}Icon`]]}>
+                                <View
+                                    style={[
+                                        styles.optionIcon,
+                                        {
+                                            width: rs(54, 0.82, 1),
+                                            height: rs(54, 0.82, 1),
+                                            borderRadius: rs(18, 0.82, 1),
+                                        },
+                                        styles[`${option.tone}Icon`],
+                                    ]}
+                                >
                                     <MaterialIcons
                                         name={option.icon}
-                                        size={26}
+                                        size={Math.round(rs(26, 0.84, 1))}
                                         color={option.tone === 'secondary' ? '#5a2400' : colors.primary}
                                     />
                                 </View>
                                 <View style={styles.optionCopy}>
-                                    <Text style={styles.optionTitle}>{option.title}</Text>
-                                    <Text style={styles.optionDescription}>{option.description}</Text>
+                                    <Text style={[styles.optionTitle, { fontSize: rfs(20, 0.86, 1) }]}>{option.title}</Text>
+                                    <Text
+                                        style={[
+                                            styles.optionDescription,
+                                            {
+                                                fontSize: rfs(14, 0.9, 1),
+                                                lineHeight: Math.round(rfs(14, 0.9, 1) * 1.42),
+                                            },
+                                        ]}
+                                    >
+                                        {option.description}
+                                    </Text>
                                 </View>
                                 {isSelected ? (
                                     <MaterialIcons name="check-circle" size={26} color={colors.primary} />
@@ -305,11 +346,29 @@ export const RegistrationSurveyScreen: React.FC = () => {
                     })}
                 </View>
 
-                <View style={styles.tipCard}>
-                    <MaterialIcons name={step === 2 ? 'savings' : 'lightbulb'} size={30} color={colors.primarySoft} />
+                <View
+                    style={[
+                        styles.tipCard,
+                        {
+                            marginTop: rv(isShortHeight ? 20 : 32, 0.7, 1),
+                            padding: rs(isShortHeight ? 16 : 20, 0.82, 1),
+                            borderRadius: rs(28, 0.86, 1),
+                            gap: rs(16, 0.82, 1),
+                        },
+                    ]}
+                >
+                    <MaterialIcons name={step === 2 ? 'savings' : 'lightbulb'} size={Math.round(rs(30, 0.82, 1))} color={colors.primarySoft} />
                     <View style={styles.tipCopy}>
-                        <Text style={styles.tipTitle}>{step === 2 ? 'Last step' : 'Did you know?'}</Text>
-                        <Text style={styles.tipText}>
+                        <Text style={[styles.tipTitle, { fontSize: rfs(20, 0.86, 1) }]}>{step === 2 ? 'Last step' : 'Did you know?'}</Text>
+                        <Text
+                            style={[
+                                styles.tipText,
+                                {
+                                    fontSize: rfs(14, 0.9, 1),
+                                    lineHeight: Math.round(rfs(14, 0.9, 1) * 1.45),
+                                },
+                            ]}
+                        >
                             {step === 2
                                 ? 'We only save these answers to shape future product updates more effectively.'
                                 : 'Most Work and Travel students adjust their plan again around mid-summer.'}
@@ -317,24 +376,6 @@ export const RegistrationSurveyScreen: React.FC = () => {
                     </View>
                 </View>
             </ScrollView>
-
-            <View style={[styles.footer, { paddingHorizontal: horizontalPadding }]}>
-                <TouchableOpacity
-                    style={[styles.primaryButton, !activeValue && styles.primaryButtonDisabled]}
-                    activeOpacity={0.88}
-                    onPress={handleContinue}
-                    disabled={isSubmittingSurvey}
-                >
-                    {isSubmittingSurvey ? (
-                        <ActivityIndicator color={colors.white} />
-                    ) : (
-                        <>
-                            <Text style={styles.primaryButtonText}>{step === 2 ? 'Finish' : 'Continue'}</Text>
-                            <MaterialIcons name={step === 2 ? 'done-all' : 'arrow-forward'} size={24} color={colors.white} />
-                        </>
-                    )}
-                </TouchableOpacity>
-            </View>
         </SafeAreaView>
     );
 };
@@ -491,36 +532,5 @@ const styles = StyleSheet.create({
         fontSize: fontSizes.base,
         lineHeight: 22,
         fontWeight: fontWeights.medium,
-    },
-    footer: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        paddingTop: spacing.lg,
-        paddingBottom: spacing['3xl'],
-        backgroundColor: 'rgba(251,249,241,0.92)',
-    },
-    primaryButton: {
-        minHeight: 68,
-        borderRadius: 34,
-        backgroundColor: colors.primary,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.md,
-        shadowColor: colors.primaryDark,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.16,
-        shadowRadius: 24,
-        elevation: 8,
-    },
-    primaryButtonDisabled: {
-        opacity: 0.62,
-    },
-    primaryButtonText: {
-        color: colors.white,
-        fontSize: fontSizes.xl,
-        fontWeight: fontWeights.extrabold,
     },
 });

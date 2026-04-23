@@ -8,7 +8,6 @@ import {
     RefreshControl,
     TouchableOpacity,
     StatusBar,
-    useWindowDimensions,
     ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,7 +19,7 @@ import { HomeStackParamList, RootStackParamList, TabParamList } from '../types';
 import { useAuthStore, useJobsStore } from '../stores';
 import { CreateJobModal } from '../components/CreateJobModal';
 import { LockedFeatureCard, LockedFeatureModal } from '../components/LockedFeaturePreview';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 
 type DashboardNavigationProp = CompositeNavigationProp<
     NativeStackNavigationProp<HomeStackParamList, 'Dashboard'>,
@@ -49,7 +48,7 @@ const gigCardThemes = [
 ] as const;
 
 export const DashboardScreen: React.FC = () => {
-    const { width } = useWindowDimensions();
+    const { width, horizontalPadding, isCompact, metrics, rfs, rs, rv, scale } = useResponsiveLayout();
     const navigation = useNavigation<DashboardNavigationProp>();
     const { user } = useAuthStore();
     const { summary, jobs, error, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
@@ -57,16 +56,13 @@ export const DashboardScreen: React.FC = () => {
     const [showJobLimitLocked, setShowJobLimitLocked] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [selectedChartPoint, setSelectedChartPoint] = useState<string | null>(null);
-    const scale = Math.min(Math.max(width / 393, 0.84), 1);
-    const isCompact = width < 380;
-    const heroPadding = 32 * scale;
-    const sectionTitleSize = isCompact ? 24 : 28;
-    const heroValueSize = isCompact ? 40 : 48;
-    const heroValueLineHeight = isCompact ? 46 : 56;
-    const brandFontSize = 20;
+    const heroPadding = Math.round(rs(32, 0.82, 1));
+    const sectionTitleSize = rfs(isCompact ? 24 : 28, 0.86, 1);
+    const heroValueSize = rfs(isCompact ? 42 : 48, 0.82, 1);
+    const heroValueLineHeight = Math.round(heroValueSize * 1.14);
+    const brandFontSize = rfs(20, 0.9, 1);
     const gigCardWidth = Math.min(Math.max(width - 104, 228), 264);
     const addGigCardWidth = Math.min(Math.max(width - 176, 168), 188);
-    const horizontalPadding = isCompact ? 18 : 24;
     const chartPoints = summary?.dailyEarningsSinceMonday?.length
         ? summary.dailyEarningsSinceMonday
         : emptyChartPoints;
@@ -139,19 +135,19 @@ export const DashboardScreen: React.FC = () => {
                 style={styles.container}
                 contentContainerStyle={{
                     paddingHorizontal: horizontalPadding,
-                    paddingTop: 16,
-                    paddingBottom: isCompact ? 164 : 180,
+                    paddingTop: rv(16, 0.74, 1),
+                    paddingBottom: rv(isCompact ? 156 : 172, 0.82, 1),
                 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.topBar}>
+                <View style={[styles.topBar, { marginBottom: rv(16, 0.78, 1) }]}>
                     <TouchableOpacity
                         style={styles.brandBlock}
                         activeOpacity={0.85}
                         onPress={() => navigation.navigate('ProfileTab')}
                     >
-                        <Image source={brandLogo} style={styles.brandLogo} resizeMode="contain" />
+                        <Image source={brandLogo} style={[styles.brandLogo, { width: rs(32, 0.9, 1), height: rs(32, 0.9, 1) }]} resizeMode="contain" />
                         <Text
                             style={[
                                 styles.brandText,
@@ -172,13 +168,13 @@ export const DashboardScreen: React.FC = () => {
                         styles.heroCard,
                         {
                             padding: heroPadding,
-                            marginBottom: 32 * scale,
-                            borderRadius: 32 * scale,
+                            marginBottom: rv(32, 0.72, 1),
+                            borderRadius: rs(32, 0.84, 1),
                         },
                     ]}
                 >
                     <View style={[styles.heroIconGhost, { padding: heroPadding }]}>
-                        <MaterialIcons name="trending-up" size={120 * scale} color={colors.primary} />
+                        <MaterialIcons name="trending-up" size={Math.round(rs(120, 0.78, 1))} color={colors.primary} />
                     </View>
 
                     <View style={styles.heroInner}>
@@ -195,7 +191,7 @@ export const DashboardScreen: React.FC = () => {
                             {formatCurrency(summary?.weeklyEarnings ?? 0)}
                         </Text>
 
-                        <View style={styles.chartRow}>
+                        <View style={[styles.chartRow, { height: rv(160, 0.82, 1), marginTop: rv(16, 0.74, 1) }]}>
                             {chartPoints.map((point, index) => {
                                 const barHeight = maxChartValue > 0
                                     ? Math.max((point.totalEarnings / maxChartValue) * 100, point.totalEarnings > 0 ? 10 : 4)
@@ -273,7 +269,7 @@ export const DashboardScreen: React.FC = () => {
                     showsHorizontalScrollIndicator={false}
                     style={{ marginHorizontal: -horizontalPadding }}
                     contentContainerStyle={{
-                        gap: 16 * scale,
+                        gap: rs(16, 0.82, 1),
                         paddingLeft: horizontalPadding,
                         paddingRight: horizontalPadding,
                         paddingBottom: 8,
@@ -296,9 +292,9 @@ export const DashboardScreen: React.FC = () => {
                                     styles.gigCard,
                                     {
                                         minWidth: gigCardWidth,
-                                        height: 172 * scale,
-                                        padding: 20 * scale,
-                                        borderRadius: 28 * scale,
+                                        height: rv(172, 0.84, 1),
+                                        padding: rs(20, 0.82, 1),
+                                        borderRadius: rs(28, 0.84, 1),
                                     },
                                     backgroundStyle,
                                 ]}
@@ -311,22 +307,22 @@ export const DashboardScreen: React.FC = () => {
                                     <View style={styles.gigTopRow}>
                                         <MaterialIcons
                                             name={theme.icon}
-                                            size={Math.round(32 * scale)}
+                                            size={Math.round(rs(32, 0.84, 1))}
                                             color={colors.white}
                                         />
                                     </View>
 
-                                    <Text style={[styles.gigTitle, { fontSize: isCompact ? 18 : 21 }]}>{job.title}</Text>
+                                    <Text style={[styles.gigTitle, { fontSize: rfs(isCompact ? 18 : 21, 0.86, 1) }]}>{job.title}</Text>
                                     {job.isLocked ? <Text style={styles.lockedTag}>Locked</Text> : null}
-                                    <Text style={[styles.gigSubtitle, { fontSize: isCompact ? 12 : 13 }]}> 
+                                    <Text style={[styles.gigSubtitle, { fontSize: rfs(isCompact ? 12 : 13, 0.9, 1) }]}>
                                         First day: {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][job.firstDayOfWeek]}
                                     </Text>
                                 </View>
 
                                 <View style={styles.gigBottomRow}>
-                                    <Text style={[styles.gigRate, { fontSize: isCompact ? 22 : 24 }]}>
+                                    <Text style={[styles.gigRate, { fontSize: rfs(isCompact ? 22 : 24, 0.86, 1) }]}>
                                         ${job.hourlyRate.toFixed(2)}
-                                        <Text style={[styles.gigRateSuffix, { fontSize: isCompact ? 11 : 12 }]}>/hr</Text>
+                                        <Text style={[styles.gigRateSuffix, { fontSize: rfs(isCompact ? 11 : 12, 0.9, 1) }]}>/hr</Text>
                                     </Text>
 
                                     <View style={styles.gigArrowWrap}>
@@ -342,8 +338,8 @@ export const DashboardScreen: React.FC = () => {
                             styles.addGigCard,
                             {
                                 minWidth: addGigCardWidth,
-                                height: 172 * scale,
-                                borderRadius: 28 * scale,
+                                height: rv(172, 0.84, 1),
+                                borderRadius: rs(28, 0.84, 1),
                             },
                         ]}
                         activeOpacity={0.85}
@@ -356,7 +352,7 @@ export const DashboardScreen: React.FC = () => {
                             setIsModalOpen(true);
                         }}
                     >
-                        <MaterialIcons name="add-circle" size={Math.round(28 * scale)} color={colors.outline} />
+                        <MaterialIcons name="add-circle" size={Math.round(rs(28, 0.86, 1))} color={colors.outline} />
                         <Text style={styles.addGigText}>{!user?.subscription.isPremium && jobs.length >= 2 ? 'Upgrade' : 'Add Job'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
@@ -366,10 +362,10 @@ export const DashboardScreen: React.FC = () => {
                         style={[
                             styles.spendingCard,
                             {
-                                borderRadius: 28 * scale,
-                                padding: 24 * scale,
-                                minHeight: 236 * scale,
-                                marginTop: 20 * scale,
+                                borderRadius: rs(28, 0.84, 1),
+                                padding: metrics.cardPadding,
+                                minHeight: rv(236, 0.84, 1),
+                                marginTop: rv(20, 0.72, 1),
                             },
                         ]}
                         activeOpacity={0.9}
@@ -382,7 +378,7 @@ export const DashboardScreen: React.FC = () => {
                             </View>
                         </View>
                         <View style={styles.spendingHeadlineRow}>
-                            <Text style={[styles.spendingValue, { fontSize: isCompact ? 34 : 40 }]}>
+                            <Text style={[styles.spendingValue, { fontSize: rfs(isCompact ? 34 : 40, 0.84, 1) }]}>
                                 {formatCurrency(summary?.weeklyExpenses ?? 0)}
                             </Text>
                             <View style={[
@@ -427,20 +423,20 @@ export const DashboardScreen: React.FC = () => {
                         scale={scale}
                         onUnlock={openExpensesDetails}
                         previewVariant="weeklyLedger"
-                        style={{ marginTop: 20 * scale, marginBottom: 28, padding: 18 * scale, backgroundColor: '#ff8a00' }}
+                        style={{ marginTop: rv(20, 0.72, 1), marginBottom: rv(28, 0.78, 1), padding: rs(18, 0.84, 1), backgroundColor: '#ff8a00' }}
                     />
                 )}
 
                 {user?.access.canUseGoals ? (
                     <TouchableOpacity
-                        style={[styles.goalCard, { borderRadius: 28 * scale, padding: 24 * scale, marginTop: 18 * scale }]}
+                        style={[styles.goalCard, { borderRadius: rs(28, 0.84, 1), padding: metrics.cardPadding, marginTop: rv(18, 0.72, 1) }]}
                         activeOpacity={0.88}
                         onPress={() => navigation.navigate('Goal')}
                     >
                         <View style={styles.goalCardTop}>
                             <View>
                                 <Text style={styles.goalEyebrow}>Weekly Goal</Text>
-                                <Text style={[styles.goalTitle, { fontSize: isCompact ? 26 : 30 }]}>This week's goal</Text>
+                                <Text style={[styles.goalTitle, { fontSize: rfs(isCompact ? 26 : 30, 0.84, 1), lineHeight: Math.round(rfs(isCompact ? 26 : 30, 0.84, 1) * 1.14) }]}>This week's goal</Text>
                             </View>
                             <View style={styles.goalIconWrap}>
                                 <MaterialIcons name="track-changes" size={20} color={colors.white} />

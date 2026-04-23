@@ -9,12 +9,11 @@ import {
     KeyboardAvoidingView,
     ScrollView,
     TextInput,
-    useWindowDimensions,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useEntriesStore } from '../stores';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
 
 interface AddEntryModalProps {
@@ -30,10 +29,8 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     onClose,
     onCreated,
 }) => {
-    const { width } = useWindowDimensions();
+    const { horizontalPadding, isCompact: compact, metrics, rfs, rs, rv } = useResponsiveLayout();
     const { createEntry, isCreating } = useEntriesStore();
-    const compact = width < 380;
-    const scale = Math.min(Math.max(width / 393, 0.84), 1);
 
     const [date, setDate] = useState(new Date('2023-10-24'));
     const [hours, setHours] = useState('8');
@@ -104,16 +101,16 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                 <ScrollView
                     style={styles.container}
                     contentContainerStyle={{
-                        paddingHorizontal: compact ? 18 : 24,
-                        paddingTop: 12,
-                        paddingBottom: 36,
+                        paddingHorizontal: horizontalPadding,
+                        paddingTop: rv(12, 0.72, 1),
+                        paddingBottom: rv(36, 0.78, 1),
                     }}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    <View style={[styles.heroCard, { borderRadius: 48 * scale, padding: 28 * scale }]}>
+                    <View style={[styles.heroCard, { borderRadius: rs(48, 0.84, 1), padding: rs(28, 0.84, 1), marginBottom: rv(20, 0.78, 1) }]}>
                         <View>
-                            <Text style={[styles.heroValue, { fontSize: compact ? 36 : 40 }]}>Log today&apos;s shift</Text>
+                            <Text style={[styles.heroValue, { fontSize: rfs(compact ? 36 : 40, 0.84, 1), marginBottom: rv(18, 0.74, 1) }]}>Log today&apos;s shift</Text>
                         </View>
 
                         <View style={styles.heroPillsRow}>
@@ -128,7 +125,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                         </View>
 
                         <View style={styles.heroGhost}>
-                            <MaterialIcons name="cleaning-services" size={72} color="rgba(0,109,68,0.10)" />
+                            <MaterialIcons name="cleaning-services" size={Math.round(rs(72, 0.84, 1))} color="rgba(0,109,68,0.10)" />
                         </View>
                     </View>
 
@@ -139,9 +136,9 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                     ) : null}
 
                     <View style={styles.fieldBlock}>
-                        <Text style={styles.fieldLabel}>Work Date</Text>
-                        <TouchableOpacity style={styles.fieldInputWrap} activeOpacity={0.88} onPress={() => setShowDatePicker(true)}>
-                            <Text style={styles.fieldInputText}>
+                        <Text style={[styles.fieldLabel, { fontSize: rfs(16, 0.9, 1), marginBottom: rv(10, 0.74, 1) }]}>Work Date</Text>
+                        <TouchableOpacity style={[styles.fieldInputWrap, { minHeight: metrics.compactInputHeight, paddingHorizontal: rs(20, 0.86, 1) }]} activeOpacity={0.88} onPress={() => setShowDatePicker(true)}>
+                            <Text style={[styles.fieldInputText, { fontSize: rfs(24, 0.86, 1) }]}>
                                 {date.toLocaleDateString('en-US')}
                             </Text>
                             <MaterialIcons name="calendar-today" size={18} color="#94a3b8" />
@@ -164,10 +161,10 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                     ) : null}
 
                     <View style={styles.fieldBlock}>
-                        <Text style={styles.fieldLabel}>Hours Worked</Text>
-                        <View style={styles.fieldInputWrap}>
+                        <Text style={[styles.fieldLabel, { fontSize: rfs(16, 0.9, 1), marginBottom: rv(10, 0.74, 1) }]}>Hours Worked</Text>
+                        <View style={[styles.fieldInputWrap, { minHeight: metrics.compactInputHeight, paddingHorizontal: rs(20, 0.86, 1) }]}>
                             <TextInput
-                                style={styles.numberInput}
+                                style={[styles.numberInput, { fontSize: rfs(34, 0.82, 1) }]}
                                 value={hours}
                                 onChangeText={setHours}
                                 keyboardType="decimal-pad"
@@ -179,11 +176,11 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                     </View>
 
                     <View style={styles.fieldBlock}>
-                        <Text style={styles.fieldLabel}>Tips Received</Text>
-                        <View style={styles.fieldInputWrap}>
-                            <Text style={styles.leadingHint}>$</Text>
+                        <Text style={[styles.fieldLabel, { fontSize: rfs(16, 0.9, 1), marginBottom: rv(10, 0.74, 1) }]}>Tips Received</Text>
+                        <View style={[styles.fieldInputWrap, { minHeight: metrics.compactInputHeight, paddingHorizontal: rs(20, 0.86, 1) }]}>
+                            <Text style={[styles.leadingHint, { fontSize: rfs(28, 0.84, 1) }]}>$</Text>
                             <TextInput
-                                style={[styles.numberInput, styles.moneyEntryInput]}
+                                style={[styles.numberInput, styles.moneyEntryInput, { fontSize: rfs(34, 0.82, 1) }]}
                                 value={tip}
                                 onChangeText={setTip}
                                 keyboardType="decimal-pad"
@@ -194,9 +191,17 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                     </View>
 
                     <View style={styles.fieldBlock}>
-                        <Text style={styles.fieldLabel}>Shift Notes (Optional)</Text>
+                        <Text style={[styles.fieldLabel, { fontSize: rfs(16, 0.9, 1), marginBottom: rv(10, 0.74, 1) }]}>Shift Notes (Optional)</Text>
                         <TextInput
-                            style={[styles.notesInput, { minHeight: 120 * scale, borderRadius: 24 * scale }]}
+                            style={[
+                                styles.notesInput,
+                                {
+                                    minHeight: rv(120, 0.78, 1),
+                                    borderRadius: rs(24, 0.86, 1),
+                                    fontSize: rfs(18, 0.88, 1),
+                                    lineHeight: Math.round(rfs(18, 0.88, 1) * 1.45),
+                                },
+                            ]}
                             multiline
                             placeholder="Extra heavy checkout day..."
                             placeholderTextColor="#94a3b8"
@@ -207,12 +212,20 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.confirmButton, isCreating && styles.confirmButtonDisabled]}
+                        style={[
+                            styles.confirmButton,
+                            {
+                                minHeight: metrics.buttonHeight,
+                                marginTop: rv(6, 0.72, 1),
+                                marginBottom: rv(18, 0.78, 1),
+                            },
+                            isCreating && styles.confirmButtonDisabled,
+                        ]}
                         activeOpacity={0.9}
                         onPress={handleSubmit}
                         disabled={isCreating}
                     >
-                        <Text style={styles.confirmText}>{isCreating ? 'Saving...' : 'Save'}</Text>
+                        <Text style={[styles.confirmText, { fontSize: rfs(21, 0.86, 1) }]}>{isCreating ? 'Saving...' : 'Save'}</Text>
                     </TouchableOpacity>
 
                     <View style={styles.successHint}>

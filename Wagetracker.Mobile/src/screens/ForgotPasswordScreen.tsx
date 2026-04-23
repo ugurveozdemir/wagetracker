@@ -23,7 +23,8 @@ type ForgotPasswordNavigationProp = NativeStackNavigationProp<AuthStackParamList
 
 export const ForgotPasswordScreen: React.FC = () => {
     const navigation = useNavigation<ForgotPasswordNavigationProp>();
-    const { isCompact, horizontalPadding, rs } = useResponsiveLayout();
+    const { isCompact, isShortHeight, horizontalPadding, metrics, rfs, rs, rv } = useResponsiveLayout();
+    const titleSize = rfs(isCompact ? 34 : 40, 0.84, 1);
 
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');
@@ -160,17 +161,26 @@ export const ForgotPasswordScreen: React.FC = () => {
         errorText: string,
         extraProps?: Partial<React.ComponentProps<typeof TextInput>>,
     ) => (
-        <View style={styles.fieldBlock}>
-            <Text style={styles.fieldLabel}>{label}</Text>
+        <View style={[styles.fieldBlock, { marginBottom: rv(16, 0.76, 1) }]}>
+            <Text style={[styles.fieldLabel, { fontSize: rfs(20, 0.86, 1), marginBottom: rv(12, 0.72, 1) }]}>{label}</Text>
             <TextInput
-                style={[styles.input, errorText ? styles.inputError : null]}
+                style={[
+                    styles.input,
+                    {
+                        height: metrics.compactInputHeight,
+                        borderRadius: metrics.compactInputHeight / 2,
+                        paddingHorizontal: rs(20, 0.86, 1),
+                        fontSize: rfs(18, 0.88, 1),
+                    },
+                    errorText ? styles.inputError : null,
+                ]}
                 placeholder={placeholder}
                 placeholderTextColor={colors.slate400}
                 value={value}
                 onChangeText={setValue}
                 {...extraProps}
             />
-            {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
+            {errorText ? <Text style={[styles.errorText, { fontSize: rfs(12, 0.9, 1), marginTop: rv(8, 0.7, 1) }]}>{errorText}</Text> : null}
         </View>
     );
 
@@ -186,21 +196,21 @@ export const ForgotPasswordScreen: React.FC = () => {
                         styles.scrollContent,
                         {
                             paddingHorizontal: horizontalPadding,
-                            paddingTop: rs(24),
-                            paddingBottom: rs(40),
+                            paddingTop: rv(isShortHeight ? 18 : 24, 0.72, 1),
+                            paddingBottom: rv(40, 0.74, 1),
                         },
                     ]}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+                    <TouchableOpacity style={[styles.backButton, { marginBottom: rv(20, 0.72, 1) }]} onPress={() => navigation.goBack()} activeOpacity={0.8}>
                         <MaterialIcons name="arrow-back" size={20} color={colors.onSurface} />
-                        <Text style={styles.backButtonLabel}>Back to Sign In</Text>
+                        <Text style={[styles.backButtonLabel, { fontSize: rfs(14, 0.9, 1) }]}>Back to Sign In</Text>
                     </TouchableOpacity>
 
-                    <View style={styles.heroSection}>
-                        <Text style={[styles.title, { fontSize: isCompact ? 34 : 40 }]}>Reset Password</Text>
-                        <Text style={[styles.subtitle, { fontSize: isCompact ? 15 : 17 }]}>Enter your email, get a 6-digit code, then choose a new password.</Text>
+                    <View style={[styles.heroSection, { marginBottom: rv(isShortHeight ? 18 : 24, 0.72, 1) }]}>
+                        <Text style={[styles.title, { fontSize: titleSize, lineHeight: Math.round(titleSize * 1.15), marginBottom: rv(12, 0.72, 1) }]}>Reset Password</Text>
+                        <Text style={[styles.subtitle, { fontSize: rfs(17, 0.88, 1), lineHeight: Math.round(rfs(17, 0.88, 1) * 1.45) }]}>Enter your email, get a 6-digit code, then choose a new password.</Text>
                     </View>
 
                     {renderField(
@@ -222,17 +232,25 @@ export const ForgotPasswordScreen: React.FC = () => {
                     )}
 
                     <TouchableOpacity
-                        style={[styles.secondaryButton, !canSendCode && styles.buttonDisabled]}
+                        style={[
+                            styles.secondaryButton,
+                            {
+                                height: metrics.buttonHeight,
+                                borderRadius: metrics.buttonHeight / 2,
+                                marginTop: rv(8, 0.7, 1),
+                            },
+                            !canSendCode && styles.buttonDisabled,
+                        ]}
                         onPress={handleSendCode}
                         disabled={!canSendCode}
                         activeOpacity={0.88}
                     >
-                        <Text style={styles.secondaryButtonText}>{isSendingCode ? 'Sending...' : hasRequestedCode ? 'Resend Code' : 'Send Code'}</Text>
+                        <Text style={[styles.secondaryButtonText, { fontSize: rfs(16, 0.9, 1) }]}>{isSendingCode ? 'Sending...' : hasRequestedCode ? 'Resend Code' : 'Send Code'}</Text>
                     </TouchableOpacity>
 
                     {hasRequestedCode ? (
                         <>
-                            <View style={styles.divider} />
+                            <View style={[styles.divider, { marginVertical: rv(24, 0.72, 1) }]} />
 
                             {renderField(
                                 'Reset Code',
@@ -291,12 +309,20 @@ export const ForgotPasswordScreen: React.FC = () => {
                             )}
 
                             <TouchableOpacity
-                                style={[styles.primaryButton, !canResetPassword && styles.buttonDisabled]}
+                                style={[
+                                    styles.primaryButton,
+                                    {
+                                        height: metrics.primaryButtonHeight,
+                                        borderRadius: metrics.primaryButtonHeight / 2,
+                                        marginTop: rv(12, 0.72, 1),
+                                    },
+                                    !canResetPassword && styles.buttonDisabled,
+                                ]}
                                 onPress={handleResetPassword}
                                 disabled={!canResetPassword}
                                 activeOpacity={0.88}
                             >
-                                <Text style={styles.primaryButtonText}>{isResettingPassword ? 'Updating...' : 'Reset Password'}</Text>
+                                <Text style={[styles.primaryButtonText, { fontSize: rfs(18, 0.9, 1) }]}>{isResettingPassword ? 'Updating...' : 'Reset Password'}</Text>
                             </TouchableOpacity>
                         </>
                     ) : null}

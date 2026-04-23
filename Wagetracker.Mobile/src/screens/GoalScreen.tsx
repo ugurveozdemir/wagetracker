@@ -14,7 +14,7 @@ import Toast from 'react-native-toast-message';
 import { Button, Input } from '../components/ui';
 import { useJobsStore } from '../stores';
 import { profileApi } from '../api';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 
 const RING_SEGMENTS = 40;
 const RING_SIZE = 240;
@@ -27,6 +27,7 @@ const formatCurrency = (amount: number) =>
     })}`;
 
 export const GoalScreen: React.FC = () => {
+    const { horizontalPadding, rfs, rs, rv } = useResponsiveLayout();
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
     const [goalInput, setGoalInput] = useState('');
     const [motivationQuoteInput, setMotivationQuoteInput] = useState('');
@@ -39,6 +40,10 @@ export const GoalScreen: React.FC = () => {
     const progressPercent = Math.max(0, Math.min(summary?.weeklyGoal?.progressPercent ?? 0, 100));
     const remainingAmount = summary?.weeklyGoal?.remainingAmount ?? 0;
     const activeSegments = Math.round((progressPercent / 100) * RING_SEGMENTS);
+    const ringSize = rs(RING_SIZE, 0.82, 1);
+    const ringRadius = ringSize * (RING_RADIUS / RING_SIZE);
+    const segmentHeight = rs(34, 0.84, 1);
+    const ringCenterSize = rs(154, 0.84, 1);
 
     useFocusEffect(
         useCallback(() => {
@@ -132,19 +137,27 @@ export const GoalScreen: React.FC = () => {
 
             <ScrollView
                 style={styles.container}
-                contentContainerStyle={styles.contentContainer}
+                contentContainerStyle={[
+                    styles.contentContainer,
+                    {
+                        paddingHorizontal: horizontalPadding,
+                        paddingTop: rv(18, 0.74, 1),
+                        paddingBottom: rv(120, 0.82, 1),
+                        gap: rv(20, 0.78, 1),
+                    },
+                ]}
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.screenHeader}>
-                    <Text style={styles.screenTitle}>My Goal</Text>
+                    <Text style={[styles.screenTitle, { fontSize: rfs(38, 0.84, 1) }]}>My Goal</Text>
                 </View>
 
-                <View style={styles.heroCard}>
+                <View style={[styles.heroCard, { borderRadius: rs(32, 0.86, 1), padding: rs(28, 0.84, 1) }]}>
                     <Text style={styles.eyebrow}>Weekly Goal</Text>
-                    <Text style={styles.title}>Progress resets automatically every Monday.</Text>
+                    <Text style={[styles.title, { fontSize: rfs(30, 0.84, 1), lineHeight: Math.round(rfs(30, 0.84, 1) * 1.14) }]}>Progress resets automatically every Monday.</Text>
 
-                    <View style={styles.ringWrap}>
-                        <View style={styles.ringBase}>
+                    <View style={[styles.ringWrap, { marginVertical: rv(28, 0.74, 1) }]}>
+                        <View style={[styles.ringBase, { width: ringSize, height: ringSize, borderRadius: ringSize / 2 }]}>
                             {ringSegments.map((segment) => {
                                 const rotation = `${(360 / RING_SEGMENTS) * segment}deg`;
                                 const isActive = segment < activeSegments;
@@ -154,12 +167,21 @@ export const GoalScreen: React.FC = () => {
                                         key={segment}
                                         style={[
                                             styles.segmentOrbit,
-                                            { transform: [{ rotate: rotation }] },
+                                            {
+                                                width: ringSize,
+                                                height: ringSize,
+                                                transform: [{ rotate: rotation }],
+                                            },
                                         ]}
                                     >
                                         <View
                                             style={[
                                                 styles.segment,
+                                                {
+                                                    width: rs(12, 0.86, 1),
+                                                    height: segmentHeight,
+                                                    marginTop: ringSize / 2 - ringRadius - segmentHeight / 2,
+                                                },
                                                 isActive ? styles.segmentActive : styles.segmentInactive,
                                             ]}
                                         />
@@ -167,28 +189,28 @@ export const GoalScreen: React.FC = () => {
                                 );
                             })}
 
-                            <View style={styles.ringCenter}>
-                                <Text style={styles.progressValue}>{Math.round(progressPercent)}%</Text>
+                            <View style={[styles.ringCenter, { width: ringCenterSize, height: ringCenterSize, borderRadius: ringCenterSize / 2 }]}>
+                                <Text style={[styles.progressValue, { fontSize: rfs(40, 0.84, 1) }]}>{Math.round(progressPercent)}%</Text>
                                 <Text style={styles.progressLabel}>filled</Text>
                             </View>
                         </View>
                     </View>
 
-                    <View style={styles.metricsRow}>
-                        <View style={styles.metricCard}>
+                    <View style={[styles.metricsRow, { gap: rs(12, 0.82, 1) }]}>
+                        <View style={[styles.metricCard, { borderRadius: rs(22, 0.86, 1), padding: rs(18, 0.84, 1) }]}>
                             <Text style={styles.metricLabel}>Current</Text>
-                            <Text style={styles.metricValue}>{formatCurrency(currentAmount)}</Text>
+                            <Text style={[styles.metricValue, { fontSize: rfs(22, 0.86, 1) }]}>{formatCurrency(currentAmount)}</Text>
                         </View>
-                        <View style={styles.metricCardAccent}>
+                        <View style={[styles.metricCardAccent, { borderRadius: rs(22, 0.86, 1), padding: rs(18, 0.84, 1) }]}>
                             <Text style={styles.metricLabelAccent}>Remaining</Text>
-                            <Text style={styles.metricValueAccent}>{formatCurrency(remainingAmount)}</Text>
+                            <Text style={[styles.metricValueAccent, { fontSize: rfs(22, 0.86, 1) }]}>{formatCurrency(remainingAmount)}</Text>
                         </View>
                     </View>
                 </View>
 
-                <View style={styles.editorCard}>
-                    <Text style={styles.editorTitle}>Set This Week's Target</Text>
-                    <Text style={styles.editorCopy}>The target repeats every week and progress resets automatically on Monday.</Text>
+                <View style={[styles.editorCard, { borderRadius: rs(28, 0.86, 1), padding: rs(24, 0.84, 1) }]}>
+                    <Text style={[styles.editorTitle, { fontSize: rfs(24, 0.86, 1) }]}>Set This Week's Target</Text>
+                    <Text style={[styles.editorCopy, { fontSize: rfs(14, 0.9, 1), lineHeight: Math.round(rfs(14, 0.9, 1) * 1.55), marginBottom: rv(20, 0.78, 1) }]}>The target repeats every week and progress resets automatically on Monday.</Text>
 
                     <Input
                         label="Weekly Goal"
@@ -221,9 +243,9 @@ export const GoalScreen: React.FC = () => {
                     </View>
                 </View>
 
-                <View style={styles.quoteCard}>
-                    <Text style={styles.quoteTitle}>Motivation Quote</Text>
-                    <Text style={styles.quoteCopy}>Add a short line that keeps you focused this week.</Text>
+                <View style={[styles.quoteCard, { borderRadius: rs(28, 0.86, 1), padding: rs(24, 0.84, 1) }]}>
+                    <Text style={[styles.quoteTitle, { fontSize: rfs(24, 0.86, 1) }]}>Motivation Quote</Text>
+                    <Text style={[styles.quoteCopy, { fontSize: rfs(14, 0.9, 1), lineHeight: Math.round(rfs(14, 0.9, 1) * 1.55), marginBottom: rv(20, 0.78, 1) }]}>Add a short line that keeps you focused this week.</Text>
                     <Input
                         label="Your Quote"
                         value={motivationQuoteInput}

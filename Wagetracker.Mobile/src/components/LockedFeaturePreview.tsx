@@ -9,11 +9,10 @@ import {
     TouchableOpacity,
     View,
     ViewStyle,
-    useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { colors } from '../theme';
+import { colors, useResponsiveLayout } from '../theme';
 
 export type LockedFeature = 'goals' | 'expenses' | 'jobs';
 export type LockedPreviewVariant = 'metrics' | 'weeklyLedger';
@@ -237,15 +236,17 @@ export const LockedFeatureCard: React.FC<LockedFeatureCardProps> = ({
     style,
 }) => {
     const copy = featureCopy[feature];
+    const { rfs, rs, rv, scale: responsiveScale } = useResponsiveLayout();
+    const cardScale = Math.min(scale, responsiveScale);
 
     return (
         <TouchableOpacity
             style={[
                 styles.card,
                 {
-                    borderRadius: 28 * scale,
-                    padding: 22 * scale,
-                    marginTop: 18 * scale,
+                    borderRadius: rs(28, 0.86, 1),
+                    padding: 22 * cardScale,
+                    marginTop: rv(18, 0.74, 1),
                 },
                 style,
             ]}
@@ -256,7 +257,7 @@ export const LockedFeatureCard: React.FC<LockedFeatureCardProps> = ({
             <View style={styles.cardHeader}>
                 <View style={styles.cardHeaderCopy}>
                     <Text style={styles.cardEyebrow}>{copy.eyebrow}</Text>
-                    <Text style={[styles.cardTitle, { fontSize: compact ? 24 : 28 }]}>{copy.title}</Text>
+                    <Text style={[styles.cardTitle, { fontSize: rfs(compact ? 24 : 28, 0.86, 1) }]}>{copy.title}</Text>
                 </View>
                 <View style={styles.lockBadge}>
                     <MaterialIcons name="lock" size={18} color={colors.secondaryContainer} />
@@ -272,8 +273,7 @@ export const LockedFeatureCard: React.FC<LockedFeatureCardProps> = ({
 };
 
 export const LockedFeatureScreen: React.FC<LockedFeatureBaseProps> = ({ feature, onUnlock, previewVariant = 'metrics' }) => {
-    const { width } = useWindowDimensions();
-    const compact = width < 380;
+    const { horizontalPadding, isCompact: compact, rfs, rv } = useResponsiveLayout();
     const copy = featureCopy[feature];
 
     return (
@@ -283,8 +283,8 @@ export const LockedFeatureScreen: React.FC<LockedFeatureBaseProps> = ({ feature,
                 contentContainerStyle={[
                     styles.screenContent,
                     {
-                        paddingHorizontal: compact ? 18 : 24,
-                        paddingTop: compact ? 16 : 24,
+                        paddingHorizontal: horizontalPadding,
+                        paddingTop: rv(compact ? 16 : 24, 0.72, 1),
                     },
                 ]}
                 showsVerticalScrollIndicator={false}
@@ -294,7 +294,7 @@ export const LockedFeatureScreen: React.FC<LockedFeatureBaseProps> = ({ feature,
                         <MaterialIcons name="lock" size={26} color={colors.secondaryContainer} />
                     </View>
                     <Text style={styles.screenEyebrow}>{copy.eyebrow}</Text>
-                    <Text style={[styles.screenTitle, { fontSize: compact ? 30 : 36 }]}>{copy.title}</Text>
+                    <Text style={[styles.screenTitle, { fontSize: rfs(compact ? 30 : 36, 0.84, 1) }]}>{copy.title}</Text>
                     <Text style={styles.screenBody}>{copy.body}</Text>
                     <PreviewPanel feature={feature} compact={compact} variant={previewVariant} />
                     <View style={styles.notesStack}>
