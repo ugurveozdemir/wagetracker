@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using WageTracker.API.Data;
 using WageTracker.API.Models.DTOs;
 using WageTracker.API.Utilities;
@@ -282,6 +283,201 @@ namespace WageTracker.API.Services
                 // Recent
                 RecentExpenses = recentExpenses
             };
+        }
+
+        public async Task<GeneralSummaryResponse> GetGeneralSummaryAsync(int userId)
+        {
+            await _subscriptionService.EnsureExpensesAccessAsync(userId);
+
+            var jobs = await _context.Jobs
+                .AsNoTracking()
+                .Where(j => j.UserId == userId)
+                .OrderBy(j => j.CreatedAt)
+                .ThenBy(j => j.Id)
+                .ToListAsync();
+
+            var entries = await _context.DailyEntries
+                .AsNoTracking()
+                .Where(e => e.UserId == userId)
+                .ToListAsync();
+
+            var expenses = await _context.Expenses
+                .AsNoTracking()
+                .Where(e => e.UserId == userId)
+                .ToListAsync();
+
+            return BuildGeneralSummaryResponse(jobs, entries, expenses);
+        }
+
+        public static GeneralSummaryResponse BuildGeneralSummaryResponse(
+            IEnumerable<Job> jobs,
+            IEnumerable<DailyEntry> entries,
+            IEnumerable<Expense> expenses)
+        {
+            var jobList = jobs.OrderBy(j => j.CreatedAt).ThenBy(j => j.Id).ToList();
+            var entryList = entries.ToList();
+            var expenseList = expenses.ToList();
+            var jobTitleById = jobList.ToDictionary(j => j.Id, j => j.Title);
+
+            var totalEarnings = entryList.Sum(e => e.TotalEarnings);
+            var totalExpenses = expenseList.Sum(e => e.Amount);
+            var totalHours = entryList.Sum(e => e.TotalHours);
+
+            return new GeneralSummaryResponse
+            {
+                TotalEarnings = totalEarnings,
+                TotalExpenses = totalExpenses,
+                NetEarnings = totalEarnings - totalExpenses,
+                TotalHours = totalHours,
+                AverageWeeklyHours = CalculateAverageWeeklyHours(entryList),
+                LargestPurchase = BuildLargestPurchase(expenseList),
+                Jobs = BuildJobSummaries(jobList, entryList),
+                Months = BuildMonthlySummaries(entryList, expenseList),
+                MonthlyJobs = BuildMonthlyJobSummaries(entryList, jobTitleById),
+                AverageWeeklyHoursByJob = BuildAverageWeeklyHoursByJob(jobList, entryList)
+            };
+        }
+
+        private static decimal CalculateAverageWeeklyHours(IEnumerable<DailyEntry> entries)
+        {
+            var weekTotals = entries
+                .GroupBy(e => WeekCalculator.GetWeekRange(e.Date.Date, DayOfWeek.Monday).weekStart)
+                .Select(g => g.Sum(e => e.TotalHours))
+                .ToList();
+
+            return weekTotals.Count == 0 ? 0 : Math.Round(weekTotals.Average(), 2);
+        }
+
+        private static GeneralSummaryPurchaseResponse? BuildLargestPurchase(IEnumerable<Expense> expenses)
+        {
+            var expense = expenses
+                .OrderByDescending(e => e.Amount)
+                .ThenByDescending(e => e.Date)
+                .ThenByDescending(e => e.CreatedAt)
+                .FirstOrDefault();
+
+            if (expense == null)
+            {
+                return null;
+            }
+
+            return new GeneralSummaryPurchaseResponse
+            {
+                ExpenseId = expense.Id,
+                Amount = expense.Amount,
+                Date = expense.Date,
+                Title = !string.IsNullOrWhiteSpace(expense.MerchantName)
+                    ? expense.MerchantName
+                    : !string.IsNullOrWhiteSpace(expense.Description)
+                        ? expense.Description
+                        : ExpenseService.GetCategoryName((int)expense.Category),
+                CategoryName = ExpenseService.GetCategoryName((int)expense.Category)
+            };
+        }
+
+        private static List<GeneralSummaryJobResponse> BuildJobSummaries(
+            IEnumerable<Job> jobs,
+            IEnumerable<DailyEntry> entries)
+        {
+            var entriesByJob = entries
+                .GroupBy(e => e.JobId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            return jobs.Select(job =>
+            {
+                entriesByJob.TryGetValue(job.Id, out var jobEntries);
+                jobEntries ??= new List<DailyEntry>();
+
+                return new GeneralSummaryJobResponse
+                {
+                    JobId = job.Id,
+                    JobTitle = job.Title,
+                    TotalEarnings = jobEntries.Sum(e => e.TotalEarnings),
+                    TotalHours = jobEntries.Sum(e => e.TotalHours)
+                };
+            }).ToList();
+        }
+
+        private static List<GeneralSummaryMonthResponse> BuildMonthlySummaries(
+            IEnumerable<DailyEntry> entries,
+            IEnumerable<Expense> expenses)
+        {
+            var earningsByMonth = entries
+                .GroupBy(e => new { e.Date.Year, e.Date.Month })
+                .ToDictionary(g => (g.Key.Year, g.Key.Month), g => g.Sum(e => e.TotalEarnings));
+
+            var expensesByMonth = expenses
+                .GroupBy(e => new { e.Date.Year, e.Date.Month })
+                .ToDictionary(g => (g.Key.Year, g.Key.Month), g => g.Sum(e => e.Amount));
+
+            return earningsByMonth.Keys
+                .Concat(expensesByMonth.Keys)
+                .Distinct()
+                .OrderByDescending(k => k.Year)
+                .ThenByDescending(k => k.Month)
+                .Select(key =>
+                {
+                    var earnings = earningsByMonth.GetValueOrDefault(key);
+                    var expenseTotal = expensesByMonth.GetValueOrDefault(key);
+                    return new GeneralSummaryMonthResponse
+                    {
+                        Year = key.Year,
+                        Month = key.Month,
+                        MonthLabel = FormatMonthLabel(key.Year, key.Month),
+                        Earnings = earnings,
+                        Expenses = expenseTotal,
+                        NetEarnings = earnings - expenseTotal
+                    };
+                })
+                .ToList();
+        }
+
+        private static List<GeneralSummaryMonthlyJobResponse> BuildMonthlyJobSummaries(
+            IEnumerable<DailyEntry> entries,
+            IReadOnlyDictionary<int, string> jobTitleById)
+        {
+            return entries
+                .GroupBy(e => new { e.JobId, e.Date.Year, e.Date.Month })
+                .OrderByDescending(g => g.Key.Year)
+                .ThenByDescending(g => g.Key.Month)
+                .ThenBy(g => jobTitleById.GetValueOrDefault(g.Key.JobId) ?? "Job")
+                .Select(g => new GeneralSummaryMonthlyJobResponse
+                {
+                    JobId = g.Key.JobId,
+                    JobTitle = jobTitleById.GetValueOrDefault(g.Key.JobId) ?? "Job",
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    MonthLabel = FormatMonthLabel(g.Key.Year, g.Key.Month),
+                    Earnings = g.Sum(e => e.TotalEarnings)
+                })
+                .ToList();
+        }
+
+        private static List<GeneralSummaryJobHoursResponse> BuildAverageWeeklyHoursByJob(
+            IEnumerable<Job> jobs,
+            IEnumerable<DailyEntry> entries)
+        {
+            var entriesByJob = entries
+                .GroupBy(e => e.JobId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            return jobs.Select(job =>
+            {
+                entriesByJob.TryGetValue(job.Id, out var jobEntries);
+                jobEntries ??= new List<DailyEntry>();
+
+                return new GeneralSummaryJobHoursResponse
+                {
+                    JobId = job.Id,
+                    JobTitle = job.Title,
+                    AverageWeeklyHours = CalculateAverageWeeklyHours(jobEntries)
+                };
+            }).ToList();
+        }
+
+        private static string FormatMonthLabel(int year, int month)
+        {
+            return new DateTime(year, month, 1).ToString("MMM yyyy", CultureInfo.InvariantCulture);
         }
     }
 }

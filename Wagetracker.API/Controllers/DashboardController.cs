@@ -36,6 +36,13 @@ namespace WageTracker.API.Controllers
             var summary = await _dashboardService.GetDashboardSummaryAsync(userId);
             return Ok(summary);
         }
+
+        [HttpGet("general-summary")]
+        public async Task<ActionResult<GeneralSummaryResponse>> GetGeneralSummary()
+        {
+            var userId = GetUserId();
+            var summary = await _dashboardService.GetGeneralSummaryAsync(userId);
+            return Ok(summary);
+        }
     }
 }
-

@@ -444,6 +444,64 @@ namespace WageTracker.API.Models.DTOs
         public List<ExpenseResponse> RecentExpenses { get; set; } = new();
     }
 
+    public class GeneralSummaryResponse
+    {
+        public decimal TotalEarnings { get; set; }
+        public decimal TotalExpenses { get; set; }
+        public decimal NetEarnings { get; set; }
+        public decimal TotalHours { get; set; }
+        public decimal AverageWeeklyHours { get; set; }
+        public GeneralSummaryPurchaseResponse? LargestPurchase { get; set; }
+        public List<GeneralSummaryJobResponse> Jobs { get; set; } = new();
+        public List<GeneralSummaryMonthResponse> Months { get; set; } = new();
+        public List<GeneralSummaryMonthlyJobResponse> MonthlyJobs { get; set; } = new();
+        public List<GeneralSummaryJobHoursResponse> AverageWeeklyHoursByJob { get; set; } = new();
+    }
+
+    public class GeneralSummaryJobResponse
+    {
+        public int JobId { get; set; }
+        public string JobTitle { get; set; } = string.Empty;
+        public decimal TotalEarnings { get; set; }
+        public decimal TotalHours { get; set; }
+    }
+
+    public class GeneralSummaryMonthResponse
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public string MonthLabel { get; set; } = string.Empty;
+        public decimal Earnings { get; set; }
+        public decimal Expenses { get; set; }
+        public decimal NetEarnings { get; set; }
+    }
+
+    public class GeneralSummaryMonthlyJobResponse
+    {
+        public int JobId { get; set; }
+        public string JobTitle { get; set; } = string.Empty;
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public string MonthLabel { get; set; } = string.Empty;
+        public decimal Earnings { get; set; }
+    }
+
+    public class GeneralSummaryPurchaseResponse
+    {
+        public int ExpenseId { get; set; }
+        public decimal Amount { get; set; }
+        public DateTime Date { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string CategoryName { get; set; } = string.Empty;
+    }
+
+    public class GeneralSummaryJobHoursResponse
+    {
+        public int JobId { get; set; }
+        public string JobTitle { get; set; } = string.Empty;
+        public decimal AverageWeeklyHours { get; set; }
+    }
+
     public class WeeklyGoalStatusResponse
     {
         public decimal? TargetAmount { get; set; }

@@ -18,6 +18,7 @@ import {
     GoalStackParamList,
     HomeStackParamList,
     OverviewStackParamList,
+    ProfileStackParamList,
     RootStackParamList,
     TabParamList,
 } from '../types';
@@ -35,6 +36,7 @@ import { ExpensesScreen } from '../screens/ExpensesScreen';
 import { ExpenseHistoryScreen } from '../screens/ExpenseHistoryScreen';
 import { OverviewScreen } from '../screens/OverviewScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { GeneralSummaryScreen } from '../screens/GeneralSummaryScreen';
 import { PaywallScreen } from '../screens/PaywallScreen';
 import { PremiumFeatureScreen } from '../screens/PremiumFeatureScreen';
 import { AddExpenseModal } from '../components/AddExpenseModal';
@@ -48,6 +50,7 @@ const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const ExpenseStack = createNativeStackNavigator<ExpenseStackParamList>();
 const OverviewStack = createNativeStackNavigator<OverviewStackParamList>();
 const GoalStack = createNativeStackNavigator<GoalStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
 const AuthNavigator: React.FC = () => {
@@ -126,6 +129,21 @@ const GoalNavigator: React.FC = () => {
     );
 };
 
+const ProfileNavigator: React.FC = () => {
+    return (
+        <ProfileStack.Navigator
+            screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.surface },
+                animation: 'slide_from_right',
+            }}
+        >
+            <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+            <ProfileStack.Screen name="GeneralSummary" component={GeneralSummaryScreen} />
+        </ProfileStack.Navigator>
+    );
+};
+
 const LockedGoalScreen: React.FC = () => <PremiumFeatureScreen feature="goals" />;
 const LockedExpensesScreen: React.FC = () => <PremiumFeatureScreen feature="expenses" />;
 const DummyScreen: React.FC = () => <View style={{ flex: 1, backgroundColor: '#fbf9f1' }} />;
@@ -145,6 +163,12 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
     const activeRoute = state.routes[state.index];
     const nestedState = activeRoute?.state;
     const nestedRoute = nestedState?.routes?.[nestedState.index ?? 0];
+    const normalizedActiveRouteName =
+        activeRouteName === 'HomeTab' && nestedRoute?.name === 'Goal'
+            ? 'GoalTab'
+            : activeRouteName === 'HomeTab' && nestedRoute?.name === 'JobDetails'
+                ? 'OverviewTab'
+                : activeRouteName;
     const isDashboardJobDetails = activeRouteName === 'HomeTab' && nestedRoute?.name === 'JobDetails';
     const showFab = isDashboardJobDetails || activeRouteName === 'OverviewTab' || (activeRouteName === 'ExpensesTab' && user?.access.canUseExpenses);
 
@@ -183,7 +207,7 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
             >
                 {visibleTabs.map((tab) => {
                     const routeIndex = state.routes.findIndex((route: any) => route.name === tab.routeName);
-                    const isFocused = activeRouteName === tab.routeName;
+                    const isFocused = normalizedActiveRouteName === tab.routeName;
 
                     const onPress = () => {
                         const route = state.routes[routeIndex];
@@ -322,7 +346,7 @@ const MainNavigator: React.FC = () => {
                 <Tab.Screen name="ExpensesTab" component={user?.access.canUseExpenses ? ExpenseNavigator : LockedExpensesScreen} />
                 <Tab.Screen name="AddTab" component={DummyScreen} />
                 <Tab.Screen name="OverviewTab" component={OverviewNavigator} />
-                <Tab.Screen name="ProfileTab" component={ProfileScreen} />
+                <Tab.Screen name="ProfileTab" component={ProfileNavigator} />
             </Tab.Navigator>
 
             <AddExpenseModal

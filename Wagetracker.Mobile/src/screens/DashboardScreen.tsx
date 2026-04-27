@@ -41,10 +41,10 @@ const dayLabelsByIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as co
 const brandLogo = require('../../assets/logo.png');
 
 const gigCardThemes = [
-    { backgroundStyle: 'gigCardPrimary', icon: 'hotel' },
-    { backgroundStyle: 'gigCardTertiary', icon: 'restaurant' },
-    { backgroundStyle: 'gigCardTeal', icon: 'cleaning-services' },
-    { backgroundStyle: 'gigCardSlate', icon: 'work' },
+    { backgroundStyle: 'gigCardPrimary' },
+    { backgroundStyle: 'gigCardTertiary' },
+    { backgroundStyle: 'gigCardTeal' },
+    { backgroundStyle: 'gigCardSlate' },
 ] as const;
 
 export const DashboardScreen: React.FC = () => {
@@ -299,19 +299,11 @@ export const DashboardScreen: React.FC = () => {
                                     backgroundStyle,
                                 ]}
                                 activeOpacity={0.9}
-                                onPress={() => navigation.navigate('JobDetails', { jobId: job.id })}
+                                onPress={() => navigation.navigate('OverviewTab', { screen: 'JobDetails', params: { jobId: job.id } })}
                             >
                                 <View style={styles.gigGlow} />
 
-                                <View>
-                                    <View style={styles.gigTopRow}>
-                                        <MaterialIcons
-                                            name={theme.icon}
-                                            size={Math.round(rs(32, 0.84, 1))}
-                                            color={colors.white}
-                                        />
-                                    </View>
-
+                                <View style={styles.gigContent}>
                                     <Text style={[styles.gigTitle, { fontSize: rfs(isCompact ? 18 : 21, 0.86, 1) }]}>{job.title}</Text>
                                     {job.isLocked ? <Text style={styles.lockedTag}>Locked</Text> : null}
                                     <Text style={[styles.gigSubtitle, { fontSize: rfs(isCompact ? 12 : 13, 0.9, 1) }]}>
@@ -431,7 +423,7 @@ export const DashboardScreen: React.FC = () => {
                     <TouchableOpacity
                         style={[styles.goalCard, { borderRadius: rs(28, 0.84, 1), padding: metrics.cardPadding, marginTop: rv(18, 0.72, 1) }]}
                         activeOpacity={0.88}
-                        onPress={() => navigation.navigate('Goal')}
+                        onPress={() => navigation.navigate('GoalTab')}
                     >
                         <View style={styles.goalCardTop}>
                             <View>
@@ -804,19 +796,21 @@ const styles = StyleSheet.create({
         borderRadius: 9999,
         backgroundColor: 'rgba(255,255,255,0.10)',
     },
-    gigTopRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 14,
+    gigContent: {
+        flex: 1,
+        justifyContent: 'center',
     },
     gigTitle: {
         color: colors.white,
-        fontWeight: '700',
+        fontWeight: '800',
         letterSpacing: -0.4,
-        marginBottom: 4,
+        marginBottom: 8,
+        textAlign: 'center',
     },
     gigSubtitle: {
         color: 'rgba(255,255,255,0.80)',
+        textAlign: 'center',
+        fontWeight: '600',
     },
     gigBottomRow: {
         flexDirection: 'row',

@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 // ==================== AUTH TYPES ====================
 
 export interface LoginRequest {
@@ -353,16 +355,68 @@ export interface DailyEarningsPointResponse {
     totalEarnings: number;
 }
 
+export interface GeneralSummaryResponse {
+    totalEarnings: number;
+    totalExpenses: number;
+    netEarnings: number;
+    totalHours: number;
+    averageWeeklyHours: number;
+    largestPurchase: GeneralSummaryPurchaseResponse | null;
+    jobs: GeneralSummaryJobResponse[];
+    months: GeneralSummaryMonthResponse[];
+    monthlyJobs: GeneralSummaryMonthlyJobResponse[];
+    averageWeeklyHoursByJob: GeneralSummaryJobHoursResponse[];
+}
+
+export interface GeneralSummaryJobResponse {
+    jobId: number;
+    jobTitle: string;
+    totalEarnings: number;
+    totalHours: number;
+}
+
+export interface GeneralSummaryMonthResponse {
+    year: number;
+    month: number;
+    monthLabel: string;
+    earnings: number;
+    expenses: number;
+    netEarnings: number;
+}
+
+export interface GeneralSummaryMonthlyJobResponse {
+    jobId: number;
+    jobTitle: string;
+    year: number;
+    month: number;
+    monthLabel: string;
+    earnings: number;
+}
+
+export interface GeneralSummaryPurchaseResponse {
+    expenseId: number;
+    amount: number;
+    date: string;
+    title: string;
+    categoryName: string;
+}
+
+export interface GeneralSummaryJobHoursResponse {
+    jobId: number;
+    jobTitle: string;
+    averageWeeklyHours: number;
+}
+
 // ==================== NAVIGATION TYPES ====================
 
 // Bottom Tab Navigator
 export type TabParamList = {
-    HomeTab: undefined;
+    HomeTab: NavigatorScreenParams<HomeStackParamList> | undefined;
     GoalTab: undefined;
     ExpensesTab: undefined;
     AddTab: undefined;
-    OverviewTab: undefined;
-    ProfileTab: undefined;
+    OverviewTab: NavigatorScreenParams<OverviewStackParamList> | undefined;
+    ProfileTab: NavigatorScreenParams<ProfileStackParamList> | undefined;
 };
 
 // Root Stack (Auth vs Main)
@@ -402,6 +456,11 @@ export type ExpenseStackParamList = {
 
 export type GoalStackParamList = {
     Goal: undefined;
+};
+
+export type ProfileStackParamList = {
+    Profile: undefined;
+    GeneralSummary: undefined;
 };
 
 // Backward compat alias

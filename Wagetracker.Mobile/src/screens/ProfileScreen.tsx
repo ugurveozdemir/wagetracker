@@ -110,6 +110,15 @@ export const ProfileScreen: React.FC = () => {
         }
     };
 
+    const handleGeneralSummary = () => {
+        if (!user?.subscription.isPremium) {
+            navigation.navigate('Paywall', { source: 'profile', feature: 'premium' });
+            return;
+        }
+
+        navigation.navigate('GeneralSummary');
+    };
+
     const openUrl = async (url: string) => {
         try {
             await Linking.openURL(url);
@@ -323,6 +332,21 @@ export const ProfileScreen: React.FC = () => {
                     </View>
                 </View>
 
+                <TouchableOpacity
+                    style={[styles.generalSummaryButton, { borderRadius: rs(30), padding: rs(isCompact ? 20 : 22), marginBottom: rv(24, 0.74, 1) }]}
+                    activeOpacity={0.86}
+                    onPress={handleGeneralSummary}
+                >
+                    <View style={[styles.generalSummaryIconBubble, { width: rs(52), height: rs(52), borderRadius: rs(26) }]}>
+                        <MaterialIcons name="analytics" size={24} color={colors.primarySoft} />
+                    </View>
+                    <View style={styles.generalSummaryCopy}>
+                        <Text style={styles.generalSummaryTitle}>General Summary</Text>
+                        <Text style={styles.generalSummarySubtitle}>Review earnings, spending, net income, and job trends.</Text>
+                    </View>
+                    <Feather name="arrow-right" size={22} color={colors.primary} />
+                </TouchableOpacity>
+
                 <View style={[styles.subscriptionCard, { borderRadius: rs(30), padding: rs(isCompact ? 24 : 28) }]}>
                     <View style={styles.subscriptionHeader}>
                         <View>
@@ -525,6 +549,37 @@ const styles = StyleSheet.create({
     },
     statValuePrimary: {
         color: colors.primarySoft,
+    },
+    generalSummaryButton: {
+        backgroundColor: colors.surfaceContainerLowest,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.md,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.06,
+        shadowRadius: 20,
+        elevation: 4,
+    },
+    generalSummaryIconBubble: {
+        backgroundColor: colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    generalSummaryCopy: {
+        flex: 1,
+        gap: spacing.xs,
+    },
+    generalSummaryTitle: {
+        color: colors.onSurface,
+        fontSize: fontSizes.xl,
+        fontWeight: fontWeights.extrabold,
+    },
+    generalSummarySubtitle: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.sm,
+        fontWeight: fontWeights.medium,
+        lineHeight: 19,
     },
     menuPanel: {
         backgroundColor: colors.surfaceLow,

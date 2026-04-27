@@ -27,10 +27,10 @@ type OverviewNavigationProp = CompositeNavigationProp<
 type PaywallTarget = RootStackParamList['Paywall'];
 
 const overviewCardThemes = [
-    { tone: 'primary', icon: 'cleaning-services' },
-    { tone: 'secondary', icon: 'local-bar' },
-    { tone: 'tertiary', icon: 'directions-car' },
-    { tone: 'quaternary', icon: 'storefront' },
+    { tone: 'primary' },
+    { tone: 'secondary' },
+    { tone: 'tertiary' },
+    { tone: 'quaternary' },
 ] as const;
 
 export const OverviewScreen: React.FC = () => {
@@ -127,15 +127,7 @@ export const OverviewScreen: React.FC = () => {
                                 style={styles.cardGlow}
                             />
 
-                            <View style={styles.jobTop}>
-                                <MaterialIcons
-                                    name={job.icon}
-                                    size={Math.round(rs(32, 0.84, 1))}
-                                    color={colors.white}
-                                />
-                            </View>
-
-                            <View>
+                            <View style={styles.jobMain}>
                                 <Text style={[styles.jobName, { fontSize: rfs(compact ? 24 : 27, 0.86, 1), marginBottom: rv(18, 0.74, 1) }]}>{job.title}</Text>
                                 {job.isLocked ? <Text style={styles.lockedTag}>Locked on free tier</Text> : null}
                                 <View
@@ -289,21 +281,21 @@ const styles = StyleSheet.create({
         borderRadius: 999,
         backgroundColor: 'rgba(255,255,255,0.10)',
     },
-    jobTop: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 20,
+    jobMain: {
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     jobName: {
         color: colors.white,
         fontSize: 27,
-        fontWeight: '700',
+        fontWeight: '800',
         marginBottom: 18,
         letterSpacing: -0.6,
+        textAlign: 'center',
     },
     ratePill: {
-        alignSelf: 'flex-start',
+        alignSelf: 'center',
+        alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderRadius: 999,
@@ -340,6 +332,7 @@ const styles = StyleSheet.create({
     earnedSection: {
         paddingTop: 18,
         marginTop: 18,
+        alignItems: 'center',
     },
     earnedSectionPrimary: {
         borderTopWidth: 1,
@@ -360,6 +353,7 @@ const styles = StyleSheet.create({
         fontSize: 34,
         fontWeight: '800',
         letterSpacing: -1,
+        textAlign: 'center',
     },
     earnedValuePrimary: {
         color: colors.white,

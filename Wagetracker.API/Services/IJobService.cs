@@ -14,6 +14,7 @@ namespace WageTracker.API.Services
     public interface IDashboardService
     {
         Task<DashboardSummaryResponse> GetDashboardSummaryAsync(int userId);
+        Task<GeneralSummaryResponse> GetGeneralSummaryAsync(int userId);
     }
 
     public interface IProfileService
