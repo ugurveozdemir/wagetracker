@@ -312,7 +312,7 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                 {isPurchasing ? <Text style={styles.helperText}>Waiting for the store...</Text> : null}
                 {!isLoading && packages.length === 0 ? (
                     <Text style={styles.helperText}>
-                        No store packages are available yet. Finish RevenueCat and store setup, then refresh this screen.
+                        Subscriptions are temporarily unavailable. Please try again later.
                     </Text>
                 ) : null}
 
