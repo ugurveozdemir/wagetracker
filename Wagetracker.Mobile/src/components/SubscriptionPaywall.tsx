@@ -123,6 +123,7 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
         isPurchasing,
         error,
         purchaseSelectedPackage,
+        restorePurchases,
         refreshSubscriptionStatus,
     } = useSubscriptionStore();
 
@@ -147,6 +148,31 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                 type: 'error',
                 text1: 'Purchase Failed',
                 text2: purchaseError instanceof Error ? purchaseError.message : 'Please try again.',
+                visibilityTime: 2800,
+            });
+        }
+    };
+
+    const handleRestore = async () => {
+        try {
+            const updatedUser = await restorePurchases();
+            const hasPremium = updatedUser?.subscription.isPremium;
+            Toast.show({
+                type: hasPremium ? 'success' : 'info',
+                text1: hasPremium ? 'Purchases Restored' : 'No Active Subscription',
+                text2: hasPremium
+                    ? 'Premium access is active on this account.'
+                    : 'No active subscription was found for this store account.',
+                visibilityTime: 2400,
+            });
+            if (hasPremium) {
+                onSuccess?.();
+            }
+        } catch (restoreError) {
+            Toast.show({
+                type: 'error',
+                text1: 'Restore Failed',
+                text2: restoreError instanceof Error ? restoreError.message : 'Please try again.',
                 visibilityTime: 2800,
             });
         }
@@ -272,6 +298,15 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                     })}
                 </View>
 
+                <TouchableOpacity
+                    style={[styles.secondaryButton, isPurchasing && styles.secondaryButtonDisabled]}
+                    activeOpacity={0.84}
+                    onPress={handleRestore}
+                    disabled={isPurchasing}
+                >
+                    <Text style={styles.secondaryButtonText}>Restore purchases</Text>
+                </TouchableOpacity>
+
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 {isLoading ? <Text style={styles.helperText}>Loading offers...</Text> : null}
                 {isPurchasing ? <Text style={styles.helperText}>Waiting for the store...</Text> : null}
@@ -282,12 +317,12 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                 ) : null}
 
                 <Text style={styles.legalText}>
-                    Purchases renew automatically unless cancelled before the renewal date. By subscribing, you agree to the Terms and Privacy Policy.
+                    Purchases renew automatically unless cancelled before the renewal date. By subscribing, you agree to the Apple Standard EULA and Privacy Policy.
                 </Text>
 
                 <View style={styles.linksRow}>
                     <TouchableOpacity activeOpacity={0.8} onPress={() => Linking.openURL(config.TERMS_URL)}>
-                        <Text style={styles.linkText}>Terms</Text>
+                        <Text style={styles.linkText}>Apple Standard EULA</Text>
                     </TouchableOpacity>
                     <TouchableOpacity activeOpacity={0.8} onPress={() => Linking.openURL(config.PRIVACY_URL)}>
                         <Text style={styles.linkText}>Privacy</Text>

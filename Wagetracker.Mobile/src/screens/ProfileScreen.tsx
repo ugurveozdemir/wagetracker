@@ -126,7 +126,7 @@ export const ProfileScreen: React.FC = () => {
     const handleDeleteAccount = () => {
         Alert.alert(
             'Delete Account',
-            'This permanently deletes your Chickaree account, jobs, entries, expenses, and profile data. This cannot be undone.',
+            'This permanently deletes your Chickaree account, jobs, entries, expenses, and profile data. This cannot be undone.\n\nDeleting your Chickaree account does not cancel your Apple or Google Play subscription. Manage or cancel your subscription from your store subscription settings.',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {

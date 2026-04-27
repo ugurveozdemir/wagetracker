@@ -300,44 +300,51 @@ const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, on
         _progress: Animated.AnimatedInterpolation<number>,
         dragX: Animated.AnimatedInterpolation<number>
     ) => {
+        const actionScaleX = dragX.interpolate({
+            inputRange: [-124, -40, 0],
+            outputRange: [1, 0.56, 0.24],
+            extrapolate: 'clamp',
+        });
+
         const actionTranslateX = dragX.interpolate({
-            inputRange: [-120, -40, 0],
-            outputRange: [0, 26, 72],
+            inputRange: [-124, -40, 0],
+            outputRange: [0, 23, 40],
             extrapolate: 'clamp',
         });
 
         const bgOpacity = dragX.interpolate({
-            inputRange: [-120, -32, 0],
-            outputRange: [1, 0.82, 0],
+            inputRange: [-96, -24, 0],
+            outputRange: [1, 0.74, 0],
             extrapolate: 'clamp',
         });
 
-        const iconTranslateX = dragX.interpolate({
-            inputRange: [-120, -40, 0],
-            outputRange: [0, 10, 22],
+        const iconOpacity = dragX.interpolate({
+            inputRange: [-88, -38, 0],
+            outputRange: [1, 0.45, 0],
             extrapolate: 'clamp',
         });
 
         const iconScale = dragX.interpolate({
-            inputRange: [-120, -40, 0],
-            outputRange: [1, 0.92, 0.84],
+            inputRange: [-104, -40, 0],
+            outputRange: [1, 0.9, 0.72],
             extrapolate: 'clamp',
         });
 
         return (
             <View style={styles.swipeDeleteContainer}>
-                <Animated.View
-                    style={[
-                        styles.swipeDeleteBackground,
-                        {
-                            opacity: bgOpacity,
-                            transform: [{ translateX: actionTranslateX }],
-                        },
-                    ]}
-                />
-                <TouchableOpacity style={styles.swipeDeleteAction} onPress={onDelete} activeOpacity={0.8}>
-                    <Animated.View style={{ opacity: bgOpacity, transform: [{ translateX: iconTranslateX }, { scale: iconScale }] }}>
-                        <Feather name="trash-2" size={22} color={colors.white} />
+                <TouchableOpacity style={styles.swipeDeleteAction} onPress={onDelete} activeOpacity={0.84}>
+                    <Animated.View
+                        style={[
+                            styles.swipeDeleteSurface,
+                            {
+                                opacity: bgOpacity,
+                                transform: [{ translateX: actionTranslateX }, { scaleX: actionScaleX }],
+                            },
+                        ]}
+                    >
+                        <Animated.View style={{ opacity: iconOpacity, transform: [{ scale: iconScale }] }}>
+                            <Feather name="trash-2" size={21} color={colors.white} />
+                        </Animated.View>
                     </Animated.View>
                 </TouchableOpacity>
             </View>
@@ -345,45 +352,53 @@ const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, on
     };
 
     return (
-        <Swipeable renderRightActions={renderRightActions} overshootRight={false} friction={2} rightThreshold={40}>
-            <View style={[styles.recentItem, { borderRadius: rs(24, 0.86, 1), padding: rs(20, 0.84, 1), height: rv(92, 0.86, 1) }]}>
-                <View style={styles.recentLeft}>
-                    <View style={[styles.recentIconWrap, { width: rs(48, 0.86, 1), height: rs(48, 0.86, 1), borderRadius: rs(24, 0.86, 1), backgroundColor: item.iconBg }]}>
-                        <MaterialIcons name={item.icon} size={Math.round(rs(24, 0.86, 1))} color={item.iconColor} />
+        <View style={[styles.recentItemShell, { borderRadius: rs(24, 0.86, 1) }]}>
+            <Swipeable renderRightActions={renderRightActions} overshootRight={false} friction={2} rightThreshold={40}>
+                <View
+                    style={[
+                        styles.recentItem,
+                        { borderRadius: rs(24, 0.86, 1), padding: rs(20, 0.84, 1), height: rv(92, 0.86, 1) },
+                        hasItems && expanded && styles.recentItemExpanded,
+                    ]}
+                >
+                    <View style={styles.recentLeft}>
+                        <View style={[styles.recentIconWrap, { width: rs(48, 0.86, 1), height: rs(48, 0.86, 1), borderRadius: rs(24, 0.86, 1), backgroundColor: item.iconBg }]}>
+                            <MaterialIcons name={item.icon} size={Math.round(rs(24, 0.86, 1))} color={item.iconColor} />
+                        </View>
+
+                        <View style={styles.recentCopy}>
+                            <Text
+                                numberOfLines={1}
+                                style={[styles.recentTitle, { fontSize: rfs(compact ? 15 : 16, 0.9, 1) }]}
+                            >
+                                {item.title}
+                            </Text>
+                            <Text
+                                numberOfLines={1}
+                                style={[styles.recentMeta, { fontSize: rfs(compact ? 10 : 11, 0.92, 1) }]}
+                            >
+                                {item.meta}
+                            </Text>
+                            <Text
+                                numberOfLines={1}
+                                style={[styles.recentDescription, { fontSize: rfs(compact ? 10 : 11, 0.92, 1) }]}
+                            >
+                                {item.description || ' '}
+                            </Text>
+                        </View>
                     </View>
 
-                    <View style={styles.recentCopy}>
-                        <Text
-                            numberOfLines={1}
-                            style={[styles.recentTitle, { fontSize: rfs(compact ? 15 : 16, 0.9, 1) }]}
-                        >
-                            {item.title}
-                        </Text>
-                        <Text
-                            numberOfLines={1}
-                            style={[styles.recentMeta, { fontSize: rfs(compact ? 10 : 11, 0.92, 1) }]}
-                        >
-                            {item.meta}
-                        </Text>
-                        <Text
-                            numberOfLines={1}
-                            style={[styles.recentDescription, { fontSize: rfs(compact ? 10 : 11, 0.92, 1) }]}
-                        >
-                            {item.description || ' '}
-                        </Text>
+                    <View style={styles.recentAmountWrap}>
+                        {hasItems ? (
+                            <TouchableOpacity style={styles.itemCountPill} onPress={onToggleExpanded} activeOpacity={0.82}>
+                                <Text style={styles.itemCountText}>{item.expense.itemCount} items</Text>
+                                <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={15} color="#005232" />
+                            </TouchableOpacity>
+                        ) : null}
+                        <Text style={[styles.recentAmount, { fontSize: rfs(compact ? 15 : 16, 0.9, 1) }]}>{item.amount}</Text>
                     </View>
                 </View>
-
-                <View style={styles.recentAmountWrap}>
-                    {hasItems ? (
-                        <TouchableOpacity style={styles.itemCountPill} onPress={onToggleExpanded} activeOpacity={0.82}>
-                            <Text style={styles.itemCountText}>{item.expense.itemCount} items</Text>
-                            <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={15} color="#005232" />
-                        </TouchableOpacity>
-                    ) : null}
-                    <Text style={[styles.recentAmount, { fontSize: rfs(compact ? 15 : 16, 0.9, 1) }]}>{item.amount}</Text>
-                </View>
-            </View>
+            </Swipeable>
             {hasItems && expanded ? (
                 <View style={styles.expandedItems}>
                     {item.expense.items.map((expenseItem) => (
@@ -397,7 +412,7 @@ const RecentExpenseItem: React.FC<RecentExpenseItemProps> = ({ item, compact, on
                     ))}
                 </View>
             ) : null}
-        </Swipeable>
+        </View>
     );
 };
 
@@ -546,12 +561,20 @@ const styles = StyleSheet.create({
     recentList: {
         gap: 14,
     },
+    recentItemShell: {
+        backgroundColor: '#ffffff',
+        overflow: 'hidden',
+    },
     recentItem: {
         backgroundColor: '#ffffff',
         height: 92,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+    },
+    recentItemExpanded: {
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
     },
     recentLeft: {
         flexDirection: 'row',
@@ -624,8 +647,6 @@ const styles = StyleSheet.create({
     },
     expandedItems: {
         backgroundColor: '#ffffff',
-        borderBottomLeftRadius: 24,
-        borderBottomRightRadius: 24,
         paddingHorizontal: 20,
         paddingBottom: 14,
         gap: 8,
@@ -660,26 +681,28 @@ const styles = StyleSheet.create({
         fontWeight: '800',
     },
     swipeDeleteContainer: {
-        width: 112,
+        width: 116,
         height: '100%',
-        position: 'relative',
-        overflow: 'hidden',
-    },
-    swipeDeleteBackground: {
-        position: 'absolute',
-        right: 0,
-        top: 0,
-        bottom: 0,
-        width: 112,
-        backgroundColor: colors.danger,
-        borderTopRightRadius: 24,
-        borderBottomRightRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'flex-end',
     },
     swipeDeleteAction: {
-        width: 112,
+        width: 116,
         height: '100%',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        paddingLeft: 8,
+    },
+    swipeDeleteSurface: {
+        width: 104,
+        height: '100%',
+        borderTopLeftRadius: 24,
+        borderBottomLeftRadius: 24,
+        borderTopRightRadius: 24,
+        borderBottomRightRadius: 24,
+        backgroundColor: colors.danger,
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1,
+        overflow: 'hidden',
     },
 });
