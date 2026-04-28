@@ -110,7 +110,6 @@ const getPlanSupportCopy = (identifier: string) => {
 
 export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
     feature,
-    source,
     showBackButton = false,
     onBackPress,
     onSuccess,
@@ -327,7 +326,6 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                     <TouchableOpacity activeOpacity={0.8} onPress={() => Linking.openURL(config.PRIVACY_URL)}>
                         <Text style={styles.linkText}>Privacy</Text>
                     </TouchableOpacity>
-                    <Text style={styles.sourceText}>Source: {source.replace('_', ' ')}</Text>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -565,10 +563,5 @@ const styles = StyleSheet.create({
         color: colors.primary,
         fontSize: 13,
         fontWeight: '700',
-    },
-    sourceText: {
-        color: colors.onSurfaceVariant,
-        fontSize: 12,
-        fontWeight: '600',
     },
 });
