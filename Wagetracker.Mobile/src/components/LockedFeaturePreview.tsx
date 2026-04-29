@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { colors, useResponsiveLayout } from '../theme';
+import { useSubscriptionStore } from '../stores';
 
 export type LockedFeature = 'goals' | 'expenses' | 'jobs';
 export type LockedPreviewVariant = 'metrics' | 'weeklyLedger';
@@ -48,7 +49,7 @@ interface LockedFeatureModalProps extends LockedFeatureBaseProps {
 
 const featureCopy: Record<LockedFeature, LockedFeatureCopy> = {
     goals: {
-        eyebrow: 'Premium Goals',
+        eyebrow: 'Pro Goals',
         title: 'Plan the week before it starts.',
         body: 'Preview weekly targets, progress, and remaining income without changing your current setup.',
         icon: 'track-changes',
@@ -60,7 +61,7 @@ const featureCopy: Record<LockedFeature, LockedFeatureCopy> = {
         notes: ['Weekly target preview', 'Progress resets Monday', 'Dashboard goal cards'],
     },
     expenses: {
-        eyebrow: 'Premium Expenses',
+        eyebrow: 'Pro Expenses',
         title: 'See where the week is going.',
         body: 'Preview spending totals, receipt scans, and weekly history beside your income, then unlock the full ledger.',
         icon: 'receipt-long',
@@ -72,13 +73,13 @@ const featureCopy: Record<LockedFeature, LockedFeatureCopy> = {
         notes: ['Receipt scan logging', 'Weekly spend preview', 'Income vs spending'],
     },
     jobs: {
-        eyebrow: 'Premium Jobs',
+        eyebrow: 'Pro Jobs',
         title: 'Keep every role in one place.',
-        body: 'Free accounts keep two jobs unlocked. Premium lets you keep adding roles without hiding older work.',
+        body: 'Free accounts keep two jobs unlocked. Pro lets you keep adding roles without hiding older work.',
         icon: 'work',
         metrics: [
             { label: 'Unlocked', value: '2' },
-            { label: 'Premium', value: '∞' },
+            { label: 'Pro', value: '∞' },
             { label: 'Roles', value: 'All' },
         ],
         notes: ['Unlimited job cards', 'No older roles locked', 'One earnings workspace'],
@@ -209,10 +210,11 @@ const PreviewPanel: React.FC<{
 };
 
 const UnlockButton: React.FC<{ onPress?: () => void; asView?: boolean }> = ({ onPress, asView = false }) => {
+    const canStartTrial = useSubscriptionStore((state) => state.hasEligibleFreeTrial());
     const content = (
         <>
             <MaterialIcons name="workspace-premium" size={18} color={colors.white} />
-            <Text style={styles.unlockButtonText}>Unlock Premium</Text>
+            <Text style={styles.unlockButtonText}>{canStartTrial ? 'Try Pro free' : 'Unlock Pro'}</Text>
         </>
     );
 

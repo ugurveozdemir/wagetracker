@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { CompositeNavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useAuthStore, useJobsStore } from '../stores';
+import { useAuthStore, useJobsStore, useSubscriptionStore } from '../stores';
 import { OverviewStackParamList, RootStackParamList } from '../types';
 import { colors, useResponsiveLayout } from '../theme';
 import { CreateJobModal } from '../components/CreateJobModal';
@@ -38,6 +38,7 @@ export const OverviewScreen: React.FC = () => {
     const navigation = useNavigation<OverviewNavigationProp>();
     const { user } = useAuthStore();
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
+    const canStartTrial = useSubscriptionStore((state) => state.hasEligibleFreeTrial());
     const [refreshing, setRefreshing] = useState(false);
     const [showCreateJobModal, setShowCreateJobModal] = useState(false);
     const [showJobLimitLocked, setShowJobLimitLocked] = useState(false);
@@ -193,10 +194,10 @@ export const OverviewScreen: React.FC = () => {
                         >
                             <MaterialIcons name="add" size={Math.round(rs(30, 0.86, 1))} color="#8a948d" />
                         </View>
-                        <Text style={[styles.addJobTitle, { fontSize: rfs(26, 0.86, 1) }]}>{!user?.subscription.isPremium && jobs.length >= 2 ? 'Upgrade for more' : 'Add New Job'}</Text>
+                        <Text style={[styles.addJobTitle, { fontSize: rfs(26, 0.86, 1) }]}>{!user?.subscription.isPremium && jobs.length >= 2 ? (canStartTrial ? 'Try Pro free' : 'Unlock Pro') : 'Add New Job'}</Text>
                         <Text style={[styles.addJobCopy, { fontSize: rfs(15, 0.9, 1), lineHeight: Math.round(rfs(15, 0.9, 1) * 1.6) }]}>
                             {!user?.subscription.isPremium && jobs.length >= 2
-                                ? 'Free accounts keep 2 jobs unlocked. Upgrade to add more without locking older roles.'
+                                ? 'Free accounts keep 2 jobs unlocked. Pro adds more roles without locking older work.'
                                 : 'Maximize your income by tracking a second or third role.'}
                         </Text>
                     </TouchableOpacity>

@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
     Linking,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -9,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { INTRO_ELIGIBILITY_STATUS, PurchasesPackage } from 'react-native-purchases';
 import Toast from 'react-native-toast-message';
 import { useAuthStore, useSubscriptionStore } from '../stores';
 import { config } from '../config';
@@ -27,24 +29,24 @@ interface SubscriptionPaywallProps {
 
 const featureCopy: Record<PaywallFeature, { eyebrow: string; title: string; body: string }> = {
     premium: {
-        eyebrow: 'Chickaree Premium',
+        eyebrow: 'Chickaree Pro',
         title: 'Unlock your full money workspace.',
-        body: 'Premium unlocks goals, expenses, and unlimited jobs across the app.',
+        body: 'Pro unlocks goals, expenses, and unlimited jobs across the app.',
     },
     goals: {
-        eyebrow: 'Premium Goals',
+        eyebrow: 'Pro Goals',
         title: 'Set weekly income targets.',
         body: 'Upgrade to save weekly goals, track progress, and keep target history in the dashboard.',
     },
     expenses: {
-        eyebrow: 'Premium Expenses',
+        eyebrow: 'Pro Expenses',
         title: 'Track spending with the rest of your ledger.',
         body: 'Upgrade to log expenses, scan receipts, view weekly history, and compare income against spending.',
     },
     jobs: {
-        eyebrow: 'Premium Jobs',
+        eyebrow: 'Pro Jobs',
         title: 'Go beyond the free 2-job limit.',
-        body: 'Premium keeps all jobs unlocked and lets you keep adding new roles without hitting the free-tier cap.',
+        body: 'Pro keeps all jobs unlocked and lets you keep adding new roles without hitting the free-tier cap.',
     },
 };
 
@@ -60,9 +62,37 @@ const getPlanKind = (identifier: string): PlanKind => {
 
 const getPlanLabel = (identifier: string) => {
     const kind = getPlanKind(identifier);
-    if (kind === 'annual') return 'Yearly';
-    if (kind === 'six_month') return '6 Months';
-    return 'Monthly';
+    if (kind === 'annual') return 'Yearly Pro';
+    if (kind === 'six_month') return '6 Month Pro';
+    return 'Monthly Pro';
+};
+
+const getPlanDuration = (pkg: PurchasesPackage) => {
+    switch (pkg.product.subscriptionPeriod) {
+        case 'P1M':
+            return 'month';
+        case 'P6M':
+            return '6 months';
+        case 'P1Y':
+            return 'year';
+        default: {
+            const kind = getPlanKind(pkg.identifier);
+            if (kind === 'annual') return 'year';
+            if (kind === 'six_month') return '6 months';
+            return 'month';
+        }
+    }
+};
+
+const hasThreeDayFreeTrial = (pkg: PurchasesPackage) => {
+    const introPrice = pkg.product.introPrice;
+    return Boolean(
+        introPrice &&
+        introPrice.price === 0 &&
+        introPrice.cycles === 1 &&
+        introPrice.periodUnit === 'DAY' &&
+        introPrice.periodNumberOfUnits === 3
+    );
 };
 
 const getPlanOrder = (identifier: string) => {
@@ -82,7 +112,7 @@ const getPlanSupportCopy = (identifier: string) => {
             benefits: [
                 'Unlimited jobs across your full season',
                 'Receipt scan, expenses, and weekly history',
-                'Weekly income goals and premium dashboard tools',
+                'Weekly income goals and Pro dashboard tools',
             ],
         };
     }
@@ -99,11 +129,11 @@ const getPlanSupportCopy = (identifier: string) => {
     }
 
     return {
-        eyebrow: 'Start using every premium feature now',
+        eyebrow: 'Start using every Pro feature now',
         benefits: [
             'Unlimited jobs as soon as you upgrade',
             'Receipt scan, expenses, and weekly history',
-            'Weekly goals and premium dashboard tools',
+            'Weekly goals and Pro dashboard tools',
         ],
     };
 };
@@ -124,6 +154,9 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
         purchaseSelectedPackage,
         restorePurchases,
         refreshSubscriptionStatus,
+        refreshTrialEligibility,
+        redeemOfferCode,
+        trialEligibility,
     } = useSubscriptionStore();
 
     const copy = featureCopy[feature];
@@ -132,12 +165,43 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
         [availablePackages]
     );
 
-    const handlePurchase = async (selectedPackage: typeof packages[number]) => {
+    useEffect(() => {
+        refreshTrialEligibility(packages).catch(() => undefined);
+    }, [packages, refreshTrialEligibility]);
+
+    const isTrialEligible = (pkg: PurchasesPackage) => {
+        const eligibility = trialEligibility[pkg.product.identifier];
+        return hasThreeDayFreeTrial(pkg) && eligibility?.status === INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE;
+    };
+
+    const getPriceCopy = (pkg: PurchasesPackage) => {
+        const duration = getPlanDuration(pkg);
+        if (isTrialEligible(pkg)) {
+            return `3 days free, then ${pkg.product.priceString} / ${duration}`;
+        }
+
+        return `${pkg.product.priceString} / ${duration}`;
+    };
+
+    const getPlanMeta = (pkg: PurchasesPackage) => {
+        if (isTrialEligible(pkg)) {
+            return 'Start today, pay after trial';
+        }
+
+        const monthlyPrice = pkg.product.pricePerMonthString;
+        if (monthlyPrice && getPlanKind(pkg.identifier) !== 'monthly') {
+            return `${monthlyPrice} per month equivalent`;
+        }
+
+        return 'Full Pro access';
+    };
+
+    const handlePurchase = async (selectedPackage: PurchasesPackage) => {
         try {
             await purchaseSelectedPackage(selectedPackage);
             Toast.show({
                 type: 'success',
-                text1: 'Premium Unlocked',
+                text1: 'Pro Unlocked',
                 text2: 'Your subscription access is active.',
                 visibilityTime: 2200,
             });
@@ -160,7 +224,7 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                 type: hasPremium ? 'success' : 'info',
                 text1: hasPremium ? 'Purchases Restored' : 'No Active Subscription',
                 text2: hasPremium
-                    ? 'Premium access is active on this account.'
+                    ? 'Pro access is active on this account.'
                     : 'No active subscription was found for this store account.',
                 visibilityTime: 2400,
             });
@@ -172,6 +236,30 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                 type: 'error',
                 text1: 'Restore Failed',
                 text2: restoreError instanceof Error ? restoreError.message : 'Please try again.',
+                visibilityTime: 2800,
+            });
+        }
+    };
+
+    const handleRedeemOfferCode = async () => {
+        try {
+            const updatedUser = await redeemOfferCode();
+            Toast.show({
+                type: updatedUser?.subscription.isPremium ? 'success' : 'info',
+                text1: updatedUser?.subscription.isPremium ? 'Offer Redeemed' : 'Offer Code Checked',
+                text2: updatedUser?.subscription.isPremium
+                    ? 'Pro access is active on this account.'
+                    : 'If the code was accepted, access may take a moment to refresh.',
+                visibilityTime: 2600,
+            });
+            if (updatedUser?.subscription.isPremium) {
+                onSuccess?.();
+            }
+        } catch (redeemError) {
+            Toast.show({
+                type: 'error',
+                text1: 'Offer Code Failed',
+                text2: redeemError instanceof Error ? redeemError.message : 'Please try again.',
                 visibilityTime: 2800,
             });
         }
@@ -222,7 +310,7 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                         </View>
                         <View style={styles.bulletRow}>
                             <MaterialIcons name="check-circle" size={18} color={colors.primarySoft} />
-                            <Text style={[styles.bulletText, { fontSize: rfs(15, 0.9, 1) }]}>Weekly goals and premium dashboard cards</Text>
+                            <Text style={[styles.bulletText, { fontSize: rfs(15, 0.9, 1) }]}>Weekly goals and Pro dashboard cards</Text>
                         </View>
                     </View>
                 </View>
@@ -232,12 +320,12 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                         <Text style={styles.activeLabel}>Current plan</Text>
                         <Text style={[styles.activeValue, { fontSize: rfs(28, 0.86, 1) }]}>
                             {user.subscription.planTerm === 'annual'
-                                ? 'Yearly'
+                                ? 'Yearly Pro'
                                 : user.subscription.planTerm === 'six_month'
-                                    ? '6 Months'
+                                    ? '6 Month Pro'
                                     : user.subscription.planTerm === 'monthly'
-                                        ? 'Monthly'
-                                        : 'Premium'}
+                                        ? 'Monthly Pro'
+                                        : 'Pro'}
                         </Text>
                         <Text style={styles.activeMeta}>
                             Status: {user.subscription.status.replace('_', ' ')}
@@ -267,7 +355,7 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                                     <View style={styles.planHeaderCopy}>
                                         <Text style={[styles.planTitle, { fontSize: rfs(24, 0.86, 1) }]}>{getPlanLabel(pkg.identifier)}</Text>
                                         <Text style={[styles.planSubtitle, { fontSize: rfs(14, 0.9, 1), lineHeight: Math.round(rfs(14, 0.9, 1) * 1.42) }]}>
-                                            {support.eyebrow}
+                                            {getPlanMeta(pkg)}
                                         </Text>
                                     </View>
                                     {isBestOffer ? (
@@ -278,7 +366,7 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                                 </View>
 
                                 <View style={styles.priceRow}>
-                                    <Text style={[styles.priceText, { fontSize: rfs(22, 0.86, 1) }]}>{pkg.product.priceString}</Text>
+                                    <Text style={[styles.priceText, { fontSize: rfs(22, 0.86, 1) }]}>{getPriceCopy(pkg)}</Text>
                                     <MaterialIcons name="arrow-forward" size={18} color={colors.primary} />
                                 </View>
 
@@ -305,6 +393,18 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                 >
                     <Text style={styles.secondaryButtonText}>Restore purchases</Text>
                 </TouchableOpacity>
+
+                {Platform.OS === 'ios' ? (
+                    <TouchableOpacity
+                        style={[styles.offerCodeButton, isPurchasing && styles.secondaryButtonDisabled]}
+                        activeOpacity={0.84}
+                        onPress={handleRedeemOfferCode}
+                        disabled={isPurchasing}
+                    >
+                        <MaterialIcons name="redeem" size={18} color={colors.primary} />
+                        <Text style={styles.offerCodeButtonText}>Have an offer code?</Text>
+                    </TouchableOpacity>
+                ) : null}
 
                 {error ? <Text style={styles.errorText}>{error}</Text> : null}
                 {isLoading ? <Text style={styles.helperText}>Loading offers...</Text> : null}
@@ -499,9 +599,11 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     priceText: {
+        flex: 1,
         color: colors.primary,
         fontSize: 22,
         fontWeight: '800',
+        lineHeight: 28,
     },
     planBenefits: {
         gap: 10,
@@ -531,6 +633,23 @@ const styles = StyleSheet.create({
     secondaryButtonText: {
         color: colors.onSurface,
         fontSize: 16,
+        fontWeight: '700',
+    },
+    offerCodeButton: {
+        minHeight: 52,
+        borderRadius: 999,
+        backgroundColor: colors.surfaceContainerLowest,
+        borderWidth: 1,
+        borderColor: colors.outlineVariant,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginBottom: 12,
+    },
+    offerCodeButtonText: {
+        color: colors.primary,
+        fontSize: 15,
         fontWeight: '700',
     },
     errorText: {

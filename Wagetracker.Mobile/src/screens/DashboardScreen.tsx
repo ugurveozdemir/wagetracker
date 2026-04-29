@@ -16,7 +16,7 @@ import { CompositeNavigationProp, useNavigation, useFocusEffect } from '@react-n
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { HomeStackParamList, RootStackParamList, TabParamList } from '../types';
-import { useAuthStore, useJobsStore } from '../stores';
+import { useAuthStore, useJobsStore, useSubscriptionStore } from '../stores';
 import { CreateJobModal } from '../components/CreateJobModal';
 import { LockedFeatureCard, LockedFeatureModal } from '../components/LockedFeaturePreview';
 import { colors, useResponsiveLayout } from '../theme';
@@ -52,6 +52,7 @@ export const DashboardScreen: React.FC = () => {
     const navigation = useNavigation<DashboardNavigationProp>();
     const { user } = useAuthStore();
     const { summary, jobs, error, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
+    const canStartTrial = useSubscriptionStore((state) => state.hasEligibleFreeTrial());
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showJobLimitLocked, setShowJobLimitLocked] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -345,7 +346,7 @@ export const DashboardScreen: React.FC = () => {
                         }}
                     >
                         <MaterialIcons name="add-circle" size={Math.round(rs(28, 0.86, 1))} color={colors.outline} />
-                        <Text style={styles.addGigText}>{!user?.subscription.isPremium && jobs.length >= 2 ? 'Upgrade' : 'Add Job'}</Text>
+                        <Text style={styles.addGigText}>{!user?.subscription.isPremium && jobs.length >= 2 ? (canStartTrial ? 'Try Pro' : 'Pro') : 'Add Job'}</Text>
                     </TouchableOpacity>
                 </ScrollView>
 

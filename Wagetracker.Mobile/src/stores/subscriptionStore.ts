@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
-import Purchases, { CustomerInfo, LOG_LEVEL, PurchasesOfferings, PurchasesPackage } from 'react-native-purchases';
+import Purchases, {
+    CustomerInfo,
+    INTRO_ELIGIBILITY_STATUS,
+    IntroEligibility,
+    LOG_LEVEL,
+    PurchasesOfferings,
+    PurchasesPackage,
+} from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { subscriptionsApi } from '../api';
 import { config } from '../config';
@@ -16,12 +23,16 @@ interface SubscriptionState {
     isPurchasing: boolean;
     error: string | null;
     lastCustomerInfo: CustomerInfo | null;
+    trialEligibility: Record<string, IntroEligibility>;
     bootstrap: (user: UserDto | null) => Promise<void>;
     getCustomerInfo: () => Promise<CustomerInfo | null>;
     hasActiveEntitlement: (customerInfo?: CustomerInfo | null) => boolean;
+    hasEligibleFreeTrial: () => boolean;
+    refreshTrialEligibility: (packages?: PurchasesPackage[]) => Promise<Record<string, IntroEligibility>>;
     refreshSubscriptionStatus: () => Promise<UserDto | null>;
     presentRevenueCatPaywall: () => Promise<PAYWALL_RESULT>;
     presentCustomerCenter: () => Promise<void>;
+    redeemOfferCode: () => Promise<UserDto | null>;
     purchaseSelectedPackage: (selectedPackage: PurchasesPackage) => Promise<UserDto | null>;
     restorePurchases: () => Promise<UserDto | null>;
     clear: () => Promise<void>;
@@ -80,6 +91,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     isPurchasing: false,
     error: null,
     lastCustomerInfo: null,
+    trialEligibility: {},
 
     bootstrap: async (user) => {
         if (!user) {
@@ -123,6 +135,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
                 loadOfferings(),
                 Purchases.getCustomerInfo(),
             ]);
+            const trialEligibility = await get().refreshTrialEligibility(availablePackages);
 
             set({
                 offerings,
@@ -130,6 +143,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
                 isConfigured: true,
                 configuredCustomerId: user.billingCustomerId,
                 lastCustomerInfo: customerInfo,
+                trialEligibility,
                 isLoading: false,
             });
         } catch (error) {
@@ -158,6 +172,42 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     hasActiveEntitlement: (customerInfo) => {
         const info = customerInfo ?? get().lastCustomerInfo;
         return Boolean(info?.entitlements.active[config.REVENUECAT_ENTITLEMENT_ID]);
+    },
+
+    hasEligibleFreeTrial: () => {
+        return get().availablePackages.some((pkg) => {
+            const introPrice = pkg.product.introPrice;
+            const eligibility = get().trialEligibility[pkg.product.identifier];
+            return Boolean(
+                introPrice &&
+                introPrice.price === 0 &&
+                introPrice.periodUnit === 'DAY' &&
+                introPrice.periodNumberOfUnits === 3 &&
+                eligibility?.status === INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE
+            );
+        });
+    },
+
+    refreshTrialEligibility: async (packages) => {
+        if (Platform.OS !== 'ios') {
+            set({ trialEligibility: {} });
+            return {};
+        }
+
+        const productIds = [...new Set((packages ?? get().availablePackages).map((pkg) => pkg.product.identifier))];
+        if (productIds.length === 0) {
+            set({ trialEligibility: {} });
+            return {};
+        }
+
+        try {
+            const eligibility = await Purchases.checkTrialOrIntroductoryPriceEligibility(productIds);
+            set({ trialEligibility: eligibility });
+            return eligibility;
+        } catch {
+            set({ trialEligibility: {} });
+            return {};
+        }
     },
 
     refreshSubscriptionStatus: async () => {
@@ -252,6 +302,37 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         }
     },
 
+    redeemOfferCode: async () => {
+        if (Platform.OS !== 'ios') {
+            throw new Error('Offer codes are available on iOS only.');
+        }
+
+        if (!get().isConfigured) {
+            throw new Error('RevenueCat is not configured yet.');
+        }
+
+        set({ isPurchasing: true, error: null });
+        try {
+            await Purchases.presentCodeRedemptionSheet();
+            await Purchases.invalidateCustomerInfoCache();
+            const customerInfo = await get().getCustomerInfo();
+            const updatedUser = await get().refreshSubscriptionStatus();
+            if (get().hasActiveEntitlement(customerInfo)) {
+                set({ isPurchasing: false });
+                return updatedUser;
+            }
+
+            set({ isPurchasing: false });
+            return updatedUser;
+        } catch (error) {
+            set({
+                isPurchasing: false,
+                error: getErrorMessage(error, 'Failed to redeem offer code.'),
+            });
+            throw error;
+        }
+    },
+
     purchaseSelectedPackage: async (selectedPackage) => {
         set({ isPurchasing: true, error: null });
         try {
@@ -308,6 +389,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
             isPurchasing: false,
             error: null,
             lastCustomerInfo: null,
+            trialEligibility: {},
         });
     },
 }));

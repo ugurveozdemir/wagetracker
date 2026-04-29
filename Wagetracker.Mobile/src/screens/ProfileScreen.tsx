@@ -32,7 +32,7 @@ export const ProfileScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { user, logout, deleteAccount } = useAuthStore();
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
-    const { restorePurchases, presentCustomerCenter } = useSubscriptionStore();
+    const { restorePurchases, presentCustomerCenter, redeemOfferCode } = useSubscriptionStore();
     const { isCompact, horizontalPadding, rfs, rs, rv } = useResponsiveLayout();
     const [refreshing, setRefreshing] = React.useState(false);
     const [expandedSection, setExpandedSection] = React.useState<ProfileMenuKey | null>('personal');
@@ -66,7 +66,7 @@ export const ProfileScreen: React.FC = () => {
                 type: updatedUser?.subscription.isPremium ? 'success' : 'info',
                 text1: updatedUser?.subscription.isPremium ? 'Purchases Restored' : 'No Active Subscription',
                 text2: updatedUser?.subscription.isPremium
-                    ? 'Premium access is active on this account.'
+                    ? 'Pro access is active on this account.'
                     : 'No active subscription was found.',
                 visibilityTime: 2200,
             });
@@ -94,6 +94,27 @@ export const ProfileScreen: React.FC = () => {
                 visibilityTime: 2600,
             });
             await Linking.openURL(url);
+        }
+    };
+
+    const handleRedeemOfferCode = async () => {
+        try {
+            const updatedUser = await redeemOfferCode();
+            Toast.show({
+                type: updatedUser?.subscription.isPremium ? 'success' : 'info',
+                text1: updatedUser?.subscription.isPremium ? 'Offer Redeemed' : 'Offer Code Checked',
+                text2: updatedUser?.subscription.isPremium
+                    ? 'Pro access is active on this account.'
+                    : 'If the code was accepted, access may take a moment to refresh.',
+                visibilityTime: 2600,
+            });
+        } catch (error) {
+            Toast.show({
+                type: 'error',
+                text1: 'Offer Code Failed',
+                text2: error instanceof Error ? error.message : 'Please try again.',
+                visibilityTime: 2800,
+            });
         }
     };
 
@@ -195,10 +216,10 @@ export const ProfileScreen: React.FC = () => {
 
     const subscriptionTitle = user?.subscription.isPremium
         ? user.subscription.planTerm === 'annual'
-            ? '12 Month Premium'
+            ? '12 Month Pro'
             : user.subscription.planTerm === 'six_month'
-                ? '6 Month Premium'
-                : 'Monthly Premium'
+                ? '6 Month Pro'
+                : 'Monthly Pro'
         : 'Free Tier';
 
     const subscriptionStatus = user?.subscription.status
@@ -254,10 +275,13 @@ export const ProfileScreen: React.FC = () => {
                     <Text style={styles.supportActionLabel}>Restore purchases</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.deleteInlineButton} onPress={handleDeleteAccount} activeOpacity={0.82}>
-                    <Feather name="trash-2" size={18} color={colors.danger} />
-                    <Text style={styles.deleteInlineText}>Delete account in app</Text>
-                </TouchableOpacity>
+                {Platform.OS === 'ios' ? (
+                    <TouchableOpacity style={styles.supportActionButton} onPress={handleRedeemOfferCode} activeOpacity={0.82}>
+                        <MaterialIcons name="redeem" size={18} color={colors.onSurface} />
+                        <Text style={styles.supportActionLabel}>Redeem offer code</Text>
+                    </TouchableOpacity>
+                ) : null}
+
             </View>
         );
     };
@@ -365,7 +389,7 @@ export const ProfileScreen: React.FC = () => {
                     <Text style={styles.subscriptionCopy}>
                         {user?.subscription.isPremium
                             ? `Status: ${user.subscription.status.replace('_', ' ')}`
-                            : 'Upgrade for goals, expenses, and unlimited unlocked jobs.'}
+                            : 'Upgrade to Pro for goals, expenses, and unlimited unlocked jobs.'}
                     </Text>
 
                     <View style={styles.subscriptionMetaGrid}>
@@ -394,7 +418,7 @@ export const ProfileScreen: React.FC = () => {
                     <View style={styles.subscriptionActions}>
                         {user?.subscription.isPremium ? (
                             <View style={[styles.subscriptionButtonPrimary, styles.subscriptionButtonDisabled]}>
-                                <Text style={styles.subscriptionButtonPrimaryText}>Premium Active</Text>
+                                <Text style={styles.subscriptionButtonPrimaryText}>Pro Active</Text>
                             </View>
                         ) : (
                             <TouchableOpacity
@@ -440,6 +464,22 @@ export const ProfileScreen: React.FC = () => {
                         <Feather name="log-out" size={20} color={colors.danger} />
                     </View>
                     <Text style={[styles.logoutText, { fontSize: rfs(isCompact ? 18 : 20, 0.88, 1) }]}>Log Out</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.deleteAccountCard, { borderRadius: rs(30), paddingHorizontal: rs(24), paddingVertical: rs(22), marginTop: rv(16, 0.74, 1) }]}
+                    onPress={handleDeleteAccount}
+                    activeOpacity={0.86}
+                >
+                    <View style={[styles.deleteAccountIconBubble, { width: rs(48), height: rs(48), borderRadius: rs(24) }]}>
+                        <Feather name="trash-2" size={20} color={colors.danger} />
+                    </View>
+                    <View style={styles.deleteAccountCopy}>
+                        <Text style={[styles.deleteAccountText, { fontSize: rfs(isCompact ? 18 : 20, 0.88, 1) }]}>Delete Account</Text>
+                        <Text style={styles.deleteAccountHint}>
+                            Permanently remove your Chickaree account and data.
+                        </Text>
+                    </View>
                 </TouchableOpacity>
 
             </ScrollView>
@@ -620,6 +660,36 @@ const styles = StyleSheet.create({
         color: colors.danger,
         fontWeight: fontWeights.bold,
     },
+    deleteAccountCard: {
+        backgroundColor: colors.surfaceContainerLowest,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.lg,
+        shadowColor: colors.onSurface,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.05,
+        shadowRadius: 18,
+        elevation: 4,
+        marginBottom: spacing.xl,
+    },
+    deleteAccountIconBubble: {
+        backgroundColor: colors.dangerBg,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    deleteAccountCopy: {
+        flex: 1,
+        gap: spacing.xs,
+    },
+    deleteAccountText: {
+        color: colors.danger,
+        fontWeight: fontWeights.bold,
+    },
+    deleteAccountHint: {
+        color: colors.onSurfaceVariant,
+        fontSize: fontSizes.sm,
+        lineHeight: 19,
+    },
     subscriptionCard: {
         backgroundColor: colors.surfaceContainerLowest,
         marginBottom: spacing.xl,
@@ -768,20 +838,5 @@ const styles = StyleSheet.create({
         color: colors.onSurface,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.semibold,
-    },
-    deleteInlineButton: {
-        minHeight: 48,
-        borderRadius: 18,
-        backgroundColor: colors.dangerBg,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-        paddingHorizontal: spacing.md,
-        marginTop: spacing.md,
-    },
-    deleteInlineText: {
-        color: colors.danger,
-        fontSize: fontSizes.base,
-        fontWeight: fontWeights.bold,
     },
 });
