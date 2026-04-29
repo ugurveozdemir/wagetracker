@@ -82,6 +82,8 @@ const paywallCompletedAccessChange = (result: PAYWALL_RESULT) => {
     return result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED || result === PAYWALL_RESULT.NOT_PRESENTED;
 };
 
+const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
 export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     offerings: null,
     availablePackages: [],
@@ -181,6 +183,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
             return Boolean(
                 introPrice &&
                 introPrice.price === 0 &&
+                introPrice.cycles === 1 &&
                 introPrice.periodUnit === 'DAY' &&
                 introPrice.periodNumberOfUnits === 3 &&
                 eligibility?.status === INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE
@@ -322,8 +325,17 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
                 return updatedUser;
             }
 
+            await wait(1800);
+            await Purchases.invalidateCustomerInfoCache();
+            const refreshedCustomerInfo = await get().getCustomerInfo();
+            const refreshedUser = await get().refreshSubscriptionStatus();
+            if (get().hasActiveEntitlement(refreshedCustomerInfo)) {
+                set({ isPurchasing: false });
+                return refreshedUser;
+            }
+
             set({ isPurchasing: false });
-            return updatedUser;
+            return refreshedUser ?? updatedUser;
         } catch (error) {
             set({
                 isPurchasing: false,

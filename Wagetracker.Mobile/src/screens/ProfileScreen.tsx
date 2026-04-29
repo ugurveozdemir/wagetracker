@@ -102,10 +102,10 @@ export const ProfileScreen: React.FC = () => {
             const updatedUser = await redeemOfferCode();
             Toast.show({
                 type: updatedUser?.subscription.isPremium ? 'success' : 'info',
-                text1: updatedUser?.subscription.isPremium ? 'Offer Redeemed' : 'Offer Code Checked',
+                text1: updatedUser?.subscription.isPremium ? 'Offer Redeemed' : 'Offer Code Screen Closed',
                 text2: updatedUser?.subscription.isPremium
                     ? 'Pro access is active on this account.'
-                    : 'If the code was accepted, access may take a moment to refresh.',
+                    : 'If you redeemed a code, access may take a moment to appear.',
                 visibilityTime: 2600,
             });
         } catch (error) {
@@ -275,13 +275,6 @@ export const ProfileScreen: React.FC = () => {
                     <Text style={styles.supportActionLabel}>Restore purchases</Text>
                 </TouchableOpacity>
 
-                {Platform.OS === 'ios' ? (
-                    <TouchableOpacity style={styles.supportActionButton} onPress={handleRedeemOfferCode} activeOpacity={0.82}>
-                        <MaterialIcons name="redeem" size={18} color={colors.onSurface} />
-                        <Text style={styles.supportActionLabel}>Redeem offer code</Text>
-                    </TouchableOpacity>
-                ) : null}
-
             </View>
         );
     };
@@ -429,6 +422,16 @@ export const ProfileScreen: React.FC = () => {
                                 <Text style={styles.subscriptionButtonPrimaryText}>Upgrade</Text>
                             </TouchableOpacity>
                         )}
+                        {Platform.OS === 'ios' ? (
+                            <TouchableOpacity
+                                style={styles.subscriptionButtonSecondary}
+                                activeOpacity={0.86}
+                                onPress={handleRedeemOfferCode}
+                            >
+                                <MaterialIcons name="redeem" size={18} color={colors.primary} />
+                                <Text style={styles.subscriptionButtonSecondaryText}>Redeem code</Text>
+                            </TouchableOpacity>
+                        ) : null}
                     </View>
                 </View>
 
@@ -749,9 +752,11 @@ const styles = StyleSheet.create({
     subscriptionActions: {
         flexDirection: 'row',
         gap: spacing.md,
+        flexWrap: 'wrap',
     },
     subscriptionButtonPrimary: {
         flex: 1,
+        minWidth: 150,
         minHeight: 52,
         borderRadius: 999,
         backgroundColor: colors.primary,
@@ -763,6 +768,25 @@ const styles = StyleSheet.create({
     },
     subscriptionButtonPrimaryText: {
         color: colors.white,
+        fontSize: fontSizes.base,
+        fontWeight: fontWeights.bold,
+    },
+    subscriptionButtonSecondary: {
+        flex: 1,
+        minWidth: 150,
+        minHeight: 52,
+        borderRadius: 999,
+        backgroundColor: colors.surfaceLow,
+        borderWidth: 1,
+        borderColor: colors.outlineVariant,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.md,
+    },
+    subscriptionButtonSecondaryText: {
+        color: colors.primary,
         fontSize: fontSizes.base,
         fontWeight: fontWeights.bold,
     },

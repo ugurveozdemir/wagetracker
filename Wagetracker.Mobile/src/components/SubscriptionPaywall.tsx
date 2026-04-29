@@ -246,10 +246,10 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
             const updatedUser = await redeemOfferCode();
             Toast.show({
                 type: updatedUser?.subscription.isPremium ? 'success' : 'info',
-                text1: updatedUser?.subscription.isPremium ? 'Offer Redeemed' : 'Offer Code Checked',
+                text1: updatedUser?.subscription.isPremium ? 'Offer Redeemed' : 'Offer Code Screen Closed',
                 text2: updatedUser?.subscription.isPremium
                     ? 'Pro access is active on this account.'
-                    : 'If the code was accepted, access may take a moment to refresh.',
+                    : 'If you redeemed a code, access may take a moment to appear.',
                 visibilityTime: 2600,
             });
             if (updatedUser?.subscription.isPremium) {
