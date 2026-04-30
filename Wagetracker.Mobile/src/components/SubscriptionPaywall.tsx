@@ -90,8 +90,8 @@ const hasThreeDayFreeTrial = (pkg: PurchasesPackage) => {
         introPrice &&
         introPrice.price === 0 &&
         introPrice.cycles === 1 &&
-        introPrice.periodUnit === 'DAY' &&
-        introPrice.periodNumberOfUnits === 3
+        (introPrice.period === 'P3D' ||
+            (introPrice.periodUnit === 'DAY' && introPrice.periodNumberOfUnits === 3))
     );
 };
 
@@ -153,6 +153,7 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
         error,
         purchaseSelectedPackage,
         restorePurchases,
+        refreshOfferingsAndTrialEligibility,
         refreshSubscriptionStatus,
         refreshTrialEligibility,
         redeemOfferCode,
@@ -198,7 +199,27 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
 
     const handlePurchase = async (selectedPackage: PurchasesPackage) => {
         try {
-            await purchaseSelectedPackage(selectedPackage);
+            const updatedUser = await purchaseSelectedPackage(selectedPackage);
+            if (!updatedUser) {
+                Toast.show({
+                    type: 'info',
+                    text1: 'Purchase Cancelled',
+                    text2: 'No subscription changes were made.',
+                    visibilityTime: 2200,
+                });
+                return;
+            }
+
+            if (!updatedUser.subscription.isPremium) {
+                Toast.show({
+                    type: 'info',
+                    text1: 'Purchase Not Active Yet',
+                    text2: 'Refresh in a moment if the App Store completed your purchase.',
+                    visibilityTime: 2600,
+                });
+                return;
+            }
+
             Toast.show({
                 type: 'success',
                 text1: 'Pro Unlocked',
@@ -214,6 +235,11 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                 visibilityTime: 2800,
             });
         }
+    };
+
+    const handleRefresh = async () => {
+        await refreshOfferingsAndTrialEligibility();
+        await refreshSubscriptionStatus();
     };
 
     const handleRestore = async () => {
@@ -288,7 +314,7 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                         <View style={styles.headerSpacer} />
                     )}
 
-                    <TouchableOpacity style={styles.syncButton} activeOpacity={0.82} onPress={refreshSubscriptionStatus}>
+                    <TouchableOpacity style={styles.syncButton} activeOpacity={0.82} onPress={handleRefresh}>
                         <MaterialIcons name="sync" size={18} color={colors.primary} />
                         <Text style={styles.syncText}>Refresh</Text>
                     </TouchableOpacity>

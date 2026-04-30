@@ -28,6 +28,7 @@ interface SubscriptionState {
     getCustomerInfo: () => Promise<CustomerInfo | null>;
     hasActiveEntitlement: (customerInfo?: CustomerInfo | null) => boolean;
     hasEligibleFreeTrial: () => boolean;
+    refreshOfferingsAndTrialEligibility: () => Promise<PurchasesPackage[]>;
     refreshTrialEligibility: (packages?: PurchasesPackage[]) => Promise<Record<string, IntroEligibility>>;
     refreshSubscriptionStatus: () => Promise<UserDto | null>;
     presentRevenueCatPaywall: () => Promise<PAYWALL_RESULT>;
@@ -52,12 +53,45 @@ const getRevenueCatApiKey = () => {
     return '';
 };
 
-const loadOfferings = async () => {
-    const offerings = await Purchases.getOfferings();
+const loadOfferings = async (syncFirst = false) => {
+    const offerings = syncFirst ? await Purchases.syncAttributesAndOfferingsIfNeeded() : await Purchases.getOfferings();
     return {
         offerings,
         availablePackages: offerings.current?.availablePackages ?? [],
     };
+};
+
+const isThreeDayFreeIntroPrice = (introPrice: PurchasesPackage['product']['introPrice']) => {
+    return Boolean(
+        introPrice &&
+        introPrice.price === 0 &&
+        introPrice.cycles === 1 &&
+        (introPrice.period === 'P3D' ||
+            (introPrice.periodUnit === 'DAY' && introPrice.periodNumberOfUnits === 3))
+    );
+};
+
+const logTrialEligibilityDebug = (
+    packages: PurchasesPackage[],
+    eligibility: Record<string, IntroEligibility>,
+    source: string
+) => {
+    if (!__DEV__) {
+        return;
+    }
+
+    console.log(`[RevenueCat Trial Debug] ${source}`, {
+        packages: packages.map((pkg) => ({
+            packageIdentifier: pkg.identifier,
+            productIdentifier: pkg.product.identifier,
+            priceString: pkg.product.priceString,
+            subscriptionPeriod: pkg.product.subscriptionPeriod,
+            introPrice: pkg.product.introPrice,
+            hasThreeDayFreeTrial: isThreeDayFreeIntroPrice(pkg.product.introPrice),
+            eligibilityStatus: eligibility[pkg.product.identifier]?.status,
+            eligibilityDescription: eligibility[pkg.product.identifier]?.description,
+        })),
+    });
 };
 
 const isPurchaseCancelled = (error: unknown) => {
@@ -138,6 +172,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
                 Purchases.getCustomerInfo(),
             ]);
             const trialEligibility = await get().refreshTrialEligibility(availablePackages);
+            logTrialEligibilityDebug(availablePackages, trialEligibility, 'bootstrap');
 
             set({
                 offerings,
@@ -181,14 +216,36 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
             const introPrice = pkg.product.introPrice;
             const eligibility = get().trialEligibility[pkg.product.identifier];
             return Boolean(
-                introPrice &&
-                introPrice.price === 0 &&
-                introPrice.cycles === 1 &&
-                introPrice.periodUnit === 'DAY' &&
-                introPrice.periodNumberOfUnits === 3 &&
+                isThreeDayFreeIntroPrice(introPrice) &&
                 eligibility?.status === INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE
             );
         });
+    },
+
+    refreshOfferingsAndTrialEligibility: async () => {
+        if (Platform.OS === 'web' || !get().isConfigured) {
+            return [];
+        }
+
+        set({ isLoading: true, error: null });
+        try {
+            const { offerings, availablePackages } = await loadOfferings(true);
+            const trialEligibility = await get().refreshTrialEligibility(availablePackages);
+            logTrialEligibilityDebug(availablePackages, trialEligibility, 'refreshOfferingsAndTrialEligibility');
+            set({
+                offerings,
+                availablePackages,
+                trialEligibility,
+                isLoading: false,
+            });
+            return availablePackages;
+        } catch (error) {
+            set({
+                error: getErrorMessage(error, 'Failed to refresh subscription offers.'),
+                isLoading: false,
+            });
+            return get().availablePackages;
+        }
     },
 
     refreshTrialEligibility: async (packages) => {
@@ -351,6 +408,14 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
             const result = await Purchases.purchasePackage(selectedPackage);
             set({ lastCustomerInfo: result.customerInfo });
             const updatedUser = await get().refreshSubscriptionStatus();
+
+            if (get().hasActiveEntitlement(result.customerInfo) && !updatedUser?.subscription.isPremium) {
+                await wait(1800);
+                const refreshedUser = await get().refreshSubscriptionStatus();
+                set({ isPurchasing: false });
+                return refreshedUser ?? updatedUser;
+            }
+
             set({ isPurchasing: false });
             return updatedUser;
         } catch (error) {
