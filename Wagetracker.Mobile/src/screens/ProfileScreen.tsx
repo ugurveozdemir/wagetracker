@@ -260,6 +260,9 @@ export const ProfileScreen: React.FC = () => {
                     <Text style={styles.supportEmail}>{config.SUPPORT_EMAIL}</Text>
                 </TouchableOpacity>
                 <View style={styles.supportLinkRow}>
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openUrl(config.TERMS_URL)}>
+                        <Text style={styles.supportLink}>Terms of Use</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity activeOpacity={0.8} onPress={() => openUrl(config.PRIVACY_URL)}>
                         <Text style={styles.supportLink}>Privacy</Text>
                     </TouchableOpacity>
