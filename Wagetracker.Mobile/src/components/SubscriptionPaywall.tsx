@@ -442,12 +442,23 @@ export const SubscriptionPaywall: React.FC<SubscriptionPaywallProps> = ({
                 ) : null}
 
                 <Text style={styles.legalText}>
-                    Purchases renew automatically unless cancelled before the renewal date. By subscribing, you agree to the Apple Standard EULA and Privacy Policy.
+                    {Platform.OS === 'ios'
+                        ? 'Purchases renew automatically unless cancelled before the renewal date. By subscribing, you agree to the Apple Standard EULA and Privacy Policy.'
+                        : 'Subscriptions renew automatically unless cancelled before the renewal date. By subscribing, you agree to the Google Play Terms of Service and Privacy Policy.'}
                 </Text>
 
                 <View style={styles.linksRow}>
-                    <TouchableOpacity activeOpacity={0.8} onPress={() => Linking.openURL(config.TERMS_URL)}>
-                        <Text style={styles.linkText}>Apple Standard EULA</Text>
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => Linking.openURL(
+                            Platform.OS === 'ios'
+                                ? config.TERMS_URL
+                                : 'https://play.google.com/intl/en_us/about/play-terms/index.html'
+                        )}
+                    >
+                        <Text style={styles.linkText}>
+                            {Platform.OS === 'ios' ? 'Apple Standard EULA' : 'Google Play Terms'}
+                        </Text>
                     </TouchableOpacity>
                     <TouchableOpacity activeOpacity={0.8} onPress={() => Linking.openURL(config.PRIVACY_URL)}>
                         <Text style={styles.linkText}>Privacy</Text>
