@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { formatCurrency } from '../utils/format';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { dashboardApi } from '../api';
@@ -47,12 +48,6 @@ export const GeneralSummaryScreen: React.FC = () => {
     useEffect(() => {
         loadSummary();
     }, [loadSummary]);
-
-    const formatCurrency = (amount: number | undefined | null) =>
-        `$${(amount ?? 0).toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        })}`;
 
     const formatHours = (hours: number | undefined | null) =>
         `${(hours ?? 0).toLocaleString(undefined, {

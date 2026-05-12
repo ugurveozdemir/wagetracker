@@ -14,12 +14,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Feather from 'react-native-vector-icons/Feather';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-toast-message';
 import { useAuthStore, useJobsStore, useSubscriptionStore } from '../stores';
 import { config } from '../config';
 import { colors, fontSizes, fontWeights, spacing, useResponsiveLayout } from '../theme';
+import { formatCurrency } from '../utils/format';
 
 const menuItems = [
     { key: 'personal', label: 'Personal Info', icon: 'person' },
@@ -154,46 +156,73 @@ export const ProfileScreen: React.FC = () => {
     };
 
     const handleDeleteAccount = () => {
-        Alert.alert(
-            'Delete Account',
-            'This permanently deletes your Chickaree account, jobs, entries, expenses, and profile data. This cannot be undone.\n\nDeleting your Chickaree account does not cancel your Apple or Google Play subscription. Manage or cancel your subscription from your store subscription settings.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await deleteAccount();
-                            Toast.show({
-                                type: 'success',
-                                text1: 'Account Deleted',
-                                text2: 'Your Chickaree account has been removed.',
-                                visibilityTime: 2400,
-                            });
-                        } catch (error) {
-                            Toast.show({
-                                type: 'error',
-                                text1: 'Deletion Failed',
-                                text2: error instanceof Error ? error.message : 'Please try again.',
-                                visibilityTime: 2800,
-                            });
-                        }
+        const hasPremium = user?.subscription.isPremium ?? false;
+
+        const proceedWithDeletion = () => {
+            Alert.alert(
+                'Permanently Delete Account',
+                'This permanently deletes your Chickaree account, jobs, entries, expenses, and profile data. This cannot be undone.',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Delete Account',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try {
+                                await deleteAccount();
+                                Toast.show({
+                                    type: 'success',
+                                    text1: 'Account Deleted',
+                                    text2: 'Your Chickaree account has been removed.',
+                                    visibilityTime: 2400,
+                                });
+                            } catch (error) {
+                                Toast.show({
+                                    type: 'error',
+                                    text1: 'Deletion Failed',
+                                    text2: error instanceof Error ? error.message : 'Please try again.',
+                                    visibilityTime: 2800,
+                                });
+                            }
+                        },
                     },
-                },
-            ]
-        );
+                ]
+            );
+        };
+
+        if (hasPremium) {
+            Alert.alert(
+                'Cancel Subscription First',
+                'You have an active subscription. Deleting your account does NOT cancel your Apple or Google Play billing — you may continue to be charged.\n\nPlease cancel your subscription from your store settings before deleting.',
+                [
+                    { text: 'Back', style: 'cancel' },
+                    {
+                        text: 'Manage Subscription',
+                        onPress: async () => {
+                            try {
+                                await presentCustomerCenter();
+                            } catch {
+                                // CustomerCenter unavailable; fall through
+                            }
+                        },
+                    },
+                    {
+                        text: 'Delete Anyway',
+                        style: 'destructive',
+                        onPress: proceedWithDeletion,
+                    },
+                ]
+            );
+        } else {
+            proceedWithDeletion();
+        }
     };
 
     const toggleSection = (key: ProfileMenuKey) => {
         setExpandedSection((current) => (current === key ? null : key));
     };
 
-    const formatCurrency = (amount: number | undefined) =>
-        `$${(amount ?? 0).toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        })}`;
+
 
     const formatDate = (date: string | null | undefined) => {
         if (!date) {

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { JobResponse } from '../types';
 import { colors, borderRadius, spacing, fontSizes, fontWeights } from '../theme';
+import { formatCurrency } from '../utils/format';
 
 interface JobCardProps {
     job: JobResponse;
@@ -36,12 +37,6 @@ const paletteByVariant = {
 } as const;
 
 export const JobCard: React.FC<JobCardProps> = ({ job, onPress, style, variant = 'green' }) => {
-    const formatCurrency = (amount: number) => {
-        return `$${amount.toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        })}`;
-    };
 
     const palette = paletteByVariant[variant];
 

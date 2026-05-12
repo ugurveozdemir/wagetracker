@@ -20,6 +20,7 @@ import { ExpenseResponse, ExpenseStackParamList, EXPENSE_CATEGORIES } from '../t
 import { useExpenseStore } from '../stores';
 import { colors, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
+import { formatCurrency } from '../utils/format';
 
 type ExpenseHistoryNavigationProp = NativeStackNavigationProp<ExpenseStackParamList, 'ExpenseHistory'>;
 
@@ -55,11 +56,7 @@ export const ExpenseHistoryScreen: React.FC = () => {
         }, [fetchWeeklyGroups, hasLoadedWeeklyGroups])
     );
 
-    const formatCurrency = (amount: number) =>
-        `$${amount.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        })}`;
+
 
     const sections = useMemo(
         () =>

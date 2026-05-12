@@ -22,6 +22,9 @@ import { ExpenseResponse, ExpenseStackParamList } from '../types';
 import { colors, useResponsiveLayout } from '../theme';
 import Feather from 'react-native-vector-icons/Feather';
 import Toast from 'react-native-toast-message';
+import { formatCurrency } from '../utils/format';
+import { useAuthStore } from '../stores';
+import { PremiumFeatureScreen } from './PremiumFeatureScreen';
 
 type ExpensesNavigationProp = NativeStackNavigationProp<ExpenseStackParamList, 'Expenses'>;
 const brandLogo = require('../../assets/logo.png');
@@ -29,9 +32,16 @@ const brandLogo = require('../../assets/logo.png');
 export const ExpensesScreen: React.FC = () => {
     const { horizontalPadding, isCompact: compact, rfs, rs, rv } = useResponsiveLayout();
     const navigation = useNavigation<ExpensesNavigationProp>();
+    const { user } = useAuthStore();
     const { summary, fetchSummary, deleteExpense, isLoadingSummary, hasLoadedSummary } = useExpenseStore();
     const [refreshing, setRefreshing] = useState(false);
     const [expandedExpenseIds, setExpandedExpenseIds] = useState<Record<number, boolean>>({});
+
+    // Access guard: render locked screen in-place so the tab component stays stable
+    if (!user?.access.canUseExpenses) {
+        return <PremiumFeatureScreen feature="expenses" />;
+    }
+
     useFocusEffect(
         useCallback(() => {
             fetchSummary({ silent: hasLoadedSummary });
@@ -44,11 +54,7 @@ export const ExpensesScreen: React.FC = () => {
         setRefreshing(false);
     }, [fetchSummary]);
 
-    const formatCurrency = (amount: number) =>
-        `$${amount.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        })}`;
+
 
     const totalSpending = summary?.totalSpending ?? 0;
 

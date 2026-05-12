@@ -18,6 +18,7 @@ import { OverviewStackParamList, RootStackParamList } from '../types';
 import { colors, useResponsiveLayout } from '../theme';
 import { CreateJobModal } from '../components/CreateJobModal';
 import { LockedFeatureModal } from '../components/LockedFeaturePreview';
+import { formatCurrency } from '../utils/format';
 
 type OverviewNavigationProp = CompositeNavigationProp<
     NativeStackNavigationProp<OverviewStackParamList, 'Overview'>,
@@ -57,11 +58,7 @@ export const OverviewScreen: React.FC = () => {
         setRefreshing(false);
     }, [fetchDashboard]);
 
-    const formatCurrency = (amount: number) =>
-        `$${amount.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        })}`;
+
 
     const cards = useMemo(
         () =>

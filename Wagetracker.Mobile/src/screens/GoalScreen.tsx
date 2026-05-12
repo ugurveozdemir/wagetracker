@@ -15,20 +15,24 @@ import { Button, Input } from '../components/ui';
 import { useJobsStore } from '../stores';
 import { profileApi } from '../api';
 import { colors, useResponsiveLayout } from '../theme';
+import { formatCurrency } from '../utils/format';
+import { useAuthStore } from '../stores';
+import { PremiumFeatureScreen } from './PremiumFeatureScreen';
 
 const RING_SEGMENTS = 40;
 const RING_SIZE = 240;
 const RING_RADIUS = 92;
 
-const formatCurrency = (amount: number) =>
-    `$${amount.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    })}`;
 
 export const GoalScreen: React.FC = () => {
     const { horizontalPadding, rfs, rs, rv } = useResponsiveLayout();
+    const { user } = useAuthStore();
     const { summary, fetchDashboard, isLoading, hasLoadedDashboard } = useJobsStore();
+
+    // Access guard: render locked screen in-place so the tab component stays stable
+    if (!user?.access.canUseGoals) {
+        return <PremiumFeatureScreen feature="goals" />;
+    }
     const [goalInput, setGoalInput] = useState('');
     const [motivationQuoteInput, setMotivationQuoteInput] = useState('');
     const [isSavingGoal, setIsSavingGoal] = useState(false);

@@ -20,6 +20,7 @@ import { useAuthStore, useJobsStore, useSubscriptionStore } from '../stores';
 import { CreateJobModal } from '../components/CreateJobModal';
 import { LockedFeatureCard, LockedFeatureModal } from '../components/LockedFeaturePreview';
 import { colors, useResponsiveLayout } from '../theme';
+import { formatCurrency } from '../utils/format';
 
 type DashboardNavigationProp = CompositeNavigationProp<
     NativeStackNavigationProp<HomeStackParamList, 'Dashboard'>,
@@ -82,11 +83,7 @@ export const DashboardScreen: React.FC = () => {
         setRefreshing(false);
     }, [fetchDashboard]);
 
-    const formatCurrency = (amount: number) =>
-        `$${amount.toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        })}`;
+
     const formatShortDate = (value: string) => {
         const parsed = new Date(value);
         if (Number.isNaN(parsed.getTime())) {
