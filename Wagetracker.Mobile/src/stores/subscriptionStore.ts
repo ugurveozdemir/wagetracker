@@ -40,6 +40,7 @@ interface SubscriptionState {
 }
 
 let customerInfoListenerRegistered = false;
+let bootstrapPromise: Promise<void> | null = null;
 
 const getRevenueCatApiKey = () => {
     if (Platform.OS === 'ios') {
@@ -146,49 +147,61 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
             return;
         }
 
+        // If a bootstrap is already in progress, wait for it instead of
+        // calling Purchases.configure() a second time (causes the warning).
+        if (bootstrapPromise) {
+            return bootstrapPromise;
+        }
+
         set({ isLoading: true, error: null });
 
-        try {
-            if (!get().isConfigured) {
-                await Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.INFO);
-                Purchases.configure({
-                    apiKey,
-                    appUserID: user.billingCustomerId,
-                });
-                if (!customerInfoListenerRegistered) {
-                    Purchases.addCustomerInfoUpdateListener((customerInfo) => {
-                        if (useSubscriptionStore.getState().isConfigured) {
-                            useSubscriptionStore.setState({ lastCustomerInfo: customerInfo });
-                        }
+        bootstrapPromise = (async () => {
+            try {
+                if (!get().isConfigured) {
+                    await Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.INFO);
+                    Purchases.configure({
+                        apiKey,
+                        appUserID: user.billingCustomerId,
                     });
-                    customerInfoListenerRegistered = true;
+                    if (!customerInfoListenerRegistered) {
+                        Purchases.addCustomerInfoUpdateListener((customerInfo) => {
+                            if (useSubscriptionStore.getState().isConfigured) {
+                                useSubscriptionStore.setState({ lastCustomerInfo: customerInfo });
+                            }
+                        });
+                        customerInfoListenerRegistered = true;
+                    }
+                } else if (get().configuredCustomerId !== user.billingCustomerId) {
+                    await Purchases.logIn(user.billingCustomerId);
                 }
-            } else if (get().configuredCustomerId !== user.billingCustomerId) {
-                await Purchases.logIn(user.billingCustomerId);
+
+                const [{ offerings, availablePackages }, customerInfo] = await Promise.all([
+                    loadOfferings(),
+                    Purchases.getCustomerInfo(),
+                ]);
+                const trialEligibility = await get().refreshTrialEligibility(availablePackages);
+                logTrialEligibilityDebug(availablePackages, trialEligibility, 'bootstrap');
+
+                set({
+                    offerings,
+                    availablePackages,
+                    isConfigured: true,
+                    configuredCustomerId: user.billingCustomerId,
+                    lastCustomerInfo: customerInfo,
+                    trialEligibility,
+                    isLoading: false,
+                });
+            } catch (error) {
+                set({
+                    error: getErrorMessage(error, 'Failed to configure subscriptions.'),
+                    isLoading: false,
+                });
+            } finally {
+                bootstrapPromise = null;
             }
+        })();
 
-            const [{ offerings, availablePackages }, customerInfo] = await Promise.all([
-                loadOfferings(),
-                Purchases.getCustomerInfo(),
-            ]);
-            const trialEligibility = await get().refreshTrialEligibility(availablePackages);
-            logTrialEligibilityDebug(availablePackages, trialEligibility, 'bootstrap');
-
-            set({
-                offerings,
-                availablePackages,
-                isConfigured: true,
-                configuredCustomerId: user.billingCustomerId,
-                lastCustomerInfo: customerInfo,
-                trialEligibility,
-                isLoading: false,
-            });
-        } catch (error) {
-            set({
-                error: getErrorMessage(error, 'Failed to configure subscriptions.'),
-                isLoading: false,
-            });
-        }
+        return bootstrapPromise;
     },
 
     getCustomerInfo: async () => {
