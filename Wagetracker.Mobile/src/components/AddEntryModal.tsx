@@ -108,6 +108,18 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
+                    <View style={[styles.headerRow, { marginBottom: rv(16, 0.74, 1) }]}>
+                        <TouchableOpacity
+                            style={[styles.headerButton, { width: rs(42), height: rs(42), borderRadius: rs(21) }]}
+                            onPress={onClose}
+                            activeOpacity={0.8}
+                        >
+                            <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+                        </TouchableOpacity>
+                        <Text style={[styles.headerTitle, { fontSize: rfs(isCompact ? 18 : 20, 0.9, 1) }]}>Log Entry</Text>
+                        <View style={[styles.headerButton, { width: rs(42), height: rs(42) }]} />
+                    </View>
+
                     <View style={[styles.heroCard, { borderRadius: rs(48, 0.84, 1), padding: rs(28, 0.84, 1), marginBottom: rv(20, 0.78, 1) }]}>
                         <View>
                             <Text style={[styles.heroValue, { fontSize: rfs(compact ? 36 : 40, 0.84, 1), marginBottom: rv(18, 0.74, 1) }]}>Log today&apos;s shift</Text>
@@ -248,6 +260,22 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fbf9f1',
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    headerButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#eae8e0',
+    },
+    headerTitle: {
+        color: '#005232',
+        fontWeight: '700',
+        textAlign: 'center',
+        flex: 1,
     },
     heroCard: {
         backgroundColor: colors.primary,

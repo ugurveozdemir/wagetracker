@@ -96,6 +96,18 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({ visible, onClose
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
+                    <View style={[styles.headerRow, { marginBottom: rv(16, 0.74, 1) }]}>
+                        <TouchableOpacity
+                            style={[styles.headerButton, { width: rs(42), height: rs(42), borderRadius: rs(21) }]}
+                            onPress={onClose}
+                            activeOpacity={0.8}
+                        >
+                            <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
+                        </TouchableOpacity>
+                        <Text style={[styles.headerTitle, { fontSize: rfs(compact ? 18 : 20, 0.9, 1) }]}>New Job</Text>
+                        <View style={[styles.headerButton, { width: rs(42), height: rs(42) }]} />
+                    </View>
+
                     {error ? (
                         <View style={styles.errorBanner}>
                             <Text style={styles.errorText}>{error}</Text>
@@ -196,6 +208,22 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fbf9f1',
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    headerButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#eae8e0',
+    },
+    headerTitle: {
+        color: '#005232',
+        fontWeight: '700',
+        textAlign: 'center',
+        flex: 1,
     },
     errorBanner: {
         backgroundColor: '#fff1ef',
