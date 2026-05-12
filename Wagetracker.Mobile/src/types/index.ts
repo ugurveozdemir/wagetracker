@@ -414,7 +414,6 @@ export type TabParamList = {
     HomeTab: NavigatorScreenParams<HomeStackParamList> | undefined;
     GoalTab: undefined;
     ExpensesTab: undefined;
-    AddTab: undefined;
     OverviewTab: NavigatorScreenParams<OverviewStackParamList> | undefined;
     ProfileTab: NavigatorScreenParams<ProfileStackParamList> | undefined;
 };
