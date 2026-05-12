@@ -14,6 +14,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useEntriesStore } from '../stores';
 import { colors, useResponsiveLayout } from '../theme';
+import { getLocalDateString } from '../utils/date';
 import Toast from 'react-native-toast-message';
 
 interface AddEntryModalProps {
@@ -62,7 +63,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
         try {
             await createEntry({
                 jobId,
-                date: date.toISOString().split('T')[0],
+                date: getLocalDateString(date),
                 startTime: null,
                 endTime: null,
                 totalHours,

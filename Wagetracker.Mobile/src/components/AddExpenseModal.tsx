@@ -18,6 +18,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { useExpenseStore } from '../stores';
 import { EXPENSE_CATEGORIES, ReceiptScanItemDraft } from '../types';
 import { useResponsiveLayout } from '../theme';
+import { getLocalDateString } from '../utils/date';
 import Toast from 'react-native-toast-message';
 
 interface AddExpenseModalProps {
@@ -77,11 +78,9 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         }
     }, [visible]);
 
-    const formatDateForApi = (value: Date) => value.toISOString().split('T')[0];
-
     const dateFromApiValue = (value: string) => {
-        const datePart = value.split('T')[0];
-        return new Date(`${datePart}T12:00:00`);
+        const [year, month, day] = value.split('T')[0].split('-').map(Number);
+        return new Date(year, month - 1, day, 0, 0, 0);
     };
 
     const getResizeActions = (asset: ImagePicker.ImagePickerAsset): ImageManipulator.Action[] => {
@@ -251,7 +250,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             const payload = {
                 amount: parsedAmount,
                 category,
-                date: formatDateForApi(date),
+                date: getLocalDateString(date),
                 description: description.trim() || undefined,
             };
 
