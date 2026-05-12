@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import config from '../config';
+import { tokenStorage } from '../utils/storage';
 
 // Get API base URL from centralized config
 const getBaseUrl = () => {
@@ -12,32 +12,6 @@ const getBaseUrl = () => {
 };
 
 const TOKEN_KEY = 'auth_token';
-
-// Web-compatible storage helpers (SecureStore doesn't work on web)
-const isWeb = Platform.OS === 'web';
-
-const storage = {
-    getItem: async (key: string): Promise<string | null> => {
-        if (isWeb) {
-            return localStorage.getItem(key);
-        }
-        return SecureStore.getItemAsync(key);
-    },
-    setItem: async (key: string, value: string): Promise<void> => {
-        if (isWeb) {
-            localStorage.setItem(key, value);
-            return;
-        }
-        await SecureStore.setItemAsync(key, value);
-    },
-    removeItem: async (key: string): Promise<void> => {
-        if (isWeb) {
-            localStorage.removeItem(key);
-            return;
-        }
-        await SecureStore.deleteItemAsync(key);
-    },
-};
 
 export const apiClient: AxiosInstance = axios.create({
     baseURL: getBaseUrl(),
@@ -51,7 +25,7 @@ export const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
     async (config: InternalAxiosRequestConfig) => {
         try {
-            const token = await storage.getItem(TOKEN_KEY);
+            const token = await tokenStorage.getItem(TOKEN_KEY);
             if (token && config.headers) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
@@ -68,14 +42,21 @@ apiClient.interceptors.request.use(
 // Response interceptor - handle errors
 apiClient.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
         if (error.response) {
             // Server responded with error
             const { status, data } = error.response;
 
             if (status === 401) {
-                // Token expired or invalid - could trigger logout here
-                console.warn('Unauthorized - token may be expired');
+                // Token expired or invalid — clear token and trigger logout
+                try {
+                    await tokenStorage.removeItem(TOKEN_KEY);
+                    // Lazy import to avoid circular dependency
+                    const { useAuthStore } = await import('../stores/authStore');
+                    useAuthStore.getState().logout();
+                } catch (logoutError) {
+                    console.warn('Failed to auto-logout on 401:', logoutError);
+                }
             }
 
             // Return a more useful error message
@@ -89,18 +70,17 @@ apiClient.interceptors.response.use(
     }
 );
 
-// Token management helpers (using web-compatible storage)
+// Token management helpers (web: sessionStorage, native: SecureStore)
 export const setAuthToken = async (token: string): Promise<void> => {
-    await storage.setItem(TOKEN_KEY, token);
+    await tokenStorage.setItem(TOKEN_KEY, token);
 };
 
 export const getAuthToken = async (): Promise<string | null> => {
-    return await storage.getItem(TOKEN_KEY);
+    return tokenStorage.getItem(TOKEN_KEY);
 };
 
 export const removeAuthToken = async (): Promise<void> => {
-    await storage.removeItem(TOKEN_KEY);
+    await tokenStorage.removeItem(TOKEN_KEY);
 };
 
 export default apiClient;
-
