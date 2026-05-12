@@ -281,19 +281,33 @@ const MainNavigator: React.FC = () => {
 
     const openEntryModalFromNestedRoute = (activeTabRoute: any) => {
         const nestedState = activeTabRoute.state;
-        if (!nestedState) {
-            return false;
+        if (nestedState) {
+            const innerRoute = nestedState.routes[nestedState.index];
+            if (innerRoute.name === 'JobDetails' && innerRoute.params?.jobId) {
+                const selectedJob = jobs.find((job) => job.id === innerRoute.params.jobId);
+                if (selectedJob?.isLocked) {
+                    openPaywall('locked_job', 'jobs');
+                    return true;
+                }
+
+                setActiveJobId(innerRoute.params.jobId);
+                setShowEntryModal(true);
+                return true;
+            }
         }
 
-        const innerRoute = nestedState.routes[nestedState.index];
-        if (innerRoute.name === 'JobDetails' && innerRoute.params?.jobId) {
-            const selectedJob = jobs.find((job) => job.id === innerRoute.params.jobId);
+        // Fallback: React Navigation may not have populated nested state yet.
+        // The navigate params are directly on the active tab route when nested.
+        const params = activeTabRoute.params;
+        if (params?.screen === 'JobDetails' && params?.params?.jobId) {
+            const jobId = params.params.jobId;
+            const selectedJob = jobs.find((job) => job.id === jobId);
             if (selectedJob?.isLocked) {
                 openPaywall('locked_job', 'jobs');
                 return true;
             }
 
-            setActiveJobId(innerRoute.params.jobId);
+            setActiveJobId(jobId);
             setShowEntryModal(true);
             return true;
         }
