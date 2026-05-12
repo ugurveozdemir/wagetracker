@@ -32,9 +32,9 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     const { horizontalPadding, isCompact: compact, metrics, rfs, rs, rv } = useResponsiveLayout();
     const { createEntry, isCreating } = useEntriesStore();
 
-    const [date, setDate] = useState(new Date('2023-10-24'));
-    const [hours, setHours] = useState('8');
-    const [tip, setTip] = useState('10');
+    const [date, setDate] = useState(() => new Date());
+    const [hours, setHours] = useState('');
+    const [tip, setTip] = useState('0');
     const [note, setNote] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -42,8 +42,8 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
     useEffect(() => {
         if (visible) {
             setDate(new Date());
-            setHours('8');
-            setTip('10');
+            setHours('');
+            setTip('0');
             setNote('');
             setError(null);
             setShowDatePicker(false);
@@ -116,7 +116,7 @@ export const AddEntryModal: React.FC<AddEntryModalProps> = ({
                         >
                             <MaterialIcons name="arrow-back" size={22} color={colors.primary} />
                         </TouchableOpacity>
-                        <Text style={[styles.headerTitle, { fontSize: rfs(isCompact ? 18 : 20, 0.9, 1) }]}>Log Entry</Text>
+                        <Text style={[styles.headerTitle, { fontSize: rfs(compact ? 18 : 20, 0.9, 1) }]}>Log Entry</Text>
                         <View style={[styles.headerButton, { width: rs(42), height: rs(42) }]} />
                     </View>
 

@@ -61,8 +61,8 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
                 isLoadingSummary: false,
                 isLoading: state.isLoadingWeeklyGroups,
             }));
-        } catch (error: any) {
-            const message = error.response?.data?.message || error.message || 'Failed to fetch expense summary';
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to fetch expense summary';
             set((state) => ({
                 error: message,
                 isLoadingSummary: false,
@@ -88,8 +88,8 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
                 isLoadingWeeklyGroups: false,
                 isLoading: state.isLoadingSummary,
             }));
-        } catch (error: any) {
-            const message = error.response?.data?.message || error.message || 'Failed to fetch expense history';
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to fetch expense history';
             set((state) => ({
                 error: message,
                 isLoadingWeeklyGroups: false,
@@ -118,8 +118,8 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
                 hasMoreWeeklyGroups: page.hasMore,
                 isLoadingMoreWeeklyGroups: false,
             }));
-        } catch (error: any) {
-            const message = error.response?.data?.message || error.message || 'Failed to load more expense history';
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to load more expense history';
             set({
                 error: message,
                 isLoadingMoreWeeklyGroups: false,
@@ -134,18 +134,16 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
                 get().fetchSummary(),
                 get().fetchWeeklyGroups(),
             ]);
-        } catch (error: any) {
-            const message = error.response?.data?.message || error.message || 'Failed to create expense';
-            throw new Error(message);
+        } catch (error) {
+            throw error instanceof Error ? error : new Error('Failed to create expense');
         }
     },
 
     scanReceipt: async (image) => {
         try {
             return await expensesApi.scanReceipt(image);
-        } catch (error: any) {
-            const message = error.response?.data?.message || error.message || 'Failed to scan receipt';
-            throw new Error(message);
+        } catch (error) {
+            throw error instanceof Error ? error : new Error('Failed to scan receipt');
         }
     },
 
@@ -156,9 +154,8 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
                 get().fetchSummary(),
                 get().fetchWeeklyGroups(),
             ]);
-        } catch (error: any) {
-            const message = error.response?.data?.message || error.message || 'Failed to save scanned expense';
-            throw new Error(message);
+        } catch (error) {
+            throw error instanceof Error ? error : new Error('Failed to save scanned expense');
         }
     },
 
@@ -169,9 +166,8 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
                 get().fetchSummary({ silent: true }),
                 get().fetchWeeklyGroups({ silent: true }),
             ]);
-        } catch (error: any) {
-            const message = error.response?.data?.message || error.message || 'Failed to delete expense';
-            throw new Error(message);
+        } catch (error) {
+            throw error instanceof Error ? error : new Error('Failed to delete expense');
         }
     },
 

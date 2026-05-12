@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {
     AuthStackParamList,
@@ -38,7 +38,7 @@ import { OverviewScreen } from '../screens/OverviewScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { GeneralSummaryScreen } from '../screens/GeneralSummaryScreen';
 import { PaywallScreen } from '../screens/PaywallScreen';
-import { PremiumFeatureScreen } from '../screens/PremiumFeatureScreen';
+
 import { AddExpenseModal } from '../components/AddExpenseModal';
 import { AddEntryModal } from '../components/AddEntryModal';
 import { CreateJobModal } from '../components/CreateJobModal';
@@ -144,9 +144,7 @@ const ProfileNavigator: React.FC = () => {
     );
 };
 
-const LockedGoalScreen: React.FC = () => <PremiumFeatureScreen feature="goals" />;
-const LockedExpensesScreen: React.FC = () => <PremiumFeatureScreen feature="expenses" />;
-const DummyScreen: React.FC = () => <View style={{ flex: 1, backgroundColor: '#fbf9f1' }} />;
+
 
 const visibleTabs = [
     { routeName: 'HomeTab', icon: 'dashboard', label: 'Dashboard' },
@@ -156,7 +154,20 @@ const visibleTabs = [
     { routeName: 'ProfileTab', icon: 'person', label: 'Profile' },
 ] as const;
 
-const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
+// Maps each tab to its root (initial) screen so we can pop-to-root by navigating there.
+const TAB_ROOT_SCREENS: Record<string, string> = {
+    HomeTab: 'Dashboard',
+    GoalTab: 'Goal',
+    OverviewTab: 'Overview',
+    ExpensesTab: 'Expenses',
+    ProfileTab: 'Profile',
+};
+
+interface CustomTabBarProps extends BottomTabBarProps {
+    onAddPress: (tabState: BottomTabBarProps['state']) => void;
+}
+
+const CustomTabBar = ({ state, navigation, onAddPress }: CustomTabBarProps) => {
     const { user } = useAuthStore();
     const { horizontalPadding, isCompact: compact, metrics, rfs, rs, rv } = useResponsiveLayout();
     const activeRouteName = state.routes[state.index]?.name;
@@ -217,8 +228,20 @@ const CustomTabBar: React.FC<any> = ({ state, navigation, onAddPress }) => {
                             canPreventDefault: true,
                         });
 
-                        if (!isFocused && !event.defaultPrevented) {
-                            navigation.navigate(tab.routeName);
+                        if (!event.defaultPrevented) {
+                            if (activeRouteName === tab.routeName) {
+                                // Already on this tab — navigate to root only when nested stack
+                                // is not already at root. Calling navigate when at root causes
+                                // React Navigation to dispatch POP_TO_TOP which it then can't
+                                // handle (produces a warning).
+                                const rootScreen = TAB_ROOT_SCREENS[tab.routeName];
+                                const nestedIsAtRoot = !nestedState || (nestedState.index ?? 0) === 0;
+                                if (rootScreen && !nestedIsAtRoot) {
+                                    navigation.navigate(tab.routeName as any, { screen: rootScreen });
+                                }
+                            } else {
+                                navigation.navigate(tab.routeName);
+                            }
                         }
                     };
 
@@ -356,9 +379,8 @@ const MainNavigator: React.FC = () => {
                 }}
             >
                 <Tab.Screen name="HomeTab" component={HomeNavigator} />
-                <Tab.Screen name="GoalTab" component={user?.access.canUseGoals ? GoalNavigator : LockedGoalScreen} />
-                <Tab.Screen name="ExpensesTab" component={user?.access.canUseExpenses ? ExpenseNavigator : LockedExpensesScreen} />
-                <Tab.Screen name="AddTab" component={DummyScreen} />
+                <Tab.Screen name="GoalTab" component={GoalNavigator} />
+                <Tab.Screen name="ExpensesTab" component={ExpenseNavigator} />
                 <Tab.Screen name="OverviewTab" component={OverviewNavigator} />
                 <Tab.Screen name="ProfileTab" component={ProfileNavigator} />
             </Tab.Navigator>
@@ -422,23 +444,26 @@ export const AppNavigator: React.FC = () => {
         let cancelled = false;
 
         const syncSubscriptions = async () => {
-            if (!isAuthenticated || !user) {
+            // Read fresh user from store to avoid the entire effect re-running
+            // every time any field on the user object changes reference.
+            const currentUser = useAuthStore.getState().user;
+            if (!isAuthenticated || !currentUser) {
                 initialSubscriptionRefreshUserId.current = null;
                 await clear();
                 return;
             }
 
             try {
-                await bootstrap(user);
+                await bootstrap(currentUser);
             } catch (error) {
                 console.error(error);
             }
 
-            if (cancelled || initialSubscriptionRefreshUserId.current === user.id) {
+            if (cancelled || initialSubscriptionRefreshUserId.current === currentUser.id) {
                 return;
             }
 
-            initialSubscriptionRefreshUserId.current = user.id;
+            initialSubscriptionRefreshUserId.current = currentUser.id;
             const refreshedUser = await refreshSubscriptionStatus();
             if (!refreshedUser && !cancelled) {
                 initialSubscriptionRefreshUserId.current = null;
@@ -450,7 +475,10 @@ export const AppNavigator: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [bootstrap, clear, isAuthenticated, refreshSubscriptionStatus, user]);
+    // user?.id + user?.billingCustomerId instead of the full user object:
+    // prevents re-triggering bootstrap on every isPremium/weeklyGoal update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [bootstrap, clear, isAuthenticated, refreshSubscriptionStatus, user?.id, user?.billingCustomerId]);
 
     useEffect(() => {
         const subscription = AppState.addEventListener('change', (nextState) => {

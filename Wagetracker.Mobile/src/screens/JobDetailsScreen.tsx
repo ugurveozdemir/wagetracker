@@ -18,24 +18,31 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
-import { MainStackParamList, WeeklyGroupResponse, EntryResponse } from '../types';
+import { MainStackParamList, WeeklyGroupResponse, EntryResponse, HomeStackParamList, JobDetailsResponse } from '../types';
 import { useEntriesStore, useJobsStore } from '../stores';
+import { entriesApi } from '../api';
 import { Card } from '../components/ui';
 import { AddEntryModal } from '../components/AddEntryModal';
 import { EditJobModal } from '../components/EditJobModal';
 import { colors, spacing, fontSizes, fontWeights, borderRadius, useResponsiveLayout } from '../theme';
 import Toast from 'react-native-toast-message';
+import { formatCurrency } from '../utils/format';
 
 type JobDetailsNavigationProp = NativeStackNavigationProp<MainStackParamList, 'JobDetails'>;
 type JobDetailsRouteProp = RouteProp<MainStackParamList, 'JobDetails'>;
 
 export const JobDetailsScreen: React.FC = () => {
-    const navigation = useNavigation<any>();
+    const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList, 'JobDetails'>>();
     const route = useRoute<JobDetailsRouteProp>();
     const { jobId } = route.params;
     const { isCompact, horizontalPadding, panelRadius, metrics, rfs, rs, rv } = useResponsiveLayout();
 
-    const { jobDetails, weeks, isLoading, fetchJobDetails, deleteEntry, clearJobDetails } = useEntriesStore();
+    // --- Local state: isolated per screen instance, no global singleton conflict ---
+    const [jobDetails, setJobDetails] = useState<JobDetailsResponse | null>(null);
+    const [weeks, setWeeks] = useState<WeeklyGroupResponse[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const { createEntry, deleteEntry } = useEntriesStore();
     const { fetchDashboard, deleteJob } = useJobsStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,21 +50,31 @@ export const JobDetailsScreen: React.FC = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
+    const loadJobDetails = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const details = await entriesApi.getJobDetailsWithWeekly(jobId);
+            setJobDetails(details);
+            setWeeks(details.weeks);
+        } catch (error) {
+            // Error will surface as empty state; the pull-to-refresh lets user retry
+            console.warn('Failed to load job details:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [jobId]);
+
     useFocusEffect(
         useCallback(() => {
-            fetchJobDetails(jobId);
-        }, [jobId, fetchJobDetails])
+            loadJobDetails();
+        }, [loadJobDetails])
     );
-
-    useEffect(() => {
-        return () => clearJobDetails();
-    }, [clearJobDetails]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await fetchJobDetails(jobId);
+        await loadJobDetails();
         setRefreshing(false);
-    }, [jobId, fetchJobDetails]);
+    }, [loadJobDetails]);
 
     const handleEditJob = () => {
         setShowOptionsMenu(false);
@@ -76,14 +93,15 @@ export const JobDetailsScreen: React.FC = () => {
                     onPress: async () => {
                         try {
                             await deleteEntry(entryId);
+                            // Refresh local screen state and global dashboard
+                            await loadJobDetails();
+                            fetchDashboard().catch(console.error);
                             Toast.show({
                                 type: 'delete',
                                 text1: 'Entry Deleted',
                                 text2: 'The entry has been removed',
                                 visibilityTime: 2000,
                             });
-                            fetchJobDetails(jobId);
-                            fetchDashboard();
                         } catch {
                             Toast.show({
                                 type: 'error',
@@ -133,12 +151,7 @@ export const JobDetailsScreen: React.FC = () => {
         );
     };
 
-    const formatCurrency = (amount: number) => {
-        return `$${amount.toLocaleString(undefined, {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        })}`;
-    };
+
 
     if (isLoading && !refreshing && !jobDetails) {
         return (
@@ -254,8 +267,8 @@ export const JobDetailsScreen: React.FC = () => {
                 onClose={() => setIsModalOpen(false)}
                 onCreated={() => {
                     setIsModalOpen(false);
-                    fetchJobDetails(jobId);
-                    fetchDashboard();
+                    loadJobDetails();
+                    fetchDashboard().catch(console.error);
                 }}
             />
 
@@ -265,8 +278,8 @@ export const JobDetailsScreen: React.FC = () => {
                 onClose={() => setIsEditModalOpen(false)}
                 onUpdated={() => {
                     setIsEditModalOpen(false);
-                    fetchJobDetails(jobId);
-                    fetchDashboard();
+                    loadJobDetails();
+                    fetchDashboard().catch(console.error);
                 }}
             />
         </SafeAreaView>
@@ -286,7 +299,7 @@ const WeekGroupComponent: React.FC<WeekGroupProps> = ({ week, onDeleteEntry, isL
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
-    const formatCurrency = (amount: number) => `$${amount.toFixed(0)}`;
+
 
     return (
         <View style={[styles.weekGroup, { marginBottom: rv(20, 0.78, 1) }]}>
