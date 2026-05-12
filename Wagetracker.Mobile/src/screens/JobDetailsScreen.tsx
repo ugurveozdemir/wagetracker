@@ -18,7 +18,7 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import Feather from 'react-native-vector-icons/Feather';
-import { MainStackParamList, WeeklyGroupResponse, EntryResponse, HomeStackParamList, JobDetailsResponse } from '../types';
+import { MainStackParamList, WeeklyGroupResponse, EntryResponse, JobDetailsResponse } from '../types';
 import { useEntriesStore, useJobsStore } from '../stores';
 import { entriesApi } from '../api';
 import { Card } from '../components/ui';
@@ -32,7 +32,7 @@ type JobDetailsNavigationProp = NativeStackNavigationProp<MainStackParamList, 'J
 type JobDetailsRouteProp = RouteProp<MainStackParamList, 'JobDetails'>;
 
 export const JobDetailsScreen: React.FC = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList, 'JobDetails'>>();
+    const navigation = useNavigation<JobDetailsNavigationProp>();
     const route = useRoute<JobDetailsRouteProp>();
     const { jobId } = route.params;
     const { isCompact, horizontalPadding, panelRadius, metrics, rfs, rs, rv } = useResponsiveLayout();

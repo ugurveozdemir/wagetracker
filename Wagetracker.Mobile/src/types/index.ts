@@ -439,8 +439,6 @@ export type AuthStackParamList = {
 // Nested stacks inside tabs
 export type HomeStackParamList = {
     Dashboard: undefined;
-    Goal: undefined;
-    JobDetails: { jobId: number };
 };
 
 export type OverviewStackParamList = {
@@ -463,4 +461,4 @@ export type ProfileStackParamList = {
 };
 
 // Backward compat alias
-export type MainStackParamList = HomeStackParamList;
+export type MainStackParamList = OverviewStackParamList;

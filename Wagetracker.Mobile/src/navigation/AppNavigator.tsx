@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { CommonActions, NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -79,8 +79,6 @@ const HomeNavigator: React.FC = () => {
             }}
         >
             <HomeStack.Screen name="Dashboard" component={DashboardScreen} />
-            <HomeStack.Screen name="Goal" component={GoalScreen} />
-            <HomeStack.Screen name="JobDetails" component={JobDetailsScreen} />
         </HomeStack.Navigator>
     );
 };
@@ -154,15 +152,6 @@ const visibleTabs = [
     { routeName: 'ProfileTab', icon: 'person', label: 'Profile' },
 ] as const;
 
-// Maps each tab to its root (initial) screen so we can pop-to-root by navigating there.
-const TAB_ROOT_SCREENS: Record<string, string> = {
-    HomeTab: 'Dashboard',
-    GoalTab: 'Goal',
-    OverviewTab: 'Overview',
-    ExpensesTab: 'Expenses',
-    ProfileTab: 'Profile',
-};
-
 interface CustomTabBarProps extends BottomTabBarProps {
     onAddPress: (tabState: BottomTabBarProps['state']) => void;
 }
@@ -171,17 +160,15 @@ const CustomTabBar = ({ state, navigation, onAddPress }: CustomTabBarProps) => {
     const { user } = useAuthStore();
     const { horizontalPadding, isCompact: compact, metrics, rfs, rs, rv } = useResponsiveLayout();
     const activeRouteName = state.routes[state.index]?.name;
-    const activeRoute = state.routes[state.index];
-    const nestedState = activeRoute?.state;
-    const nestedRoute = nestedState?.routes?.[nestedState.index ?? 0];
-    const normalizedActiveRouteName =
-        activeRouteName === 'HomeTab' && nestedRoute?.name === 'Goal'
-            ? 'GoalTab'
-            : activeRouteName === 'HomeTab' && nestedRoute?.name === 'JobDetails'
-                ? 'OverviewTab'
-                : activeRouteName;
-    const isDashboardJobDetails = activeRouteName === 'HomeTab' && nestedRoute?.name === 'JobDetails';
-    const showFab = isDashboardJobDetails || activeRouteName === 'OverviewTab' || (activeRouteName === 'ExpensesTab' && user?.access.canUseExpenses);
+    const showFab = activeRouteName === 'OverviewTab' || (activeRouteName === 'ExpensesTab' && user?.access.canUseExpenses);
+
+    const resetTabToRoot = (routeIndex: number) => {
+        navigation.dispatch(CommonActions.reset({
+            index: routeIndex,
+            routes: state.routes.map((route) => ({ name: route.name })),
+            stale: true,
+        }));
+    };
 
     return (
         <View pointerEvents="box-none" style={tabStyles.wrapper}>
@@ -218,30 +205,22 @@ const CustomTabBar = ({ state, navigation, onAddPress }: CustomTabBarProps) => {
             >
                 {visibleTabs.map((tab) => {
                     const routeIndex = state.routes.findIndex((route: any) => route.name === tab.routeName);
-                    const isFocused = normalizedActiveRouteName === tab.routeName;
+                    const isFocused = activeRouteName === tab.routeName;
 
                     const onPress = () => {
                         const route = state.routes[routeIndex];
+                        if (!route) {
+                            return;
+                        }
+
                         const event = navigation.emit({
                             type: 'tabPress',
-                            target: route?.key,
+                            target: route.key,
                             canPreventDefault: true,
                         });
 
                         if (!event.defaultPrevented) {
-                            if (activeRouteName === tab.routeName) {
-                                // Already on this tab — navigate to root only when nested stack
-                                // is not already at root. Calling navigate when at root causes
-                                // React Navigation to dispatch POP_TO_TOP which it then can't
-                                // handle (produces a warning).
-                                const rootScreen = TAB_ROOT_SCREENS[tab.routeName];
-                                const nestedIsAtRoot = !nestedState || (nestedState.index ?? 0) === 0;
-                                if (rootScreen && !nestedIsAtRoot) {
-                                    navigation.navigate(tab.routeName as any, { screen: rootScreen });
-                                }
-                            } else {
-                                navigation.navigate(tab.routeName);
-                            }
+                            resetTabToRoot(routeIndex);
                         }
                     };
 
