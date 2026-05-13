@@ -62,6 +62,7 @@ logs/
 # Agent notes
 ada
 .omx/
+.commandcode/
 AGENTS.md
 .codex/*
 !.codex/agents/
@@ -75,3 +76,4 @@ AGENTS.md
 
 reference-project/
 gpt-onboarding/
+Wagetracker.Mobile/builds/

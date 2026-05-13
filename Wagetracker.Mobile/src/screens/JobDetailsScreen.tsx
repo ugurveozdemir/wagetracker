@@ -42,7 +42,7 @@ export const JobDetailsScreen: React.FC = () => {
     const [weeks, setWeeks] = useState<WeeklyGroupResponse[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const { createEntry, deleteEntry } = useEntriesStore();
+    const { deleteEntry, lastCreatedEntry } = useEntriesStore();
     const { fetchDashboard, deleteJob } = useJobsStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,6 +69,12 @@ export const JobDetailsScreen: React.FC = () => {
             loadJobDetails();
         }, [loadJobDetails])
     );
+
+    useEffect(() => {
+        if (lastCreatedEntry?.jobId === jobId) {
+            loadJobDetails();
+        }
+    }, [jobId, lastCreatedEntry?.id, lastCreatedEntry?.jobId, loadJobDetails]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);

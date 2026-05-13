@@ -17,6 +17,7 @@ interface EntriesState {
     isCreating: boolean;
     isDeleting: boolean;
     error: string | null;
+    lastCreatedEntry: EntryResponse | null;
 
     // Actions
     createEntry: (data: CreateEntryRequest) => Promise<EntryResponse>;
@@ -28,6 +29,7 @@ export const useEntriesStore = create<EntriesState>((set) => ({
     isCreating: false,
     isDeleting: false,
     error: null,
+    lastCreatedEntry: null,
 
     createEntry: async (data: CreateEntryRequest) => {
         set({ isCreating: true, error: null });
@@ -35,7 +37,7 @@ export const useEntriesStore = create<EntriesState>((set) => ({
             const newEntry = await entriesApi.create(data);
             // Kick off a background dashboard refresh so totals stay current
             useJobsStore.getState().fetchDashboard().catch(console.error);
-            set({ isCreating: false });
+            set({ isCreating: false, lastCreatedEntry: newEntry });
             return newEntry;
         } catch (error) {
             set({
