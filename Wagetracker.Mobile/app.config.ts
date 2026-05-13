@@ -9,7 +9,7 @@ const androidPackage = process.env.ANDROID_PACKAGE || DEFAULT_ANDROID_PACKAGE;
 const config: ExpoConfig = {
     name: 'Chickaree',
     slug: 'chickaree',
-    version: '1.0.0',
+    version: '1.0.1',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
